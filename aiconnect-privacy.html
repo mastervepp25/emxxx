@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - Privacy Policy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <style>
+    :root {
+      --aiConnect-bg-dark: #0d0d1a;
+      --aiConnect-panel-dark: #121225;
+      --aiConnect-glass-bg: rgba(18, 18, 37, 0.85);
+      --aiConnect-border: rgba(0, 255, 255, 0.25);
+      --aiConnect-cyan: #00ffff;
+      --aiConnect-cyan-dark: #00cccc;
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-glow-strong: rgba(0, 255, 255, 0.7);
+      --aiConnect-gold: #ffc107;
+      --aiConnect-gold-glow: rgba(255, 193, 7, 0.6);
+      --aiConnect-text-primary: #e0e0f0;
+      --aiConnect-text-secondary: #a0a0c0;
+      --aiConnect-success: #00ff88;
+      --aiConnect-error: #ff4444;
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace;
+
+      --spacing-unit: 15px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --box-shadow-emo: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+      --transition-speed: 0.3s;
+      --header-height: 56px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: var(--header-height);
+        padding-bottom: calc(60px + var(--spacing-unit));
+        max-width: 420px;
+        margin: 0 auto;
+        overflow-x: hidden;
+        position: relative;
+    }
+    a { color: var(--aiConnect-cyan); text-decoration: none; }
+    a:hover { color: var(--aiConnect-cyan-dark); text-decoration: underline; text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--border-radius); transition: background-color var(--transition-speed), transform 0.1s, box-shadow var(--transition-speed); }
+    button:active { transform: translateY(1px) scale(0.98); }
+    .material-symbols-outlined, .fas { vertical-align: middle; }
+
+    .header {
+        background-color: var(--aiConnect-glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: var(--aiConnect-text-primary);
+        padding: 0 var(--spacing-unit);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        z-index: 100;
+        border-bottom: 1px solid var(--aiConnect-border);
+        height: var(--header-height);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+    }
+    .header-logo-container { display: flex; align-items: center; }
+    .header-logo-img { width: 30px; height: 30px; object-fit: contain; margin-right: 8px; }
+    .header-logo-text {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--aiConnect-cyan);
+        font-family: var(--font-display);
+        text-shadow: 0 0 5px var(--aiConnect-glow-medium);
+    }
+    .header-icons-right { display: flex; align-items: center; gap: calc(var(--spacing-unit) * 0.5); }
+    .header-icon { position: relative; cursor: pointer; color: var(--aiConnect-text-secondary); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; transition: background-color 0.2s, color 0.2s, text-shadow 0.2s; }
+    .header-icon:hover { background-color: rgba(0, 255, 255, 0.1); color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .header-icon:active { background-color: rgba(0, 255, 255, 0.2); transform: scale(0.95); }
+    .header-icon .material-symbols-outlined { font-size: 22px; }
+    .badge { position: absolute; top: -2px; right: -2px; background-color: var(--aiConnect-error); color: white; font-size: 9px; font-weight: bold; border-radius: 50%; padding: 1px 4px; min-width: 14px; text-align: center; line-height: 1; display: none; z-index: 1; box-shadow: 0 0 5px rgba(255, 68, 68, 0.5); border: 1px solid var(--aiConnect-bg-dark); }
+    .badge.visible { display: block; }
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+
+    .data-card-emo {
+      background: var(--aiConnect-panel-dark);
+      border: 1px solid var(--aiConnect-border);
+      color: var(--aiConnect-text-primary);
+      border-radius: var(--border-radius-large);
+      padding: var(--spacing-unit);
+      box-shadow: 0 0 20px var(--aiConnect-glow-soft), inset 0 0 10px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .data-card-emo::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: inherit;
+        box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.1);
+        pointer-events: none;
+        z-index: 0;
+    }
+    .data-card-emo > * { position: relative; z-index: 1; }
+    .data-card-emo p { line-height: 1.6; margin-bottom: calc(var(--spacing-unit) * 0.75); font-size: 0.9rem; }
+    .data-card-emo h4 { font-family: var(--font-display); color: var(--aiConnect-cyan); margin-bottom: calc(var(--spacing-unit)*0.5); margin-top: var(--spacing-unit); font-size: 1rem; }
+
+
+    .data-card-header-emo {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      /*margin-bottom: var(--spacing-unit); Default, will be overridden if needed */
+      border-bottom: 1px solid rgba(0, 255, 255, 0.15);
+      padding-bottom: calc(var(--spacing-unit)*0.6);
+    }
+    .action-button-emo {
+      background-color: rgba(0, 255, 255, 0.1); color: var(--aiConnect-cyan);
+      border: 1px solid var(--aiConnect-border); font-weight: 500;
+      padding: 8px calc(var(--spacing-unit) * 0.8); border-radius: 6px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px; /* Changed from flex:1 */
+      font-size: 0.85rem; font-family: var(--font-display); transition: all var(--transition-speed);
+    }
+    .action-button-emo .material-symbols-outlined { font-size: 1rem; font-variation-settings: 'wght' 500; }
+    .action-button-emo:hover {
+        background-color: rgba(0, 255, 255, 0.2); border-color: var(--aiConnect-cyan);
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft); color: #fff;
+    }
+
+    #pageLoading {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(13, 13, 26, 0.95);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1001; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0s; }
+    #pageLoading .loading-text { font-size: 1.1rem; font-weight: 500; color: var(--aiConnect-text-primary); font-family: var(--font-display); }
+    #pageLoading .spinner {
+        border: 4px solid rgba(0, 255, 255, 0.2); border-top: 4px solid var(--aiConnect-cyan);
+        border-radius: 50%; width: 30px; height: 30px;
+        animation: spin 1s linear infinite; margin-bottom: 15px;
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .bottom-nav {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid var(--aiConnect-border); width: 100%; max-width: 420px;
+        display: flex; justify-content: space-around; align-items: center;
+        padding: 5px 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+        z-index: 100; height: 60px; box-shadow: 0 -3px 15px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .nav-item {
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        color: var(--aiConnect-text-secondary); flex: 1; padding: 10px 0;
+        transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
+        height: 100%; border-radius: var(--border-radius); margin: 0 2px;
+    }
+    .nav-item.active { color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .nav-item:hover:not(.active) { color: var(--aiConnect-cyan); background-color: rgba(0, 255, 255, 0.08); }
+    .nav-item:active { transform: scale(0.95); }
+    .nav-item .material-symbols-outlined { font-size: 28px; }
+    .center-button-nav {
+        display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%;
+        background-color: var(--aiConnect-panel-dark); box-shadow: 0 0 15px rgba(0,0,0,0.7);
+        margin-top: -20px; cursor: pointer; border: 2px solid var(--aiConnect-border);
+        position: relative; flex-shrink: 0;
+        transition: transform 0.1s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .center-button-nav.active { border-color: var(--aiConnect-cyan); box-shadow: 0 0 15px var(--aiConnect-glow-strong); }
+    .center-button-nav:hover:not(.active) { box-shadow: 0 0 10px var(--aiConnect-glow-medium), 0 0 20px rgba(0,0,0,0.7); }
+    .center-button-nav:active { transform: scale(0.95); }
+
+    /* Additional styles for settings/lists/forms */
+    .setting-item-emo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--aiConnect-border);
+        font-size: 0.9rem;
+    }
+    .setting-item-emo:last-child { border-bottom: none; }
+    .setting-item-emo span a { color: var(--aiConnect-cyan); }
+
+    .action-button-emo.small-btn {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+    }
+
+    .switch-emo { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink:0; }
+    .switch-emo input { opacity: 0; width: 0; height: 0; }
+    .slider-emo { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #33334c; transition: .4s; }
+    .slider-emo:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--aiConnect-text-secondary); transition: .4s; }
+    .switch-emo input:checked + .slider-emo { background-color: var(--aiConnect-cyan); }
+    .switch-emo input:focus + .slider-emo { box-shadow: 0 0 1px var(--aiConnect-cyan); }
+    .switch-emo input:checked + .slider-emo:before { transform: translateX(20px); background-color: var(--aiConnect-panel-dark); }
+    .slider-emo.round { border-radius: 24px; }
+    .slider-emo.round:before { border-radius: 50%; }
+
+    .settings-list-emo { list-style: none; padding: 0; }
+    .settings-list-emo li {
+        border-bottom: 1px solid var(--aiConnect-border);
+    }
+    .settings-list-emo li:last-child { border-bottom: none; }
+    .settings-list-emo li a {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 5px;
+        color: var(--aiConnect-text-primary);
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+    .settings-list-emo li a:hover {
+        background-color: rgba(0, 255, 255, 0.05);
+        color: var(--aiConnect-cyan);
+    }
+    .settings-list-emo li a .material-symbols-outlined {
+        color: var(--aiConnect-text-secondary);
+        font-size: 1.2rem;
+    }
+    .settings-list-emo li a:hover .material-symbols-outlined { color: var(--aiConnect-cyan); }
+
+    .transaction-list-emo { list-style: none; padding: 0; }
+    .transaction-item-emo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 5px;
+        border-bottom: 1px solid var(--aiConnect-border);
+        font-size: 0.9rem;
+    }
+    .transaction-item-emo:last-child { border-bottom: none; }
+    .transaction-date-emo { font-size: 0.75rem; color: var(--aiConnect-text-secondary); display: block; margin-top:2px; }
+    .transaction-amount-emo.credit { color: var(--aiConnect-success); font-weight: bold; }
+    .transaction-amount-emo.debit { color: var(--aiConnect-error); font-weight: bold; }
+
+    .current-plan-emo { text-align: center; padding-bottom: 15px; border-bottom: 1px solid var(--aiConnect-border); }
+    .current-plan-emo h4 { margin-bottom: 5px; color: var(--aiConnect-cyan); font-family: var(--font-display);}
+    .plan-options-emo h4 { font-family: var(--font-display); color: var(--aiConnect-cyan); margin-bottom: 10px;}
+    .plan-item-emo { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; font-size: 0.9rem; }
+    .plan-item-emo:not(:last-child) { border-bottom: 1px solid rgba(0,255,255,0.1); }
+
+    input[type="text"], input[type="date"], select {
+        background-color: var(--aiConnect-panel-dark);
+        color: var(--aiConnect-text-primary);
+        border: 1px solid var(--aiConnect-border);
+        padding: 8px;
+        border-radius: var(--border-radius);
+        font-family: var(--font-body);
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1) sepia(100%) saturate(10000%) hue-rotate(180deg); /* Makes it cyan-ish */
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+      <div class="spinner"></div>
+      <p class="loading-text">Initializing ai-Connect...</p>
+  </div>
+
+  <header class="header">
+    <div class="header-logo-container">
+      <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="ai-Connect Logo" class="header-logo-img">
+      <span class="header-logo-text">EMX</span>
+    </div>
+    <div class="header-icons-right">
+      <div class="header-icon" id="notificationsIcon" title="Notifications">
+        <span class="material-symbols-outlined">notifications</span>
+        <span id="notificationBadge" class="badge"></span>
+      </div>
+      <div class="header-icon" id="messagesIcon" title="Messages">
+        <span class="material-symbols-outlined">mail</span>
+        <span id="messageBadge" class="badge"></span>
+      </div>
+      <div id="signOutIcon" class="header-icon" title="Sign Out">
+        <span class="material-symbols-outlined">logout</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="data-card-emo">
+      <div class="data-card-header-emo" style="margin-bottom: 0; border-bottom:none;">
+        <h1 style="font-size: 1.3rem; color: var(--aiConnect-cyan); font-family: var(--font-display); text-align: center; width: 100%; padding-bottom: calc(var(--spacing-unit)*0.6); border-bottom: 1px solid rgba(0, 255, 255, 0.15);">
+          Privacy Policy
+        </h1>
+      </div>
+    </div>
+
+    <div class="data-card-emo">
+      
+<p>Last Updated: October 26, 2023</p>
+<p>Your privacy is important to us. This Privacy Policy explains how ai-Connect ("we," "us," or "our") collects, uses, shares, and protects your personal information when you use our services.</p>
+<h4>1. Information We Collect</h4>
+<p>We may collect information you provide directly to us, such as when you create an account, use our services, or communicate with us. This may include your name, email address, user ID, and other relevant data processed in accordance with this policy.</p>
+<h4>2. How We Use Your Information</h4>
+<p>We use your information to provide, maintain, and improve our services, to personalize your experience, to communicate with you, for security purposes, and as otherwise described in this Privacy Policy or at the time of collection.</p>
+<h4>3. Information Sharing</h4>
+<p>We do not sell your personal information. We may share information under specific circumstances, such as with your consent, for legal reasons, with service providers working on our behalf (who are bound by confidentiality obligations), or as part of a business transfer.</p>
+<h4>4. Data Security</h4>
+<p>We implement reasonable security measures to protect your information from unauthorized access, use, or disclosure. However, no internet-based service can be 100% secure.</p>
+<h4>5. Your Choices</h4>
+<p>You may have certain rights regarding your personal information, including the right to access, correct, or delete your data, subject to applicable law. You can typically manage your account information through your app settings.</p>
+<h4>6. Contact Us</h4>
+<p>If you have any questions about this Privacy Policy, please contact us at privacy@aiconnect.app (placeholder email).</p>
+<p style="margin-top:20px; font-size:0.8rem; color:var(--aiConnect-text-secondary);"><em>This is a placeholder Privacy Policy. For full and current details, always refer to the official document provided within the ai-Connect application or its official website.</em></p>
+        
+    </div>
+  </main>
+
+
+
+  <script>
+    // ai-Connect Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+    const authInstance = firebase.auth();
+    const dbInstance = firebase.firestore();
+
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const pageLoadingText = pageLoadingElement?.querySelector('.loading-text');
+    const notificationsIcon = document.getElementById('notificationsIcon');
+    const messagesIcon = document.getElementById('messagesIcon');
+    const notificationBadge = document.getElementById('notificationBadge');
+    const messageBadge = document.getElementById('messageBadge');
+    const signOutIcon = document.getElementById('signOutIcon');
+
+    function triggerHapticFeedback(type = 'medium') {
+        if (window.navigator.vibrate) {
+            let duration = 50;
+            if (type === 'light') duration = 20;
+            else if (type === 'strong') duration = 100;
+            else if (type === 'selection') duration = 10;
+            window.navigator.vibrate(duration);
+        }
+    }
+
+    async function fetchHeaderData(user) { // Simplified for header badges, etc.
+        if (!user || !user.uid) return;
+        try {
+            const userDocRef = dbInstance.collection('users').doc(user.uid);
+            const userDoc = await userDocRef.get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const notificationsCount = userData.unreadNotifications || 0;
+                if (notificationBadge) {
+                     if (notificationsCount > 0) {
+                         notificationBadge.textContent = notificationsCount > 9 ? '9+' : notificationsCount;
+                         notificationBadge.classList.add('visible');
+                     } else {
+                         notificationBadge.textContent = '';
+                         notificationBadge.classList.remove('visible');
+                     }
+                }
+                const messagesCount = userData.unreadMessages || 0;
+                if (messageBadge) {
+                      if (messagesCount > 0) {
+                          messageBadge.textContent = messagesCount > 9 ? '9+' : messagesCount;
+                          messageBadge.classList.add('visible');
+                      } else {
+                          messageBadge.textContent = '';
+                          messageBadge.classList.remove('visible');
+                      }
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching header data:", error);
+        }
+    }
+
+    authInstance.onAuthStateChanged((user) => {
+        if (pageLoadingElement) pageLoadingElement.classList.remove('hidden');
+        if (user) {
+            if(pageLoadingText) pageLoadingText.textContent = 'Loading ai-Connect...';
+            fetchHeaderData(user); // Fetch data for header icons like notifications/messages
+            // Specific page data can be fetched here or in a page-specific function
+            setTimeout(() => { if(pageLoadingElement) pageLoadingElement.classList.add('hidden'); }, 300);
+        }
+        else {
+            if(pageLoadingElement) pageLoadingElement.classList.add('hidden');
+            window.location.href = 'signin-aiconnect.html';
+        }
+    });
+
+    if (notificationsIcon) {
+        notificationsIcon.addEventListener('click', () => {
+            triggerHapticFeedback('light'); window.location.href = 'aiconnect-notifications.html';
+        });
+    }
+    if (messagesIcon) {
+        messagesIcon.addEventListener('click', () => {
+            triggerHapticFeedback('light'); window.location.href = 'aiconnect-messages.html';
+        });
+    }
+    if(signOutIcon) {
+        signOutIcon.addEventListener('click', async () => {
+            triggerHapticFeedback('light');
+            if (confirm("Sign out from ai-Connect?")) {
+                try {
+                    if(pageLoadingElement) pageLoadingElement.classList.remove('hidden');
+                    if(pageLoadingText) pageLoadingText.textContent = 'Signing out...';
+                    await authInstance.signOut();
+                    // Auth state change will redirect to signin page
+                } catch (error) {
+                    console.error("Error signing out:", error); alert("Failed to sign out.");
+                    if(pageLoadingElement) pageLoadingElement.classList.add('hidden');
+                }
+            }
+        });
+    }
+
+    document.querySelectorAll('.bottom-nav .nav-item, .bottom-nav .center-button-nav').forEach(item => {
+        item.addEventListener('click', () => {
+            triggerHapticFeedback();
+            const targetUrl = item.dataset.targetUrl;
+            if (targetUrl && !item.classList.contains('active')) { window.location.href = targetUrl; }
+            else if (item.classList.contains('active')) { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        });
+    });
+
+    document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) event.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden') && !authInstance.currentUser) {
+             if(pageLoadingText) pageLoadingText.textContent = 'Authentication timed out. Please refresh.';
+          }
+        }, 7000);
+    });
+
+    
+  </script>
+</body>
+</html>

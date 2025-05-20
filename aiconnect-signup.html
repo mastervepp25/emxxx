@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Prevent zooming -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EMO Session Initialization</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0d0d1a;
+      --panel-dark: #121225;
+      --neon-blue: #00ffff;
+      --neon-blue-dark: #00cccc;
+      --neon-glow: rgba(0, 255, 255, 0.3);
+      --neon-blue-faded: rgba(0, 255, 255, 0.2);
+      --text-primary: #e0e0f0;
+      --text-secondary: #a0a0c0;
+      --success: #00ff88;
+      --success-glow: rgba(0, 255, 136, 0.5);
+      --error: #ff4444;
+      --error-glow: rgba(255, 68, 68, 0.5);
+      --warning: #ffff00;
+      --warning-glow: rgba(255, 255, 0, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      touch-action: manipulation;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--neon-blue);
+      font-family: 'Orbitron', sans-serif;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .wallet-box {
+      width: 100%;
+      max-width: 380px;
+      padding: 40px 30px;
+      background-color: var(--panel-dark);
+      border: 1px solid rgba(0, 255, 255, 0.15);
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+      transform: translateY(0);
+      opacity: 1;
+      transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease-out;
+    }
+
+    .wallet-box.animating-out {
+      transform: translateY(50px) scale(0.9);
+      opacity: 0;
+    }
+
+    .wallet-logo {
+      width: 100px;
+      height: auto;
+      margin-bottom: 30px;
+      filter: drop-shadow(0 0 10px var(--neon-glow));
+      transition: transform 0.4s ease;
+    }
+
+    h2 {
+      font-size: 1.6em;
+      margin-bottom: 30px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px var(--neon-glow);
+    }
+
+    .action-btn {
+      position: relative;
+      width: 100%;
+      padding: 16px;
+      font-size: 1.1em;
+      font-weight: 700;
+      background: transparent;
+      color: var(--neon-blue);
+      border: 2px solid var(--neon-blue);
+      border-radius: 8px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0);
+      z-index: 1;
+    }
+
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--neon-blue), var(--neon-blue-dark));
+      transform: translateY(101%);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: -1;
+    }
+
+    .action-btn:hover:not(:disabled) {
+      color: var(--bg-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 5px 25px var(--neon-glow);
+    }
+
+    .action-btn:hover:not(:disabled)::before {
+      transform: translateY(0);
+    }
+
+    .action-btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 2px 15px var(--neon-glow);
+    }
+
+    .action-btn:disabled {
+        border-color: #555;
+        color: #777;
+        cursor: not-allowed;
+        background-color: rgba(85, 85, 85, 0.2);
+        box-shadow: none;
+        transform: none;
+    }
+    .action-btn:disabled::before {
+        transform: translateY(101%);
+    }
+
+    /* Loading state */
+    .action-btn.loading {
+      pointer-events: none;
+      background-color: transparent !important;
+      box-shadow: none !important;
+      transform: none !important;
+      border-color: var(--neon-blue-faded);
+      color: transparent !important;
+    }
+    .action-btn.loading span {
+        visibility: hidden;
+        opacity: 0;
+    }
+    .action-btn.loading::before {
+        transform: translateY(101%);
+    }
+
+    /* CSS Spinner */
+    .action-btn.loading::after {
+      content: '';
+      box-sizing: border-box;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 24px;
+      height: 24px;
+      margin-top: -12px;
+      margin-left: -12px;
+      border-radius: 50%;
+      border: 3px solid var(--neon-blue-faded);
+      border-top-color: var(--neon-blue);
+      animation: spin 0.8s linear infinite;
+      display: block;
+    }
+
+    /* Success state */
+    .action-btn.success {
+      background: var(--success) !important;
+      border-color: var(--success) !important;
+      color: var(--bg-dark) !important;
+      box-shadow: 0 0 25px var(--success-glow) !important;
+      pointer-events: none;
+    }
+    .action-btn.success span {
+        visibility: visible;
+        opacity: 1;
+    }
+    .action-btn.success::before,
+    .action-btn.success::after {
+        display: none;
+    }
+
+    /* Error state */
+    .action-btn.error {
+      background: var(--error) !important;
+      border-color: var(--error) !important;
+      color: white !important;
+      box-shadow: 0 0 25px var(--error-glow) !important;
+      pointer-events: auto;
+    }
+     .action-btn.error span {
+        visibility: visible;
+        opacity: 1;
+     }
+     .action-btn.error::before,
+     .action-btn.error::after {
+        display: none;
+    }
+
+    .status {
+      margin-top: 25px;
+      font-size: 0.9em;
+      color: var(--text-secondary);
+      min-height: 1.5em;
+      line-height: 1.5;
+      transition: all 0.3s ease;
+      text-shadow: 0 0 5px rgba(160, 160, 192, 0.3);
+    }
+
+    .status.success {
+      color: var(--success);
+      text-shadow: 0 0 8px var(--success-glow);
+    }
+
+    .status.error {
+      color: var(--error);
+      text-shadow: 0 0 8px var(--error-glow);
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+    }
+
+    .pulse {
+      animation: pulse 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="wallet-box" id="walletBox">
+    <img src="assets/images/logo/logo.png" alt="EMO Logo" class="wallet-logo pulse" loading="lazy">
+    <h2>Initialize Session</h2>
+    <button class="action-btn" id="initializeBtn"><span>Initialize Wallet</span></button>
+    <div class="status" id="status">Ready to initialize your session</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+    // DOM Elements
+    const initializeBtn = document.getElementById('initializeBtn');
+    const statusEl = document.getElementById('status');
+    const walletBox = document.getElementById('walletBox');
+    const buttonTextSpan = initializeBtn.querySelector('span');
+
+    // Firebase Services
+    let firebaseApp;
+    let auth;
+    let firebaseInitialized = false;
+
+    // Target loading duration in milliseconds
+    const TARGET_LOADING_DURATION = 4000; // 4 seconds
+
+    // Attempt Firebase Initialization
+    try {
+      if (!firebase.apps.length) {
+          firebaseApp = firebase.initializeApp(firebaseConfig);
+      } else {
+          firebaseApp = firebase.app();
+      }
+      auth = firebase.auth();
+      firebaseInitialized = true;
+      console.log("Firebase App and Auth initialized successfully");
+      statusEl.textContent = "Ready to initialize your session";
+      initializeBtn.disabled = false;
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+      statusEl.textContent = "Service initialization failed. Please refresh.";
+      statusEl.className = "status error";
+      if(buttonTextSpan) buttonTextSpan.textContent = "Initialization Error";
+      initializeBtn.disabled = true;
+    }
+
+    // --- UI Update Functions ---
+    const updateUILoading = (message) => {
+      statusEl.textContent = message;
+      statusEl.className = "status";
+      initializeBtn.classList.remove('success', 'error');
+      initializeBtn.classList.add('loading');
+      initializeBtn.disabled = true;
+    };
+
+    const updateUISuccess = (message) => {
+      // Note: This might only flash briefly before redirection now
+      statusEl.textContent = message;
+      statusEl.className = "status success";
+      initializeBtn.classList.remove('loading', 'error');
+      initializeBtn.classList.add('success');
+      initializeBtn.disabled = true;
+      if(buttonTextSpan) buttonTextSpan.textContent = "✓ Session Started";
+    };
+
+    const updateUIError = (message, allowRetry = true) => {
+      statusEl.textContent = message;
+      statusEl.className = "status error";
+      initializeBtn.classList.remove('loading', 'success'); // Ensure loading is removed on error
+      initializeBtn.classList.add('error');
+      initializeBtn.disabled = !allowRetry;
+      if(buttonTextSpan) buttonTextSpan.textContent = "✕ Error Occurred";
+
+      if (allowRetry) {
+          setTimeout(() => {
+             if (initializeBtn.classList.contains('error')) {
+                 initializeBtn.classList.remove('error');
+                 if(buttonTextSpan) buttonTextSpan.textContent = "Retry Initialization";
+                 statusEl.textContent = "An error occurred. Please try again.";
+                 statusEl.className = "status";
+                 initializeBtn.disabled = false;
+             }
+          }, 3500);
+      } else {
+          if(buttonTextSpan) buttonTextSpan.textContent = "Fatal Error";
+          initializeBtn.disabled = true;
+      }
+    };
+    // --- End UI Update Functions ---
+
+
+    // --- Session Initialization Logic with Delay ---
+    const initializeSession = async () => {
+      if (!firebaseInitialized || !auth) {
+          updateUIError("Firebase Auth not initialized. Cannot proceed.", false);
+          return;
+      }
+
+      const startTime = Date.now(); // Record start time
+      updateUILoading("Initializing secure session...");
+
+      try {
+        // Step 1: Sign in anonymously
+        updateUILoading("Authenticating..."); // This message might be replaced quickly
+        const userCredential = await auth.signInAnonymously();
+        const user = userCredential.user;
+        if (!user) throw new Error("Authentication failed: User not obtained.");
+        console.log("Authenticated Anonymously - UID:", user.uid);
+
+        // Keep showing loading message during the wait
+        updateUILoading("Finalizing session...");
+
+        // Step 2: Store UID locally
+        try {
+            localStorage.setItem("emo_user_uid", user.uid);
+            console.log("User UID stored locally.");
+        } catch (storageError) {
+            // Decide how to handle critical storage failure
+            console.warn("Local storage unavailable or failed:", storageError);
+            throw new Error("Failed to store session locally. Cannot proceed."); // Make it fatal if needed
+        }
+
+        // Step 3: Calculate remaining time for delay
+        const elapsedTime = Date.now() - startTime;
+        const remainingTime = Math.max(0, TARGET_LOADING_DURATION - elapsedTime);
+        console.log(`Elapsed: ${elapsedTime}ms, Remaining Delay: ${remainingTime}ms`);
+
+        // Step 4: Wait for the remaining duration
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+
+        // Step 5: Update UI to Success (briefly)
+        updateUISuccess("Session initialized successfully!");
+        console.log("Minimum loading duration met. Proceeding.");
+
+        // Step 6: Animate out and redirect to confirm.html
+        setTimeout(() => {
+          walletBox.classList.add('animating-out');
+        }, 300); // Shorter delay before starting animation out
+
+        setTimeout(() => {
+          window.location.href = "confirm.html"; // Redirect to confirm.html
+        }, 900); // Redirect sooner after animation starts (adjust timing as needed)
+
+      } catch (error) {
+        console.error("Session initialization failed:", error);
+        // Stop the loading state and show error immediately
+        const elapsedTime = Date.now() - startTime;
+        console.log(`Failed after ${elapsedTime}ms`);
+
+        let errorMessage = "An unexpected error occurred during initialization.";
+        let allowRetry = true;
+
+        if (error.code) {
+            switch (error.code) {
+                case 'auth/network-request-failed':
+                    errorMessage = "Network error. Check connection."; break;
+                case 'auth/operation-not-allowed':
+                     errorMessage = "Anonymous sign-in is not enabled."; allowRetry = false; break;
+                default: errorMessage = `Error: ${error.message || error.code}`;
+            }
+        } else if (error.message) {
+             // Use custom error message if thrown (like local storage failure)
+             errorMessage = error.message;
+             if (errorMessage.includes("store session locally")) {
+                 allowRetry = false; // Don't allow retry if local storage fails critically
+             }
+        }
+
+        // Update UI with error - no extra delay needed for errors
+        updateUIError(errorMessage, allowRetry);
+      }
+    };
+    // --- End Session Initialization Logic ---
+
+
+    // --- Event Listener Setup ---
+    if (initializeBtn && firebaseInitialized) {
+      initializeBtn.addEventListener('click', () => {
+        if (!initializeBtn.classList.contains('loading') && !initializeBtn.classList.contains('success')) {
+          initializeSession();
+        }
+      });
+    } else if (!firebaseInitialized && initializeBtn) {
+        console.log("Button listener not attached due to Firebase initialization failure.");
+    } else if (!initializeBtn) {
+        console.error("Initialize button element not found in the DOM.");
+        if(statusEl) {
+            statusEl.textContent = "UI Error: Button missing.";
+            statusEl.className = "status error";
+        }
+    }
+    // --- End Event Listener Setup ---
+
+  </script>
+</body>
+</html>

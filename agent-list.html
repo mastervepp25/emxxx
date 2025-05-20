@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect • Agent List</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+
+  <!-- Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --panel: #121225;
+      --glass: rgba(18,18,37,.9);
+      --border: rgba(0,255,255,.25);
+      --cyan: #00ffff;
+      --cyan-dark: #00cccc;
+      --text: #e0e0f0;
+      --text-med: #a0a0c0;
+      --radius: 8px;
+      --space: 16px;
+      --header-h: 56px;
+      --transition: .3s;
+      --shadow: 0 2px 8px rgba(0,0,0,.3), 0 0 12px rgba(0,255,255,.15);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Roboto Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      padding-top: var(--header-h);
+      overflow-x: hidden;
+      max-width: 420px;
+      margin: 0 auto;
+      transition: opacity var(--transition);
+    }
+    body.fade-out { opacity: 0; }
+
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { color: var(--cyan-dark); }
+
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--header-h);
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+    }
+    .logo-text {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--cyan);
+      font-size: 1.1rem;
+      text-shadow: 0 0 6px rgba(0,255,255,.25);
+    }
+    .header-btn {
+      background: none;
+      border: none;
+      color: var(--text-med);
+      font-size: 22px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: background var(--transition), color var(--transition);
+    }
+    .header-btn:hover {
+      background: rgba(0,255,255,.1);
+      color: var(--cyan);
+    }
+
+    .main {
+      padding: var(--space);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space);
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space);
+      margin-bottom: var(--space);
+    }
+    .controls input {
+      flex: 1;
+      padding: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+    }
+
+    #agentList {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space);
+    }
+    .agent-card {
+      display: flex;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--space);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .agent-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,255,255,.2), 0 2px 6px rgba(0,0,0,.4);
+    }
+    .agent-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--cyan);
+      margin-right: var(--space);
+      flex-shrink: 0;
+    }
+    .agent-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .agent-name {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--cyan);
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+    .agent-desc {
+      font-size: 0.85rem;
+      color: var(--text-med);
+      line-height: 1.4;
+    }
+    .agent-arrow {
+      font-size: 1.2rem;
+      color: var(--cyan);
+      margin-left: var(--space);
+      flex-shrink: 0;
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: var(--space);
+    }
+    .view-toggle .header-btn {
+      font-size: 24px;
+    }
+    .view-toggle .active {
+      color: var(--cyan);
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <button id="backBtn" class="header-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+    <div class="logo-text">EMX Agents</div>
+    <button id="createBtn" class="header-btn" title="New Agent"><i class="fas fa-plus"></i></button>
+  </header>
+
+  <main class="main">
+    <div class="controls">
+      <input type="text" id="filterInput" placeholder="Search agents…">
+      <div class="view-toggle">
+        <button id="listViewBtn" class="header-btn active" title="List View">
+          <i class="material-symbols-outlined">view_list</i>
+        </button>
+        <button id="gridViewBtn" class="header-btn" title="Grid View">
+          <i class="material-symbols-outlined">view_module</i>
+        </button>
+      </div>
+    </div>
+    <div id="agentList">
+      <div class="agent-card" style="justify-content:center; color:var(--text-med)">
+        Loading agents…
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // smooth fade navigation
+    function navigateSmooth(url) {
+      document.body.classList.add('fade-out');
+      setTimeout(() => window.location.href = url, 300);
+    }
+
+    // back button
+    document.getElementById('backBtn').onclick = () => history.back();
+
+    // create agent
+    document.getElementById('createBtn').onclick = () => navigateSmooth('create-agent.html');
+
+    // view toggle
+    const listBtn = document.getElementById('listViewBtn');
+    const gridBtn = document.getElementById('gridViewBtn');
+    const agentListEl = document.getElementById('agentList');
+
+    listBtn.onclick = () => {
+      listBtn.classList.add('active');
+      gridBtn.classList.remove('active');
+      agentListEl.style.gridTemplateColumns = '1fr';
+    };
+    gridBtn.onclick = () => {
+      gridBtn.classList.add('active');
+      listBtn.classList.remove('active');
+      agentListEl.style.gridTemplateColumns = 'repeat(2,1fr)';
+    };
+
+    // firebase init
+    const config = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    if (!firebase.apps.length) firebase.initializeApp(config);
+    const auth = firebase.auth();
+    const db = firebase.database();
+
+    // render agent cards
+    function renderAgents(data) {
+      agentListEl.innerHTML = '';
+      if (!data) {
+        agentListEl.innerHTML = '<div class="agent-card" style="justify-content:center;color:var(--text-med)">No agents found.</div>';
+        return;
+      }
+      Object.entries(data).forEach(([id, agent]) => {
+        if (!agent.active) return;
+        const name = agent.name || 'Unnamed';
+        if (filterInput.value && !name.toLowerCase().includes(filterInput.value.toLowerCase())) return;
+
+        const card = document.createElement('div');
+        card.className = 'agent-card';
+        card.innerHTML = `
+          <img src="${agent.logoUrl||'https://memo.aitekchat.com/assets/logo/logo.png'}" class="agent-logo" alt="${name}">
+          <div class="agent-info">
+            <div class="agent-name">${name}</div>
+            <div class="agent-desc">${agent.subtitle||'No description.'}</div>
+          </div>
+          <i class="fas fa-arrow-right agent-arrow"></i>
+        `;
+        card.onclick = () => navigateSmooth(`agent-details.html?agent=${id}`);
+        agentListEl.appendChild(card);
+      });
+    }
+
+    // fetch and watch agents
+    db.ref('aiConnect_agents').on('value',
+      snap => renderAgents(snap.val()),
+      () => agentListEl.innerHTML = '<div class="agent-card" style="justify-content:center;color:var(--text-error)">Error loading.</div>'
+    );
+
+    // search filter
+    document.getElementById('filterInput').addEventListener('input', e => {
+      db.ref('aiConnect_agents').once('value').then(snap => renderAgents(snap.val()));
+    });
+
+    // auth guard
+    auth.onAuthStateChanged(user => {
+      if (!user) navigateSmooth('signin.html');
+    });
+  </script>
+</body>
+</html>

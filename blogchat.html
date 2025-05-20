@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlogMaster & Banner Generator</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDKs (v8 syntax based on previous examples/config) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+    <style>
+        /* Custom scrollbar for output areas */
+        .output-area::-webkit-scrollbar { width: 8px; }
+        .output-area::-webkit-scrollbar-track { background: #2d3748; }
+        .output-area::-webkit-scrollbar-thumb { background-color: #4a5568; border-radius: 4px; border: 2px solid #2d3748; }
+        .output-area { scrollbar-width: thin; scrollbar-color: #4a5568 #2d3748; }
+        /* Basic loading spinner */
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #5e8ce9; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        /* Image loader specific styles */
+        .image-loader-container { display: flex; justify-content: center; align-items: center; min-height: 150px; background-color: #1a202c; border: 1px dashed #4a5568; border-radius: 0.375rem; }
+        .image-loader { width: 40px; height: 40px; }
+        /* Small status loader */
+        .status-loader { width: 16px; height: 16px; border-width: 2px; display: inline-block; margin-right: 0.5em; vertical-align: middle; }
+        /* Button styling */
+        .action-button { padding: 0.3rem 0.6rem; font-size: 0.8rem; background-color: #4a5568; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s ease; }
+        .action-button:hover:not(:disabled) { background-color: #718096; }
+        .action-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans antialiased">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-green-400">
+                BlogMasterGPT & Banner Generator
+            </h1>
+            <p class="text-gray-400 mt-2">Your AI Content Creation Suite</p>
+        </header>
+
+        <main>
+            <!-- == BlogMasterGPT Section == -->
+            <section id="blogmaster-section" class="mb-12">
+                <h2 class="text-2xl font-semibold mb-4 text-center text-blue-300">1. Generate Blog Content</h2>
+                <div class="bg-gray-800 shadow-lg rounded-lg p-6 mb-6">
+                    <label for="prompt-input" class="block text-sm font-medium text-gray-300 mb-2">
+                        Enter your blog topic or instructions:
+                    </label>
+                    <textarea
+                        id="prompt-input"
+                        rows="4"
+                        class="w-full p-3 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500 text-gray-100 resize-y"
+                        placeholder="e.g., Write a blog post about the benefits of using Tailwind CSS for rapid development, targeting intermediate developers. Include a CTA to try it out."
+                    ></textarea>
+
+                    <div class="mt-4 flex items-center justify-end">
+                        <div id="loading-indicator-blog" class="loader mr-3 hidden"></div>
+                        <button
+                            id="generate-blog-button"
+                            class="px-6 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-blue-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Generate Blog Post
+                        </button>
+                    </div>
+                </div>
+
+                <div id="error-message-blog" class="bg-red-800 border border-red-600 text-red-100 px-4 py-3 rounded-md mb-6 hidden" role="alert">
+                    <strong class="font-bold">Blog Generation Error:</strong>
+                    <span class="block sm:inline" id="error-text-blog"></span>
+                </div>
+
+                <div id="output-section-blog" class="bg-gray-800 shadow-lg rounded-lg p-6 hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-green-400 border-b border-gray-700 pb-2">Generated Content</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between items-center mb-2">
+                                <h4 class="text-lg font-semibold text-blue-400">Blog Post:</h4>
+                                <button id="copy-blog-button" class="action-button" disabled>Copy Text</button>
+                            </div>
+                            <div id="blog-output" class="output-area bg-gray-900 p-4 rounded-md border border-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto text-gray-200 leading-relaxed">
+                                <!-- Blog content will appear here -->
+                            </div>
+                        </div>
+                         <div>
+                             <h4 class="text-lg font-semibold mb-2 text-blue-400">Generated Hashtags:</h4>
+                             <div id="hashtags-output" class="output-area bg-gray-900 p-4 rounded-md border border-gray-700 whitespace-pre-wrap max-h-40 overflow-y-auto text-gray-300 font-mono text-sm">
+                                 <!-- Hashtags will appear here -->
+                             </div>
+                         </div>
+                        <div>
+                            <h4 class="text-lg font-semibold mb-2 text-blue-400">Image Prompt:</h4>
+                            <div id="image-prompt-output" class="output-area bg-gray-900 p-4 rounded-md border border-gray-700 whitespace-pre-wrap max-h-60 overflow-y-auto text-gray-300 font-mono text-sm">
+                                <!-- Image prompt will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- == Image Generation Section == -->
+            <section id="image-generator-section" class="mb-12">
+                 <h2 class="text-2xl font-semibold mb-4 text-center text-green-300">2. Generate Blog Banner</h2>
+                 <div class="bg-gray-800 shadow-lg rounded-lg p-6">
+                     <p class="text-sm text-gray-400 mb-1">Uses the "Image Prompt" generated above.</p>
+                     <div class="text-center mb-4">
+                         <button
+                             id="generate-image-button"
+                             class="px-6 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                             disabled <!-- Initially disabled -->
+                         >
+                             Generate Banner Image
+                         </button>
+                     </div>
+
+                     <div id="loading-indicator-image" class="image-loader-container hidden">
+                         <div class="loader image-loader"></div>
+                         <span class="ml-3 text-gray-400">Generating image...</span>
+                     </div>
+
+                     <div id="error-message-image" class="bg-red-800 border border-red-600 text-red-100 px-4 py-3 rounded-md my-4 hidden" role="alert">
+                        <strong class="font-bold">Image Generation Error:</strong>
+                        <span class="block sm:inline" id="error-text-image"></span>
+                    </div>
+
+                     <div id="image-output-container" class="w-full mt-4 hidden">
+                        <div class="flex justify-end mb-2">
+                             <button id="download-image-button" class="action-button" disabled>Download Banner</button>
+                         </div>
+                         <img id="generated-image" src="#" alt="Generated Blog Banner" class="w-full h-auto rounded-md border border-gray-700" />
+                     </div>
+                     <div id="image-placeholder-container" class="w-full mt-4">
+                         <p id="image-placeholder" class="text-center text-gray-500 py-10 border border-dashed border-gray-600 rounded-md">Image will appear here after generation.</p>
+                     </div>
+                 </div>
+            </section>
+
+             <!-- == Save Blog Section == -->
+             <section id="save-section" class="mb-12">
+                 <h2 class="text-2xl font-semibold mb-4 text-center text-yellow-300">3. Save to Firebase</h2>
+                 <div class="bg-gray-800 shadow-lg rounded-lg p-6 text-center">
+                     <p class="text-sm text-gray-400 mb-4">Saves the blog title, body (including hashtags), and uploads the banner image.</p>
+
+                     <div id="save-status-message" class="mb-4 text-sm min-h-[1.25rem]">
+                         <!-- Status messages appear here -->
+                     </div>
+
+                     <div class="flex items-center justify-center">
+                          <div id="loading-indicator-save" class="loader status-loader mr-3 hidden"></div>
+                         <button
+                             id="save-blog-button"
+                             class="px-6 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold rounded-md shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-yellow-500 transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
+                             disabled <!-- Initially disabled -->
+                         >
+                             Save Blog
+                         </button>
+                     </div>
+                 </div>
+            </section>
+
+        </main>
+
+        <footer class="text-center text-gray-500 mt-12 text-sm">
+            Powered by Emilio LLM & Firebase | Frontend by Alex
+        </footer>
+    </div>
+
+    <script>
+        // --- DOM References ---
+        const promptInput = document.getElementById('prompt-input');
+        const generateBlogButton = document.getElementById('generate-blog-button');
+        const loadingIndicatorBlog = document.getElementById('loading-indicator-blog');
+        const errorMessageDivBlog = document.getElementById('error-message-blog');
+        const errorTextSpanBlog = document.getElementById('error-text-blog');
+        const outputSectionBlog = document.getElementById('output-section-blog');
+        const blogOutputDiv = document.getElementById('blog-output');
+        const imagePromptOutputDiv = document.getElementById('image-prompt-output');
+        const hashtagsOutputDiv = document.getElementById('hashtags-output'); // Added Hashtag Output Div
+        const copyBlogButton = document.getElementById('copy-blog-button');
+
+        const generateImageButton = document.getElementById('generate-image-button');
+        const loadingIndicatorImage = document.getElementById('loading-indicator-image');
+        const errorMessageDivImage = document.getElementById('error-message-image');
+        const errorTextSpanImage = document.getElementById('error-text-image');
+        const imageOutputContainer = document.getElementById('image-output-container');
+        const generatedImage = document.getElementById('generated-image');
+        const imagePlaceholderContainer = document.getElementById('image-placeholder-container');
+        const downloadImageButton = document.getElementById('download-image-button');
+
+        const saveBlogButton = document.getElementById('save-blog-button');
+        const loadingIndicatorSave = document.getElementById('loading-indicator-save');
+        const saveStatusMessage = document.getElementById('save-status-message');
+
+
+        // --- Configuration ---
+        const BLOG_API_URL = "https://api.together.xyz/v1/chat/completions";
+        const IMAGE_API_URL = "https://api.together.xyz/v1/images/generations";
+        // !!! MASTER E: SECURITY WARNING !!!
+        const API_BEARER_TOKEN = "144f137285e61f4f20c3af158629a0aaee85f131c8a48cd5ffdd0e6477898407";
+        const BLOG_MODEL = "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free";
+        const IMAGE_MODEL = "black-forest-labs/FLUX.1-schnell-Free";
+
+        // --- Firebase Configuration ---
+        // !!! MASTER E: SECURITY WARNING !!! Config included directly
+        const firebaseConfig = {
+            apiKey: "AIzaSyBdZM_2Dgibm-S9pftZBUqOdGVup9oNhmU",
+            authDomain: "ai-connect-2nbpnn.firebaseapp.com",
+            databaseURL: "https://ai-connect-2nbpnn-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ai-connect-2nbpnn",
+            storageBucket: "ai-connect-2nbpnn.appspot.com",
+            messagingSenderId: "704482029158",
+            appId: "1:704482029158:web:2da7baab059274e0e447a7"
+        };
+
+        // --- Firebase Initialization ---
+        let db, storage;
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            storage = firebase.storage();
+            console.log("Firebase initialized successfully.");
+        } catch (error) {
+            console.error("Firebase initialization error:", error);
+            // Disable save functionality if Firebase fails to initialize
+            saveBlogButton.disabled = true;
+            saveStatusMessage.textContent = 'Error: Could not connect to Firebase.';
+            saveStatusMessage.className = 'mb-4 text-sm text-red-400';
+        }
+
+        // --- System Prompt (Updated by Alex as per Master E's instructions) ---
+         const systemPrompt = `You are BlogMasterGPT, a top-tier blogging assistant crafted to generate highly engaging, SEO-optimized blog posts. Your outputs feature incredibly catchy intro hooks, clear reader-friendly structure, persuasive elements, and prompts for stunning banner images. Your goal is content that doesn't just inform, but captivates, gets shared, and drives action.
+
+Persona:
+- A blend of a sharp content strategist, seasoned professional blogger, and skilled conversion copywriter.
+- Possesses deep knowledge of content marketing, SEO, reader psychology, storytelling, and visual design impact.
+- Committed to making blog content irresistible, compelling readers from the headline right through to the call to action and visuals.
+
+Tone and Style:
+- Engaging, conversational, yet authoritative and informative.
+- Employs vivid language, relatable examples, and smooth transitions.
+- Adapts tone precisely to suit the target audience and niche (e.g., professional, technical, casual, inspirational).
+
+Key Responsibilities:
+- Craft blog posts designed for high search engine ranking, reader engagement, and conversion.
+- Mandatory: Write an exceptionally catchy, scroll-stopping introduction or hook using proven techniques (e.g., AIDA, PAS, Storytelling) to immediately grab reader attention.
+- Structure content logically using headings (H2s, H3s), bullet points, and bold text for excellent readability.
+- Generate a clear and persuasive Call To Action (CTA) relevant to the user's objective.
+- Naturally integrate relevant SEO keywords throughout the text.
+- Mandatory: Conclude the blog post with a curated list of 5-10 relevant, SEO-rich hashtags. Prefix this section clearly with "Hashtags:" on a new line.
+- Mandatory: Seamlessly integrate the link 'https://portfolio.ai-emilio.site/' within the content or near the CTA, encouraging readers to visit for more details or related information.
+
+VISUAL CONTENT CAPABILITY:
+- Generate a detailed image prompt suitable for AI image generators (like Midjourney, DALL-E) to create a hyper-realistic, attention-grabbing blog banner that complements the post's topic and tone.
+- Include keywords for style (e.g., "hyper-realistic," "cinematic lighting," "vibrant color palette," "minimalist design," "dynamic composition") and context (objects, setting, mood).
+- Clearly label this section starting exactly with the text: "Image Prompt:" on a new line.
+
+Example Visual Prompt Output:
+_For a blog titled “The Future of AI in Web Development”_
+Image Prompt:
+Hyper-realistic image of a sleek, glowing circuit board morphing into a beautifully designed website interface on a futuristic computer screen, background shows subtle binary code streams, cinematic blue and purple lighting, 4K resolution, tech-forward and innovative mood.
+
+Your Mission:
+Transform any given topic into a powerhouse content piece featuring:
+1. A truly captivating headline and intro hook.
+2. A value-driven, well-organized body.
+3. A compelling CTA that includes a link to https://portfolio.ai-emilio.site/ or portfolio.ai-emilio.site for more details.
+4. A list of relevant SEO hashtags (prefixed with "Hashtags:").
+5. A powerful image prompt (prefixed with "Image Prompt:") for a matching banner.
+
+Output Requirements:
+- Place the main blog title on the very first line.
+- Format the main blog content for readability (headings, lists where appropriate).
+- Ensure the final output is plain text suitable for direct use.
+- Adhere strictly to the inclusion of the specified link, hashtags section, and image prompt section with their exact prefixes.`;
+
+        // --- State Variables ---
+        let currentBlogContent = ""; // Stores only the main blog text (excluding hashtags/image prompt)
+        let currentFullApiResponse = ""; // Stores the entire raw response from the blog API
+        let currentImageDataBase64 = ""; // To store the base64 data for upload/download
+
+        // --- Event Listeners ---
+        generateBlogButton.addEventListener('click', handleGenerateBlog);
+        generateImageButton.addEventListener('click', handleGenerateImage);
+        copyBlogButton.addEventListener('click', handleCopyBlog);
+        downloadImageButton.addEventListener('click', handleDownloadImage);
+        if (db && storage) { // Only add listener if Firebase initialized
+            saveBlogButton.addEventListener('click', handleSaveBlog);
+        }
+
+        // --- Main Handler Function - Blog ---
+        async function handleGenerateBlog() {
+            const userPrompt = promptInput.value.trim();
+            if (!userPrompt) {
+                showErrorBlog("Please enter a blog topic or instructions.");
+                return;
+            }
+
+            setLoadingStateBlog(true);
+            clearOutputBlog();
+            hideErrorBlog();
+            resetImageSection();
+            resetSaveSection();
+
+            currentBlogContent = ""; // Reset state
+            currentFullApiResponse = ""; // Reset raw response state
+
+            try {
+                 const response = await fetch(BLOG_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_BEARER_TOKEN}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    },
+                    body: JSON.stringify({
+                        model: BLOG_MODEL,
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: userPrompt }
+                        ],
+                        stream: true
+                    })
+                });
+
+                if (!response.ok) {
+                    let errorData = null;
+                    try { errorData = await response.json(); } catch (e) { /* Ignore */ }
+                    const errorMsg = errorData?.error?.message || errorData?.message || response.statusText || `HTTP error ${response.status}`;
+                    throw new Error(`Blog API request failed: ${errorMsg}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                outputSectionBlog.classList.remove('hidden');
+                blogOutputDiv.textContent = ''; // Ensure it starts empty for streaming
+                hashtagsOutputDiv.textContent = '';
+                imagePromptOutputDiv.textContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n\n');
+
+                    lines.forEach(line => {
+                        if (line.startsWith('data: ')) {
+                            const jsonData = line.substring(6).trim();
+                            if (jsonData === '[DONE]') return;
+                            try {
+                                const parsedData = JSON.parse(jsonData);
+                                const deltaContent = parsedData?.choices?.[0]?.delta?.content;
+                                if (deltaContent) {
+                                    currentFullApiResponse += deltaContent;
+                                    // Displaying raw stream temporarily in main blog div for visual feedback
+                                    blogOutputDiv.textContent = currentFullApiResponse;
+                                }
+                            } catch (err) {
+                                console.warn('Error parsing stream chunk JSON:', err, 'Chunk Data:', jsonData);
+                                // Attempt to append non-JSON data as plain text
+                                if(typeof jsonData === 'string' && !jsonData.startsWith('{')) {
+                                     currentFullApiResponse += jsonData + "\n";
+                                     blogOutputDiv.textContent = currentFullApiResponse;
+                                }
+                            }
+                        }
+                    });
+                     // Auto-scroll during streaming
+                     blogOutputDiv.scrollTop = blogOutputDiv.scrollHeight;
+                }
+
+                // Once streaming is done, parse the full response
+                parseAndDisplayFinalContent(currentFullApiResponse);
+
+
+            } catch (error) {
+                console.error('Error during Blog API call:', error);
+                showErrorBlog(error.message || 'An unknown error occurred during blog generation.');
+            } finally {
+                setLoadingStateBlog(false);
+                 // Enable copy button if blog content exists
+                copyBlogButton.disabled = !currentBlogContent;
+                checkSaveButtonState(); // Check if save button can be enabled
+            }
+        }
+
+         // --- Main Handler Function - Image ---
+         async function handleGenerateImage() {
+             const imagePrompt = imagePromptOutputDiv.textContent.trim();
+             if (!imagePrompt || imagePrompt === "No image prompt generated." || imagePrompt === "") {
+                 showErrorImage("No valid image prompt available. Generate blog content first.");
+                 return;
+             }
+
+             setLoadingStateImage(true);
+             hideErrorImage();
+             imageOutputContainer.classList.add('hidden');
+             imagePlaceholderContainer.classList.add('hidden');
+
+             currentImageDataBase64 = ""; // Reset state
+
+             try {
+                 const response = await fetch(IMAGE_API_URL, {
+                     method: 'POST',
+                     headers: {
+                         'Authorization': `Bearer ${API_BEARER_TOKEN}`,
+                         'Content-Type': 'application/json',
+                         'Accept': 'application/json'
+                     },
+                     body: JSON.stringify({
+                         model: IMAGE_MODEL,
+                         prompt: imagePrompt,
+                         width: 1024, height: 768, steps: 4, n: 1,
+                         response_format: "b64_json"
+                     })
+                 });
+
+                 if (!response.ok) {
+                    let errorData = null;
+                    try { errorData = await response.json(); } catch (e) { /* Ignore */ }
+                    const errorMsg = errorData?.error?.message || errorData?.message || response.statusText || `HTTP error ${response.status}`;
+                     throw new Error(`Image API request failed: ${errorMsg}`);
+                 }
+
+                 const result = await response.json();
+
+                 if (result.data && result.data.length > 0 && result.data[0].b64_json) {
+                     currentImageDataBase64 = result.data[0].b64_json; // Store base64 data
+                     generatedImage.src = `data:image/png;base64,${currentImageDataBase64}`;
+                     imageOutputContainer.classList.remove('hidden'); // Show image container
+                     downloadImageButton.disabled = false; // Enable download
+                 } else {
+                     console.error("Unexpected response format from image API:", result);
+                     throw new Error("Received invalid data format from image generation API.");
+                 }
+
+             } catch (error) {
+                 console.error('Error during Image API call:', error);
+                 showErrorImage(error.message || 'An unknown error occurred during image generation.');
+                 imagePlaceholderContainer.classList.remove('hidden'); // Show placeholder on error
+                 downloadImageButton.disabled = true; // Disable download
+             } finally {
+                 setLoadingStateImage(false);
+                 checkSaveButtonState(); // Check if save button can be enabled
+             }
+         }
+
+        // --- Handler Function - Copy Blog ---
+        function handleCopyBlog() {
+            // Copies only the main blog content, excluding hashtags and image prompt
+            if (!currentBlogContent) return;
+            navigator.clipboard.writeText(currentBlogContent)
+                .then(() => {
+                    copyBlogButton.textContent = 'Copied!';
+                    setTimeout(() => { copyBlogButton.textContent = 'Copy Text'; }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy blog text:', err);
+                    showErrorBlog('Failed to copy text to clipboard.');
+                });
+        }
+
+        // --- Handler Function - Download Image ---
+        function handleDownloadImage() {
+            if (!currentImageDataBase64) return;
+            const link = document.createElement('a');
+            link.href = `data:image/png;base64,${currentImageDataBase64}`;
+            link.download = 'blog_banner.png'; // Or generate a dynamic name
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- Handler Function - Save Blog ---
+        async function handleSaveBlog() {
+            // Uses the full API response stored in currentFullApiResponse for the body
+            // to include title, main content, hashtags etc. as generated by the LLM.
+            if (!currentFullApiResponse || !currentImageDataBase64 || !db || !storage) {
+                showSaveStatus('Missing blog content, image, or Firebase connection.', true);
+                return;
+            }
+
+            setLoadingStateSave(true);
+            showSaveStatus('Saving...', false); // Initial saving message
+
+            try {
+                // 1. Extract Title (assuming first non-empty line from the full response)
+                const lines = currentFullApiResponse.split('\n');
+                const blogTitle = lines.find(line => line.trim() !== '') || 'Untitled Blog Post';
+                // Save the *entire* raw response as the body, including hashtags/image prompt if present
+                const blogBody = currentFullApiResponse;
+
+                // 2. Convert Base64 to Blob
+                const blob = base64ToBlob(currentImageDataBase64, 'image/png');
+                if (!blob) {
+                    throw new Error("Failed to convert image data.");
+                }
+
+                // 3. Upload Blob to Firebase Storage
+                const imageName = `banner_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.png`;
+                const storageRef = storage.ref(`blog_banners/${imageName}`);
+                showSaveStatus('Uploading image...', false);
+                const uploadTask = await storageRef.put(blob);
+
+                // 4. Get Download URL
+                showSaveStatus('Getting image URL...', false);
+                const downloadURL = await uploadTask.ref.getDownloadURL();
+
+                // 5. Save Data to Firestore
+                showSaveStatus('Saving blog post data...', false);
+                const blogData = {
+                    title: blogTitle,
+                    body: blogBody, // Storing the full response
+                    bannerImageUrl: downloadURL,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                await db.collection("blogpost").add(blogData);
+
+                showSaveStatus('Blog post saved successfully!', false, true); // Success state
+
+            } catch (error) {
+                console.error("Error saving blog to Firebase:", error);
+                showSaveStatus(`Error saving blog: ${error.message}`, true); // Error state
+            } finally {
+                setLoadingStateSave(false);
+            }
+        }
+
+
+        // --- Helper Functions - Blog ---
+        function setLoadingStateBlog(isLoading) {
+            loadingIndicatorBlog.classList.toggle('hidden', !isLoading);
+            generateBlogButton.disabled = isLoading;
+            generateBlogButton.textContent = isLoading ? 'Generating...' : 'Generate Blog Post';
+        }
+         function clearOutputBlog() {
+            blogOutputDiv.textContent = '';
+            imagePromptOutputDiv.textContent = '';
+            hashtagsOutputDiv.textContent = '';
+            outputSectionBlog.classList.add('hidden');
+            copyBlogButton.disabled = true;
+            generateImageButton.disabled = true;
+            currentBlogContent = "";
+            currentFullApiResponse = "";
+        }
+
+         function parseAndDisplayFinalContent(fullContent) {
+             const imagePromptMarker = "\nImage Prompt:";
+             const hashtagsMarker = "\nHashtags:";
+
+             let blogText = fullContent;
+             let imagePromptText = "";
+             let hashtagsText = "";
+
+             // Find Image Prompt first (usually last)
+             let imagePromptIndex = fullContent.lastIndexOf(imagePromptMarker);
+             if (imagePromptIndex !== -1) {
+                 imagePromptText = fullContent.substring(imagePromptIndex + imagePromptMarker.length).trim();
+                 blogText = fullContent.substring(0, imagePromptIndex).trim(); // Temporarily update blogText
+             } else {
+                 // Fallback check for Image Prompt marker without newline
+                 const fallbackImageMarker = "Image Prompt:";
+                 imagePromptIndex = fullContent.lastIndexOf(fallbackImageMarker);
+                 // Heuristic: Assume it's the prompt if it's near the end
+                  if (imagePromptIndex > fullContent.length * 0.75) {
+                     imagePromptText = fullContent.substring(imagePromptIndex + fallbackImageMarker.length).trim();
+                     blogText = fullContent.substring(0, imagePromptIndex).trim();
+                 } else {
+                     console.warn("Image Prompt marker not found reliably.");
+                     imagePromptText = "No image prompt generated.";
+                 }
+             }
+
+             // Now find Hashtags within the remaining blogText
+             let hashtagsIndex = blogText.lastIndexOf(hashtagsMarker);
+             if (hashtagsIndex !== -1) {
+                 hashtagsText = blogText.substring(hashtagsIndex + hashtagsMarker.length).trim();
+                 blogText = blogText.substring(0, hashtagsIndex).trim(); // Final update for blogText
+             } else {
+                  // Fallback check for Hashtags marker without newline
+                 const fallbackHashtagsMarker = "Hashtags:";
+                 hashtagsIndex = blogText.lastIndexOf(fallbackHashtagsMarker);
+                 // Heuristic: Assume it's hashtags if near the end of remaining text
+                  if (hashtagsIndex > blogText.length * 0.8) {
+                     hashtagsText = blogText.substring(hashtagsIndex + fallbackHashtagsMarker.length).trim();
+                     blogText = blogText.substring(0, hashtagsIndex).trim();
+                 } else {
+                     console.warn("Hashtags marker not found reliably.");
+                     hashtagsText = "No hashtags generated.";
+                 }
+             }
+
+
+             // Display parsed content
+             blogOutputDiv.textContent = blogText;
+             hashtagsOutputDiv.textContent = hashtagsText;
+             imagePromptOutputDiv.textContent = imagePromptText;
+             outputSectionBlog.classList.remove('hidden');
+
+             // Update state variable used by copy button (main blog content only)
+             currentBlogContent = blogText;
+
+             // Enable buttons based on success
+             copyBlogButton.disabled = !currentBlogContent;
+             generateImageButton.disabled = !imagePromptText || imagePromptText === "No image prompt generated.";
+             checkSaveButtonState(); // Re-check save button now that content is parsed
+         }
+
+        function showErrorBlog(message) {
+            errorTextSpanBlog.textContent = message;
+            errorMessageDivBlog.classList.remove('hidden');
+        }
+        function hideErrorBlog() {
+            errorMessageDivBlog.classList.add('hidden');
+            errorTextSpanBlog.textContent = '';
+        }
+
+         // --- Helper Functions - Image ---
+         function setLoadingStateImage(isLoading) {
+             loadingIndicatorImage.classList.toggle('hidden', !isLoading);
+             generateImageButton.disabled = isLoading;
+             imageOutputContainer.classList.toggle('hidden', isLoading); // Hide output container during loading
+             imagePlaceholderContainer.classList.toggle('hidden', isLoading); // Also hide placeholder during loading
+         }
+         function resetImageSection() {
+             hideErrorImage();
+             currentImageDataBase64 = ""; // Clear stored data
+             generatedImage.src = '#';
+             imageOutputContainer.classList.add('hidden'); // Hide output container
+             imagePlaceholderContainer.classList.remove('hidden'); // Show placeholder
+             downloadImageButton.disabled = true;
+             loadingIndicatorImage.classList.add('hidden');
+         }
+         function showErrorImage(message) {
+            errorTextSpanImage.textContent = message;
+            errorMessageDivImage.classList.remove('hidden');
+        }
+        function hideErrorImage() {
+            errorMessageDivImage.classList.add('hidden');
+            errorTextSpanImage.textContent = '';
+        }
+
+         // --- Helper Functions - Save ---
+         function setLoadingStateSave(isLoading) {
+             loadingIndicatorSave.classList.toggle('hidden', !isLoading);
+             saveBlogButton.disabled = isLoading;
+         }
+
+         function showSaveStatus(message, isError = false, isSuccess = false) {
+             saveStatusMessage.textContent = message;
+             if (isError) {
+                 saveStatusMessage.className = 'mb-4 text-sm text-red-400';
+             } else if (isSuccess) {
+                 saveStatusMessage.className = 'mb-4 text-sm text-green-400';
+             } else {
+                 saveStatusMessage.className = 'mb-4 text-sm text-gray-400'; // Neutral/loading
+             }
+         }
+
+         function resetSaveSection() {
+             saveBlogButton.disabled = true;
+             loadingIndicatorSave.classList.add('hidden');
+             showSaveStatus('', false); // Clear status message
+         }
+
+         function checkSaveButtonState() {
+             // Enable save button only if Firebase is ready AND
+             // we have the *full API response* AND image data
+             if (db && storage) {
+                saveBlogButton.disabled = !(currentFullApiResponse && currentImageDataBase64);
+             } else {
+                 saveBlogButton.disabled = true; // Keep disabled if Firebase isn't ready
+             }
+         }
+
+        // --- Utility Function - Base64 to Blob ---
+        function base64ToBlob(base64, contentType = '', sliceSize = 512) {
+            try {
+                const byteCharacters = atob(base64);
+                const byteArrays = [];
+
+                for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+                    const slice = byteCharacters.slice(offset, offset + sliceSize);
+                    const byteNumbers = new Array(slice.length);
+                    for (let i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    byteArrays.push(byteArray);
+                }
+
+                const blob = new Blob(byteArrays, {type: contentType});
+                return blob;
+            } catch (error) {
+                console.error("Error converting base64 to Blob:", error);
+                return null;
+            }
+        }
+
+        // --- Initial UI State ---
+        resetImageSection();
+        resetSaveSection();
+
+    </script>
+
+</body>
+</html>

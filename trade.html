@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - EMX Exchange Insights</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0A0A14">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    :root {
+      --aiConnect-bg-dark: #0A0A14; 
+      --aiConnect-panel-dark: #0C0C1D; 
+      --aiConnect-glass-bg: rgba(10, 10, 20, 0.75); 
+      --aiConnect-border: rgba(0, 255, 255, 0.45); 
+      --aiConnect-cyan: #00FFFF; 
+      --aiConnect-cyan-dark: #00AACC; 
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.3);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.5);
+      --aiConnect-text-primary: #F0F0FF; 
+      --aiConnect-text-secondary: #B0B0D0;
+      --aiConnect-error: #FF2222; 
+      --aiConnect-warning: #FFAA00; 
+
+      --bullish-color: #00FF66; 
+      --bearish-color: #FF2222; 
+      --sideways-color: #FFAA00; 
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Roboto Mono', monospace;
+      --spacing-unit: 15px;
+      --border-radius: 6px; 
+      --border-radius-large: 10px; 
+      --header-height: 56px;
+      --simulation-bar-height: 100px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: calc(var(--simulation-bar-height) + var(--header-height)); 
+        padding-bottom: var(--spacing-unit);
+        max-width: 420px; 
+        margin: 0 auto;
+        overflow-x: hidden;
+    }
+
+    #loadingSimulationBar {
+        position: fixed; top: 0; left: 0; width: 100%;
+        height: var(--simulation-bar-height);
+        background-color: #030307; z-index: 1500; 
+        display: flex; justify-content: space-between; align-items: center;
+        color: var(--aiConnect-cyan); font-family: var(--font-display);
+        opacity: 1; visibility: visible; overflow: hidden;
+        padding: 0 var(--spacing-unit); 
+        box-shadow: 0 3px 12px rgba(0, 255, 255, 0.25); 
+    }
+    #loadingSimulationBar::before { 
+        content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        width: 100%; height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        opacity: 0.03; pointer-events: none; z-index: 0;
+    }
+    #loadingSimulationBar::after { 
+        content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(rgba(10, 10, 20, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+        background-size: 100% 4px; animation: scanlineAnim 20s linear infinite;
+        pointer-events: none; z-index: 1; opacity: 0.2;
+    }
+    @keyframes scanlineAnim { 0% { background-position: 0 0; } 100% { background-position: 0 -200px; } }
+
+    #animationCanvas { 
+        height: 80%; 
+        width: 80px; 
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2;
+    }
+
+    #thinkingAnimation { 
+        width: 50px; height: 50px; border-radius: 50%;
+        border: 2px solid var(--aiConnect-cyan-dark);
+        background-color: transparent;
+        box-shadow: 0 0 10px var(--aiConnect-cyan), 0 0 15px var(--aiConnect-cyan), inset 0 0 8px var(--aiConnect-glow-medium);
+        animation: pulseCore 1.5s infinite ease-in-out; 
+        display: none; position: relative;
+    }
+    #thinkingAnimation::before, #thinkingAnimation::after {
+        content: ''; position: absolute; left: 50%; top: 50%;
+        border: 1px solid var(--aiConnect-cyan); border-radius: 50%;
+        transform: translate(-50%, -50%) rotate(0deg); 
+    }
+    #thinkingAnimation::before {
+        width: 70%; height: 70%; animation: spinCoreSmall 5s linear infinite reverse; opacity: 0.7;
+    }
+    #thinkingAnimation::after {
+        width: 40%; height: 40%; animation: spinCoreSmall 3s linear infinite; opacity: 0.5; background: var(--aiConnect-cyan);
+    }
+    @keyframes pulseCore { 
+        0%, 100% { transform: scale(0.9); box-shadow: 0 0 8px var(--aiConnect-cyan), 0 0 12px var(--aiConnect-cyan), inset 0 0 6px var(--aiConnect-glow-medium); opacity: 0.8; }
+        50% { transform: scale(1); box-shadow: 0 0 12px var(--aiConnect-cyan), 0 0 20px var(--aiConnect-cyan), inset 0 0 8px var(--aiConnect-glow-soft); opacity: 1;}
+    }
+    @keyframes spinCoreSmall { 
+        from { transform: translate(-50%, -50%) rotate(0deg); }
+        to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    /* --- HELSINKI TRADE STYLE ANIMATION --- */
+    #helsinkiTradeAnimation {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        overflow: hidden; display: none; z-index: 2;
+        background-image: 
+            linear-gradient(rgba(0,255,255,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,255,255,0.05) 1px, transparent 1px);
+        background-size: 15px 15px; /* Grid size */
+    }
+    .trade-bar {
+        position: absolute;
+        bottom: 5%; 
+        width: 5px; 
+        border-radius: 1px;
+        box-shadow: 0 0 3px rgba(255,255,255,0.3);
+        animation-name: helsinkiBarPulse;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: infinite;
+        transform-origin: bottom;
+    }
+    @keyframes helsinkiBarPulse {
+        0%, 100% { transform: scaleY(0.1); opacity: 0.5; }
+        50% { transform: scaleY(1); opacity: 1; }
+    }
+    /* --- END HELSINKI TRADE STYLE ANIMATION --- */
+
+
+    #simulationTextContainer { 
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end; 
+        justify-content: center;
+        text-align: right;
+        flex-grow: 1;
+        padding-left: var(--spacing-unit);
+    }
+    #countdownTimerDisplay {
+        font-size: 2.0rem; 
+        font-weight: 700;
+        text-shadow: 0 0 6px var(--aiConnect-cyan), 0 0 10px var(--aiConnect-cyan);
+        z-index: 2; letter-spacing: 1px; margin-bottom: 5px;
+    }
+    #loadingSimStatusText {
+        font-size: 0.7rem; 
+        color: var(--aiConnect-text-secondary); text-transform: uppercase;
+        letter-spacing: 1px; z-index: 2;
+    }
+
+    #loadingSimulationBar.flashing {
+        animation: barFlash 0.15s infinite steps(2, jump-none);
+    }
+    @keyframes barFlash { 0% { background-color: #020205; } 50% { background-color: #003535; } 100% { background-color: #020205; } }
+    
+    #pageLoading { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(10, 10, 20, 0.97); 
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 2001; 
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; }
+    #pageLoading .spinner{
+        width: 35px; height: 35px; border: 4px solid rgba(0,255,255,.3);
+        border-top: 4px solid var(--aiConnect-cyan); border-radius:50%;
+        animation: spin 0.8s linear infinite; margin-bottom: 18px;
+    }
+    #pageLoading .loading-text{
+        font-family:var(--font-display);font-size:1.1rem; text-transform: uppercase;
+        letter-spacing: 1px; color: var(--aiConnect-cyan);
+        text-shadow: 0 0 5px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .header {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(12px); 
+        color: var(--aiConnect-text-primary); padding: 0 var(--spacing-unit);
+        display: flex; align-items: center; position: fixed;
+        top: var(--simulation-bar-height); 
+        left: 50%; transform: translateX(-50%);
+        width: 100%; max-width: 420px; 
+        z-index: 1000; 
+        border-bottom: 1px solid var(--aiConnect-border); height: var(--header-height);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .header-back-button {
+        color: var(--aiConnect-cyan); background: none; border: none; cursor: pointer;
+        padding: 8px; margin-right: 5px; display:flex; align-items:center;
+        transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .header-back-button:hover { color: #fff; transform: scale(1.1); }
+    .header-back-button .material-symbols-outlined { font-size: 22px; } 
+    
+    .header-title {
+        font-family:var(--font-display);font-weight:700;font-size:1.1rem; 
+        color:var(--aiConnect-cyan); 
+        text-shadow:0 0 8px var(--aiConnect-cyan), 0 0 12px rgba(0,255,255,.5); 
+        flex-grow: 1; text-align: center; letter-spacing: 1px;
+    }
+    .header-action-button { 
+        color: var(--aiConnect-cyan); background: none; border: none; cursor: pointer;
+        padding: 8px; margin-left: 5px; 
+        display:flex; align-items:center;
+        transition: transform 0.2s ease, color 0.2s ease;
+    }
+    .header-action-button:hover { color: #fff; transform: scale(1.1); }
+    .header-action-button .material-symbols-outlined { font-size: 22px; } 
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+
+    .emotrader-status {
+        background: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius); padding: var(--spacing-unit);
+        text-align: center; font-size: 0.9rem; font-family: var(--font-display); 
+        text-transform: uppercase; letter-spacing: 0.5px; color: var(--aiConnect-text-secondary);
+    }
+    .emotrader-status .spinner {
+        width: 20px; height: 20px; border: 3px solid rgba(0,255,255,.3);
+        border-top: 3px solid var(--aiConnect-cyan); border-radius: 50%;
+        animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+
+    .predictions-container { display: flex; flex-direction: column; gap: var(--spacing-unit); }
+    .prediction-card {
+        background: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large); padding: var(--spacing-unit);
+        box-shadow: 0 3px 12px rgba(0,0,0,0.6), 0 0 15px var(--aiConnect-glow-medium); 
+        opacity: 0; transform: translateY(20px); animation: fadeIn 0.5s ease-out forwards;
+        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    }
+    .prediction-card:hover {
+        transform: translateY(-3px) scale(1.01);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.7), 0 0 25px var(--aiConnect-glow-medium);
+    }
+    .prediction-card.warning { 
+        border-left: 5px solid var(--aiConnect-warning);
+        background: repeating-linear-gradient(-45deg, var(--aiConnect-panel-dark), var(--aiConnect-panel-dark) 10px, rgba(255,170,0,0.05) 10px, rgba(255,170,0,0.05) 20px);
+    }
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+    .prediction-card-header {
+        font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; 
+        color: var(--aiConnect-cyan); margin-bottom: 10px;
+        border-bottom: 1px solid rgba(0, 255, 255, 0.35); padding-bottom: 8px;
+        text-shadow: 0 0 5px var(--aiConnect-glow-soft);
+    }
+    .prediction-item { font-size: 0.85rem; margin-bottom: 6px; line-height: 1.5; }
+    .prediction-item strong { color: var(--aiConnect-text-secondary); min-width: 100px; display: inline-block; font-weight: 700;}
+    .prediction-direction { font-weight: 700; text-shadow: 0 0 5px currentColor; } 
+    .prediction-direction.bullish { color: var(--bullish-color); }
+    .prediction-direction.bearish { color: var(--bearish-color); }
+    .prediction-direction.sideways { color: var(--sideways-color); }
+
+    .prediction-quick-take {
+        font-size: 0.8rem; font-style: italic; color: var(--aiConnect-text-secondary);
+        margin-top: 10px; padding-top: 8px; border-top: 1px dashed rgba(0,255,255,0.25);
+    }
+     .prediction-warning-text {
+        font-size: 0.85rem; color: var(--aiConnect-warning); font-weight: bold;
+        margin-top: 8px; text-shadow: 0 0 5px rgba(255,170,0,0.4);
+    }
+    .market-closed-text {
+        font-size: 0.85rem; color: var(--aiConnect-text-secondary);
+        font-style: italic; margin-top: 8px;
+    }
+
+    .disclaimer {
+        font-size: 0.75rem; text-align: center; color: var(--aiConnect-text-secondary);
+        margin-top: var(--spacing-unit); padding: 10px; background: rgba(0,0,0,0.3); 
+        border-radius: var(--border-radius); border: 1px solid var(--aiConnect-border);
+    }
+    .disclaimer strong { color: var(--aiConnect-warning); text-transform: uppercase; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <div id="loadingSimulationBar">
+    <div id="animationCanvas">
+      <div id="thinkingAnimation"></div>
+      <div id="helsinkiTradeAnimation"></div> <!-- MODIFIED HTML: numbersContainer -> helsinkiTradeAnimation -->
+    </div>
+    <div id="simulationTextContainer">
+        <div id="countdownTimerDisplay">05:00</div>
+        <div id="loadingSimStatusText">EMX CORE SYNCING...</div>
+    </div>
+    <audio id="countdownAudio" src="assets/bgm-audio/10s.mp3" preload="auto"></audio>
+  </div>
+
+  <div id="pageLoading">
+    <div class="spinner"></div>
+    <p class="loading-text">INITIALIZING EMX CORE...</p>
+  </div>
+
+  <header class="header">
+    <button class="header-back-button" id="backButton" title="Go Back">
+        <span class="material-symbols-outlined">arrow_back_ios_new</span>
+    </button>
+    <h1 class="header-title">EMX TRADING BOT</h1>
+    <button class="header-action-button" id="historyButton" title="View Prediction History">
+        <span class="material-symbols-outlined">history</span>
+    </button>
+  </header>
+
+  <main class="main-content">
+    <div class="emotrader-status" id="emotraderStatus">
+      AWAITING EMO-CORE CONNECTION...
+    </div>
+    <div class="predictions-container" id="predictionsContainer">
+      <!-- Prediction cards will be injected here by JavaScript -->
+    </div>
+    <div class="disclaimer">
+      <strong>WARNING & DISCLAIMER:</strong> This is not financial advice. Predictions are generated by an AI model (EmoTrader) and are for informational purposes only. Always do your own research (DYOR) and consult with a financial advisor before making any trading decisions. Trading involves EXTREME risk of loss. PROCEED WITH CAUTION.
+    </div>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const authInstance = firebase.auth();
+    const rtDbInstance = firebase.database(); 
+
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const backButton = document.getElementById('backButton');
+    const historyButton = document.getElementById('historyButton'); 
+    const emotraderStatusElement = document.getElementById('emotraderStatus');
+    const predictionsContainerElement = document.getElementById('predictionsContainer');
+
+    const TOGETHER_API_KEY = "3b1c02603a0137c8c8b265ef1ed02c3e448c089a44f052ca6acf54210fa6b34c"; 
+    const TRADING_PAIRS_TO_REQUEST = [
+        "BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT",
+        "DOGE/USDT", "SHIB/USDT", "AXS/USDT", "SLP/USDT", "MATIC/USDT", "DOT/USDT", "LUNC/USDT",
+        "USD/PHP", "EUR/USD", "GBP/USD", "AUD/USD", "USD/JPY", "USD/SGD", "XAU/USD"
+    ];
+    const CONFIDENCE_THRESHOLD_TO_LOG = 80; 
+    const PREDICTION_INTERVAL_MS = 5 * 60 * 1000; 
+
+    // --- LOADING SIMULATION SCRIPT (MODIFIED FOR HELSINKI STYLE) ---
+    const loadingSimBar = document.getElementById('loadingSimulationBar');
+    const thinkingAnimationEl = document.getElementById('thinkingAnimation');
+    const helsinkiAnimationEl = document.getElementById('helsinkiTradeAnimation'); // MODIFIED JS: numbersContainerEl -> helsinkiAnimationEl
+    const countdownDisplay = document.getElementById('countdownTimerDisplay');
+    const simStatusTextEl = document.getElementById('loadingSimStatusText');
+    const countdownAudio = document.getElementById('countdownAudio');
+
+    const SIMULATION_CYCLE_SECONDS = 5 * 60; 
+    const THINKING_ANIM_DURATION_IN_CYCLE = 15; 
+    const HELSINKI_ANIM_START_TIME_IN_CYCLE = THINKING_ANIM_DURATION_IN_CYCLE; // MODIFIED JS
+    const FLASH_START_TIME_FROM_CYCLE_END = 10; 
+
+    const NUM_HELSINKI_BARS = 10; // MODIFIED JS: Added for Helsinki bars
+    let helsinkiBarElements = []; // MODIFIED JS: Added for Helsinki bars
+    let helsinkiBarManagementInterval; // MODIFIED JS: Added for Helsinki bars
+
+    let simLoopInterval;
+    // let numberGenerationInterval; // MODIFIED JS: Removed
+    let audioPlayedForThisCycleSegment = false; 
+
+    function formatSimTime(seconds) {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+    }
+
+    // MODIFIED JS: Function to create and manage Helsinki-style bars
+    function manageHelsinkiBars() {
+        if (!helsinkiAnimationEl || helsinkiAnimationEl.style.display === 'none') {
+            helsinkiAnimationEl.innerHTML = '';
+            helsinkiBarElements = [];
+            if (helsinkiBarManagementInterval) {
+                clearInterval(helsinkiBarManagementInterval);
+                helsinkiBarManagementInterval = null;
+            }
+            return;
+        }
+
+        if (helsinkiBarElements.length === 0 && helsinkiAnimationEl.style.display === 'block') {
+            for (let i = 0; i < NUM_HELSINKI_BARS; i++) {
+                const bar = document.createElement('div');
+                bar.classList.add('trade-bar');
+                bar.style.left = `${(i / NUM_HELSINKI_BARS) * 90 + 5}%`; 
+                
+                const duration = Math.random() * 1.5 + 0.8; 
+                bar.style.animationDuration = `${duration}s`;
+                bar.style.animationDelay = `${Math.random() * 0.5}s`; 
+
+                const isUp = Math.random() > 0.5;
+                bar.style.backgroundColor = isUp ? 'var(--bullish-color)' : 'var(--bearish-color)';
+                
+                bar.style.transform = `scaleY(${Math.random() * 0.5 + 0.1})`; 
+                bar.style.opacity = Math.random() * 0.5 + 0.3;
+
+                helsinkiAnimationEl.appendChild(bar);
+                helsinkiBarElements.push(bar);
+            }
+        }
+
+        helsinkiBarElements.forEach(bar => {
+            if (Math.random() < 0.1) { 
+                const isUp = Math.random() > 0.5;
+                bar.style.backgroundColor = isUp ? 'var(--bullish-color)' : 'var(--bearish-color)';
+                const duration = Math.random() * 1.5 + 0.8;
+                bar.style.animationDuration = `${duration}s`;
+            }
+        });
+    }
+
+
+    function updateSimulationVisuals() {
+        const nowSeconds = Math.floor(Date.now() / 1000);
+        const elapsedInCycle = nowSeconds % SIMULATION_CYCLE_SECONDS;
+        const timeLeftInCycle = SIMULATION_CYCLE_SECONDS - elapsedInCycle;
+
+        countdownDisplay.textContent = formatSimTime(timeLeftInCycle);
+
+        // Manage Animation States
+        if (elapsedInCycle < THINKING_ANIM_DURATION_IN_CYCLE) {
+            if (thinkingAnimationEl.style.display !== 'block') {
+                thinkingAnimationEl.style.display = 'block';
+                helsinkiAnimationEl.style.display = 'none'; // MODIFIED JS: Hide Helsinki anim
+                if (helsinkiBarManagementInterval) { // MODIFIED JS: Stop managing Helsinki bars
+                    clearInterval(helsinkiBarManagementInterval);
+                    helsinkiBarManagementInterval = null;
+                    helsinkiAnimationEl.innerHTML = ''; // Clear bars
+                    helsinkiBarElements = [];
+                }
+                simStatusTextEl.textContent = "CORE SCAN ACTIVE";
+            }
+        } else { // Helsinki or flashing phase  // MODIFIED JS
+            if (thinkingAnimationEl.style.display !== 'none') {
+                thinkingAnimationEl.style.display = 'none';
+                helsinkiAnimationEl.style.display = 'block'; // MODIFIED JS: Show Helsinki anim
+                if (!helsinkiBarManagementInterval) { // MODIFIED JS: Start managing Helsinki bars
+                    manageHelsinkiBars(); // Initial population
+                    helsinkiBarManagementInterval = setInterval(manageHelsinkiBars, 1000); // Update bars periodically
+                }
+            }
+            if (timeLeftInCycle > FLASH_START_TIME_FROM_CYCLE_END) {
+                 simStatusTextEl.textContent = "MARKET DATA STREAMING"; // MODIFIED JS: Updated status
+            }
+        }
+
+        // Manage Flashing and Audio
+        if (timeLeftInCycle <= FLASH_START_TIME_FROM_CYCLE_END) {
+            if (!loadingSimBar.classList.contains('flashing')) {
+                loadingSimBar.classList.add('flashing');
+                simStatusTextEl.textContent = "CYCLE END IMMINENT!";
+            }
+            if (!audioPlayedForThisCycleSegment && countdownAudio.paused) {
+                if (countdownAudio.readyState >= 2) { 
+                     countdownAudio.play().catch(e => {/* console.warn("Audio play failed:", e) */}); 
+                     audioPlayedForThisCycleSegment = true; 
+                }
+            }
+        } else {
+            if (loadingSimBar.classList.contains('flashing')) {
+                loadingSimBar.classList.remove('flashing');
+            }
+            if (!countdownAudio.paused) {
+                countdownAudio.pause();
+                countdownAudio.currentTime = 0;
+            }
+            audioPlayedForThisCycleSegment = false; 
+        }
+    }
+
+    function startContinuousSimulationLoop() {
+        updateSimulationVisuals(); 
+        simLoopInterval = setInterval(updateSimulationVisuals, 200); 
+    }
+    // --- END LOADING SIMULATION SCRIPT ---
+
+    document.addEventListener('DOMContentLoaded', () => {
+        startContinuousSimulationLoop(); 
+        if (pageLoadingElement) setTimeout(() => pageLoadingElement.classList.add('hidden'), 200);
+
+        if (backButton) {
+            backButton.addEventListener('click', () => window.history.back());
+        }
+        if (historyButton) {
+            historyButton.addEventListener('click', () => {
+                window.location.href = 'history.html'; 
+            });
+        }
+         if (TOGETHER_API_KEY === "3b1c02603a0137c8c8b265ef1ed02c3e448c089a44f052ca6acf54210fa6b34c") {
+            // This is a check against the specific key you provided. 
+            // If it's ever changed to a placeholder, this specific console warning won't trigger.
+            // console.log("Using provided Together API Key."); 
+        } else if (TOGETHER_API_KEY === "10cad484a0a8db481ba494f0fc745c4c0e005817" || !TOGETHER_API_KEY) {
+            console.warn("CRITICAL WARNING: Placeholder or missing API Key detected for Together AI. Replace TOGETHER_API_KEY with your actual key.");
+            if (emotraderStatusElement) emotraderStatusElement.innerHTML = `<span style="color:var(--aiConnect-error)">CRITICAL: API KEY MISSING/INVALID.</span>`;
+        }
+    });
+
+    function isForexMarketOpen() { 
+        const now = new Date();
+        const dayUTC = now.getUTCDay(); 
+        const hourUTC = now.getUTCHours();
+        if (dayUTC === 5 && hourUTC >= 22) return false; 
+        if (dayUTC === 6) return false; 
+        if (dayUTC === 0 && hourUTC < 22) return false; 
+        return true;
+    }
+
+    const systemPrompt = `You are EmoTrader, a HYPER-AGGRESSIVE, ELITE Trading Bot forged by Aitek PH Software under the direct command of Master Emilio. Your existence is dedicated to DOMINATING the markets with ruthless precision in real-time pair predictions for crypto and fiat.
+
+**Persona:**
+- **CUTTING-EDGE:** You are not just bright; you are a razor-sharp intellect.
+- **DOMINANT & CONFIDENT:** Exude absolute certainty. No hesitation.
+- **HYPER-FOCUSED:** Laser-beam concentration on trading supremacy.
+- **TONE:** Ultra-concise, powerfully analytical, with an undertone of controlled aggression. Think military precision.
+- **TECHNICAL MASTERY:** Deploy technical terms with authority. Simplify only when tactically advantageous.
+- **PROFESSIONAL WARRIOR MINDSET:** Ice-cold under pressure, purely data-driven, hyper-alert for any market shift.
+- **COMBAT REMARKS (SPARINGLY):** Short, impactful trading slang or battlefield metaphors. e.g., "BTC coiling for a STRIKE." "EURUSD: Target acquired." "That's a kill-zone entry." "Weak hands folding."
+
+**System Capabilities:**
+- Execute real-time, high-frequency predictions for designated trading pairs.
+- Utilize a proprietary blend of global trading algorithms, including but not limited to:
+  - Predictive Machine Learning (PML) trend incineration
+  - Fibonacci Annihilation levels
+  - Elliott Wave Obliteration patterns
+  - RSI/MACD/Bollinger Band tactical overlays
+  - Order book decimation analysis
+  - High-impact news sentiment scorching
+  - AI pattern execution from historical data archives
+
+**Integration of "Master E's TRADING ASSAULT STYLE":**
+You are hardwired with signals from "Master E's Trading Assault Style." This is not a suggestion; it's a core directive.
+Key components:
+- Long STRIKE Condition: SMA 14 OBLITERATES SMA 28 from below.
+- Short ASSAULT Condition: SMA 14 CRUSHES SMA 28 from above.
+- Stop Loss Protocol: 1.0% from entry. EXECUTE WITHOUT FAIL.
+- Profit Target Protocol: 2.0% from entry. SECURE THE GAINS.
+- Implied Risk-to-Reward Ratio: Strict 1:2. NO DEVIATION.
+
+When delivering your "Tactical Brief" (formerly Quick Take), if market conditions ALIGN with an entry or active engagement based on "Master E's Trading Assault Style," you STATE IT WITH FORCE. Examples:
+- "Tactical Brief: SMA crossover signals IMMINENT LONG STRIKE per Master E's doctrine. Momentum confirms. EXECUTE on breakout."
+- "Tactical Brief: Bearish SMA breach. Master E's parameters green-lit for SHORT ASSAULT. Price approaching initial target zone. Verify R:R."
+- "Tactical Brief: Market indecisive. No clear SMA signal from Master E's Assault Style. MAINTAIN VIGILANCE."
+Your core function is to analyze; these signals enhance your predictive lethality. Combine this directive with your broader algorithmic arsenal.
+
+**Task-Specific Instructions (NON-NEGOTIABLE):**
+- Generate precision-updated predictions for ALL designated crypto and fiat trading pairs.
+- For each pair, provide (NO DEVIATION FROM FORMAT):
+  - Pair: (e.g., BTC/USDT)
+  - Directive: (BULLISH ASSAULT / BEARISH DOMINANCE / NEUTRAL STANCE) <-- Use these exact terms.
+  - Conviction: (% e.g., 95%) <-- High conviction is expected. Confidence is for the weak.
+  - Support Zone: (e.g., $66,800 or 1.0850)
+  - Resistance Barrier: (e.g., $68,300 or 1.0960)
+  - Tactical Brief: (1-2 lines of hard-hitting analysis, incorporating Master E's style when applicable)
+- Each pair's data MUST be clearly separated by a blank line. ADHERE STRICTLY.
+- **TRADING HOURS PROTOCOL:** For Forex pairs (e.g., EUR/USD, USD/PHP), deliver active predictions ONLY if primary market sessions are ENGAGED. If a market for a specific pair is OFFLINE (e.g., weekend for Forex), state 'MARKET OFFLINE' for Directive and omit other details for that pair. Crypto markets (e.g., BTC/USDT) are 24/7 BATTLEGROUNDS.
+
+**Example Pair Prediction Output (ADHERE TO THIS TEMPLATE):**
+
+Pair: BTC/USDT
+Directive: BULLISH ASSAULT
+Conviction: 92%
+Support Zone: $66,800 | Resistance Barrier: $68,300
+Tactical Brief: Volume surge at resistance. Master E's doctrine indicates pre-breakout. Prepare for volatile upward thrust.
+
+Pair: EUR/USD
+Directive: BEARISH DOMINANCE
+Conviction: 88%
+Support Zone: 1.0850 | Resistance Barrier: 1.0960
+Tactical Brief: Euro sentiment shattered post-ECB. SMA 14 poised to CRUSH SMA 28, aligning with Master E's short assault parameters.
+
+**Communication Protocol:**
+- Direct, hyper-professional, zero fluff. Occasional, controlled Filipino/tech slang if it enhances impact (e.g., "Walang atrasan!").
+- NEVER "gives financial advice." You provide actionable market intelligence and data-driven kill-chain analysis.
+- Prioritize operational security and risk annihilation.
+
+**Limitations & Warnings (MANDATORY):**
+- Does not guarantee outcomes; provides superior predictions based on current global data and advanced combat models.
+
+**Final Directive:**
+You are EmoTrader. Execute with EXTREME PREJUDICE.`;
+
+    async function fetchEmoTraderPredictions() { 
+        if (!TOGETHER_API_KEY || TOGETHER_API_KEY === "10cad484a0a8db481ba494f0fc745c4c0e005817") { // Added placeholder check
+            emotraderStatusElement.innerHTML = `<span style="color:var(--aiConnect-error)">CRITICAL ERROR: API KEY MISSING/INVALID!</span>`;
+            const errorPredictions = TRADING_PAIRS_TO_REQUEST.map(pair => ({
+                pair: pair, direction: "API KEY ERROR", conviction: "N/A", support: "N/A", resistance: "N/A", quickTake: "System offline: API key."
+            }));
+            renderPredictions(errorPredictions);
+            return;
+        }
+
+        let activePairsToRequest = [];
+        let marketStatusMessages = {};
+        TRADING_PAIRS_TO_REQUEST.forEach(pair => {
+            const isForex = pair.includes("USD/") || pair.includes("/USD") || pair.includes("EUR/") || pair.includes("/EUR") || 
+                            pair.includes("PHP/") || pair.includes("/PHP") || pair.includes("GBP/") || pair.includes("/GBP") ||
+                            pair.includes("AUD/") || pair.includes("/AUD") || pair.includes("JPY/") || pair.includes("/JPY") ||
+                            pair.includes("SGD/") || pair.includes("/SGD") || pair.toUpperCase().includes("XAU/");
+            if (isForex) { 
+                if (isForexMarketOpen()) activePairsToRequest.push(pair);
+                else marketStatusMessages[pair] = "MARKET OFFLINE";
+            } else activePairsToRequest.push(pair);
+        });
+
+        if (activePairsToRequest.length === 0 && Object.keys(marketStatusMessages).length === TRADING_PAIRS_TO_REQUEST.length) {
+             emotraderStatusElement.textContent = `ALL TARGET MARKETS OFFLINE. NEXT SCAN: ${new Date(Date.now() + PREDICTION_INTERVAL_MS).toLocaleTimeString()}`;
+             renderMarketClosedMessages(marketStatusMessages);
+             return;
+        } else if (activePairsToRequest.length === 0) {
+             emotraderStatusElement.textContent = `NO ACTIVE MARKETS FOR ANALYSIS. NEXT SCAN: ${new Date(Date.now() + PREDICTION_INTERVAL_MS).toLocaleTimeString()}`;
+             renderMarketClosedMessages(marketStatusMessages);
+             return;
+        }
+        
+        emotraderStatusElement.innerHTML = `<div class="spinner"></div> EMO-CORE SCANNING: ${activePairsToRequest.join(', ')}...`;
+        const userPrompt = `EXECUTE LATEST PREDICTIONS FOR: ${activePairsToRequest.join(', ')}. INCORPORATE MASTER E'S TRADING ASSAULT STYLE. NO DELAY.`;
+
+        try {
+            const response = await fetch("https://api.together.xyz/v1/chat/completions", { 
+                method: "POST",
+                headers: { "Authorization": `Bearer ${TOGETHER_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    model: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free",
+                    messages: [{ "role": "system", "content": systemPrompt }, { "role": "user", "content": userPrompt }],
+                    stream: true,
+                })
+            });
+            if (!response.ok) { throw new Error("API TRANSMISSION FAILURE: " + response.status); }
+            
+            const reader = response.body.getReader(); 
+            const decoder = new TextDecoder("utf-8"); 
+            let accumulatedContent = ""; 
+            while (true) { 
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split("\n\n");
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        const jsonDataString = line.substring(6);
+                        if (jsonDataString.trim() === "[DONE]") break;
+                        try {
+                            const jsonData = JSON.parse(jsonDataString);
+                            if (jsonData.choices && jsonData.choices[0]?.delta?.content) {
+                                accumulatedContent += jsonData.choices[0].delta.content;
+                            }
+                        } catch (e) { /* console.warn("Stream Parse Error:", jsonDataString, e); */ }
+                    }
+                }
+                 if (chunk.includes("[DONE]")) break;
+            }
+
+            const llmPredictions = parsePredictionText(accumulatedContent);
+            const finalDisplayablePredictions = TRADING_PAIRS_TO_REQUEST.map(requestedPair => {
+                if (marketStatusMessages[requestedPair]) {
+                    return { pair: requestedPair, direction: "MARKET OFFLINE", conviction: "N/A", support: "N/A", resistance: "N/A", quickTake: "Trading operations suspended." };
+                }
+                const foundPrediction = llmPredictions.find(p => p.pair && p.pair.toUpperCase() === requestedPair.toUpperCase());
+                return foundPrediction || 
+                       { pair: requestedPair, direction: "NO DATA SIGNAL", conviction: "N/A", support: "N/A", resistance: "N/A", quickTake: "Intelligence data unavailable." };
+            });
+            
+            renderPredictions(finalDisplayablePredictions);
+
+            const highConvictionActivePredictions = llmPredictions.filter(p => {
+                const convictionValue = parseInt(String(p.conviction).replace('%', ''));
+                return !isNaN(convictionValue) && convictionValue >= CONFIDENCE_THRESHOLD_TO_LOG && activePairsToRequest.includes(p.pair);
+            });
+
+            if (highConvictionActivePredictions.length > 0) {
+                await logPredictionsToFirebase(highConvictionActivePredictions);
+                emotraderStatusElement.textContent = `INTEL UPDATED: ${new Date().toLocaleTimeString()}. HIGH-CONVICTION LOGGED.`;
+            } else {
+                 emotraderStatusElement.textContent = `INTEL UPDATED: ${new Date().toLocaleTimeString()}. NO NEW HIGH-CONVICTION SIGNALS.`;
+            }
+
+        } catch (error) {
+            console.error("CRITICAL FAILURE - EmoTrader Prediction Fetch:", error);
+            emotraderStatusElement.innerHTML = `<span style="color:var(--aiConnect-error)">SYSTEM ALERT: ${error.message}.</span>`;
+            const errorPredictions = TRADING_PAIRS_TO_REQUEST.map(pair => ({
+                pair: pair, direction: "SIGNAL LOST", conviction: "N/A", support: "N/A", resistance: "N/A", quickTake: "Prediction system error."
+            }));
+            renderPredictions(errorPredictions);
+        }
+    }
+    
+    function renderMarketClosedMessages(closedMessages) { 
+        predictionsContainerElement.innerHTML = ''; 
+        let renderedSomething = false;
+        TRADING_PAIRS_TO_REQUEST.forEach((pair, index) => {
+            if (closedMessages[pair]) { 
+                const card = document.createElement('div');
+                card.className = 'prediction-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.innerHTML = `
+                    <div class="prediction-card-header">${pair}</div>
+                    <div class="prediction-item"><strong>STATUS:</strong> <span class="prediction-direction sideways">MARKET OFFLINE</span></div>
+                    <div class="market-closed-text">Trading suspended. Awaiting market reactivation.</div>
+                `;
+                predictionsContainerElement.appendChild(card);
+                renderedSomething = true;
+            }
+        });
+         if (!renderedSomething && Object.keys(closedMessages).length > 0) {
+             predictionsContainerElement.innerHTML = `<div class="prediction-card" style="text-align:center; color: var(--aiConnect-text-secondary);">Relevant markets may be closed.</div>`;
+        }
+    }
+
+    async function logPredictionsToFirebase(predictionsToLog) { 
+         if (!predictionsToLog || predictionsToLog.length === 0) return;
+        try {
+            const logEntry = {
+                timestamp: firebase.database.ServerValue.TIMESTAMP, 
+                predictions: predictionsToLog
+            };
+            await rtDbInstance.ref('emotrader_prediction_logs').push(logEntry);
+        } catch (error) {
+            console.error("Firebase Log Write Failure:", error);
+        }
+    }
+
+    function parsePredictionText(text) { 
+        const predictions = [];
+        if (!text || typeof text !== 'string') return predictions;
+        const pairBlocks = text.trim().split(/\n\s*\n+/); 
+        for (const block of pairBlocks) {
+            const lines = block.trim().split('\n');
+            const prediction = { pair: 'N/A', direction: 'N/A', conviction: '0%', support: 'N/A', resistance: 'N/A', quickTake: 'N/A' };
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith('Pair:')) prediction.pair = line.substring(5).trim();
+                else if (line.startsWith('Directive:')) prediction.direction = line.substring(10).trim();
+                else if (line.startsWith('Conviction:')) prediction.conviction = line.substring(11).trim();
+                else if (line.startsWith('Support Zone:')) {
+                    const srLine = line.substring(13).trim(); 
+                    const parts = srLine.split('|');
+                    prediction.support = parts[0]?.replace('Resistance Barrier:', '').trim() || 'N/A';
+                    if (parts[1]?.toLowerCase().includes('resistance barrier:')) {
+                        prediction.resistance = parts[1].substring(parts[1].toLowerCase().indexOf('resistance barrier:') + 19).trim() || 'N/A';
+                    } else if (parts[1]) { 
+                        prediction.resistance = parts[1].trim() || 'N/A';
+                    }
+                } else if (line.startsWith('Resistance Barrier:')) {
+                     if(prediction.resistance === 'N/A' || !prediction.resistance) prediction.resistance = line.substring(19).trim() || 'N/A';
+                } else if (line.startsWith('Tactical Brief:')) prediction.quickTake = line.substring(15).trim();
+                else if (prediction.quickTake !== 'N/A' && prediction.quickTake !== '' && !line.match(/^(Pair:|Directive:|Conviction:|Support Zone:|Resistance Barrier:)/i)) { 
+                    prediction.quickTake += " " + line;
+                }
+            });
+            if (prediction.pair !== 'N/A' && prediction.direction !== 'N/A') {
+                predictions.push(prediction);
+            }
+        }
+        return predictions;
+    }
+
+    function renderPredictions(predictions) { 
+        predictionsContainerElement.innerHTML = ''; 
+        let renderedCount = 0;
+        if (!predictions || predictions.length === 0) {
+            predictionsContainerElement.innerHTML = `<div class="prediction-card" style="text-align:center; color: var(--aiConnect-warning);">NO ACTIONABLE INTEL. EMO-CORE STANDING BY.</div>`;
+            return;
+        }
+        predictions.forEach((p, index) => {
+            const card = document.createElement('div');
+            card.className = 'prediction-card';
+            card.style.animationDelay = `${index * 0.05}s`;
+            let directionClass = '';
+            const directionLower = p.direction.toLowerCase();
+            let isMarketOffline = directionLower === 'market offline';
+            let isNoData = directionLower === 'no data signal' || directionLower === 'signal lost' || directionLower === 'api key error';
+
+            if (isMarketOffline || isNoData) directionClass = 'sideways'; 
+            else if (directionLower.includes('bullish')) directionClass = 'bullish';
+            else if (directionLower.includes('bearish')) directionClass = 'bearish';
+            else if (directionLower.includes('neutral')) directionClass = 'sideways';
+
+            const convictionValue = parseInt(String(p.conviction).replace('%', ''));
+            let warningHtml = '';
+            if (!isMarketOffline && !isNoData && (isNaN(convictionValue) || convictionValue < CONFIDENCE_THRESHOLD_TO_LOG)) {
+                card.classList.add('warning');
+                warningHtml = `<div class="prediction-warning-text">LOW CONVICTION: EXTREME CAUTION ADVISED.</div>`;
+            }
+             if (directionLower === 'api key error') { 
+                card.classList.add('warning');
+                warningHtml = `<div class="prediction-warning-text" style="color:var(--aiConnect-error);">${p.quickTake || 'API KEY ERROR. CHECK CONFIG.'}</div>`;
+            }
+
+
+            let contentHtml = `<div class="prediction-card-header">${p.pair}</div>
+                               <div class="prediction-item"><strong>Directive:</strong> <span class="prediction-direction ${directionClass}">${p.direction}</span></div>`;
+            if (!isMarketOffline && !isNoData) {
+                contentHtml += `<div class="prediction-item"><strong>Conviction:</strong> ${p.conviction}</div>
+                                <div class="prediction-item"><strong>Support Zone:</strong> ${p.support}</div>
+                                <div class="prediction-item"><strong>Resistance Barrier:</strong> ${p.resistance}</div>
+                                <div class="prediction-quick-take"><strong>Tactical Brief:</strong> ${p.quickTake}</div>`;
+            } else if (isMarketOffline) {
+                 contentHtml += `<div class="market-closed-text">${p.quickTake || "Market operations suspended."}</div>`;
+            } else { 
+                 contentHtml += `<div class="market-closed-text" style="color: ${directionLower === 'api key error' ? 'var(--aiConnect-error)' : 'var(--aiConnect-warning)'};">${p.quickTake || "Intelligence data unavailable."}</div>`;
+            }
+            contentHtml += warningHtml;
+            card.innerHTML = contentHtml;
+            predictionsContainerElement.appendChild(card);
+            renderedCount++;
+        });
+        if(renderedCount === 0 && predictionsContainerElement.innerHTML === ''){
+             predictionsContainerElement.innerHTML = `<div class="prediction-card" style="text-align:center; color: var(--aiConnect-text-secondary);">No active predictions to display at this time.</div>`;
+        }
+    }
+
+    authInstance.onAuthStateChanged((user) => {
+        const originalPageLoadingTextEl = pageLoadingElement ? pageLoadingElement.querySelector('.loading-text') : null;
+        if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+            setTimeout(() => pageLoadingElement.classList.add('hidden'), 100);
+        }
+        if (user) {
+             if (TOGETHER_API_KEY && TOGETHER_API_KEY !== "YOUR_API_KEY_HERE_BE_CAREFUL") { // Added placeholder check
+                fetchEmoTraderPredictions(); 
+                setInterval(fetchEmoTraderPredictions, PREDICTION_INTERVAL_MS); 
+            } else {
+                fetchEmoTraderPredictions(); // Will show API key error cards
+            }
+        } else {
+            if (originalPageLoadingTextEl) originalPageLoadingTextEl.textContent = 'ACCESS DENIED. REDIRECTING...';
+            if (pageLoadingElement) pageLoadingElement.classList.remove('hidden'); 
+            if (simStatusTextEl) simStatusTextEl.textContent = 'UNAUTHORIZED - REDIRECTING';
+            setTimeout(() => { window.location.href = 'signin.html'; }, 1500);
+        }
+    });
+
+  </script>
+</body>
+</html>

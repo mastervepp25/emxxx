@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - Home</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <!-- Use Firebase Realtime Database SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    :root {
+      /* EMX Theme Colors for ai-Connect */
+      --aiConnect-bg-dark: #0d0d1a;
+      --aiConnect-panel-dark: #121225;
+      --aiConnect-glass-bg: rgba(18, 18, 37, 0.85);
+      --aiConnect-border: rgba(0, 255, 255, 0.25);
+      --aiConnect-cyan: #00ffff;
+      --aiConnect-cyan-dark: #00cccc;
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-glow-strong: rgba(0, 255, 255, 0.7);
+      --aiConnect-gold: #ffc107;
+      --aiConnect-gold-glow: rgba(255, 193, 7, 0.6);
+      --aiConnect-text-primary: #e0e0f0;
+      --aiConnect-text-secondary: #a0a0c0;
+      --aiConnect-success: #00ff88;
+      --aiConnect-error: #ff4444;
+
+      /* EMX Fonts */
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace;
+
+      /* Layout */
+      --spacing-unit: 15px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --box-shadow-emo: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+      --transition-speed: 0.3s;
+      --header-height: 56px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: var(--header-height);
+        padding-bottom: calc(60px + var(--spacing-unit));
+        max-width: 420px;
+        margin: 0 auto;
+        overflow-x: hidden;
+        position: relative;
+    }
+    a { color: var(--aiConnect-cyan); text-decoration: none; }
+    a:hover { color: var(--aiConnect-cyan-dark); text-decoration: underline; text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--border-radius); transition: background-color var(--transition-speed), transform 0.1s, box-shadow var(--transition-speed); }
+    button:active { transform: translateY(1px) scale(0.98); }
+    .material-symbols-outlined, .fas { vertical-align: middle; }
+
+    .header {
+        background-color: var(--aiConnect-glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: var(--aiConnect-text-primary);
+        padding: 0 var(--spacing-unit);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        z-index: 100;
+        border-bottom: 1px solid var(--aiConnect-border);
+        height: var(--header-height);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+    }
+    .header-logo-container { display: flex; align-items: center; }
+    .header-logo-img { width: 30px; height: 30px; object-fit: contain; margin-right: 8px; }
+    .header-logo-text {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--aiConnect-cyan);
+        font-family: var(--font-display);
+        text-shadow: 0 0 5px var(--aiConnect-glow-medium);
+    }
+    .header-icons-right { display: flex; align-items: center; gap: calc(var(--spacing-unit) * 0.5); }
+    .header-icon { position: relative; cursor: pointer; color: var(--aiConnect-text-secondary); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; transition: background-color 0.2s, color 0.2s, text-shadow 0.2s; }
+    .header-icon:hover { background-color: rgba(0, 255, 255, 0.1); color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .header-icon:active { background-color: rgba(0, 255, 255, 0.2); transform: scale(0.95); }
+    .header-icon .material-symbols-outlined { font-size: 22px; }
+    .badge { position: absolute; top: -2px; right: -2px; background-color: var(--aiConnect-error); color: white; font-size: 9px; font-weight: bold; border-radius: 50%; padding: 1px 4px; min-width: 14px; text-align: center; line-height: 1; display: none; z-index: 1; box-shadow: 0 0 5px rgba(255, 68, 68, 0.5); border: 1px solid var(--aiConnect-bg-dark); }
+    .badge.visible { display: block; }
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+
+    .data-card-emo {
+      background: var(--aiConnect-panel-dark);
+      border: 1px solid var(--aiConnect-border);
+      color: var(--aiConnect-text-primary);
+      border-radius: var(--border-radius-large);
+      padding: var(--spacing-unit);
+      box-shadow: 0 0 20px var(--aiConnect-glow-soft), inset 0 0 10px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .data-card-emo::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: inherit;
+        box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.1);
+        pointer-events: none;
+        z-index: 0;
+    }
+    .data-card-emo > * { position: relative; z-index: 1; }
+
+    .data-card-header-emo {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-unit);
+      border-bottom: 1px solid rgba(0, 255, 255, 0.15);
+      padding-bottom: calc(var(--spacing-unit)*0.6);
+    }
+    .data-card-emo .user-info .user-name { color: var(--aiConnect-text-primary); font-weight: 500; font-size: 0.95rem; margin-bottom: 2px; font-family: var(--font-display);}
+    .data-card-emo .user-info .user-id { color: var(--aiConnect-text-secondary); font-size: 0.7rem; opacity: 0.8; font-family: var(--font-data); }
+
+    .data-card-emo .data-details-emo {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-unit);
+      gap: calc(var(--spacing-unit) * 0.5);
+    }
+    .data-card-emo .data-source-emo { flex: 1; padding: 0 calc(var(--spacing-unit) * 0.25); text-align: center; }
+    .data-card-emo .data-details-emo .data-amount-emo {
+      font-size: 1.6rem; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 2px;
+      font-family: var(--font-display);
+    }
+    .data-card-emo .data-details-emo #phpBalance { color: var(--aiConnect-gold); text-shadow: 0 0 8px var(--aiConnect-gold-glow); }
+    .data-card-emo .data-details-emo #emoTokenBalance { color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .data-card-emo .data-details-emo .data-label-emo {
+      color: var(--aiConnect-text-secondary); font-size: 0.65rem; text-transform: uppercase;
+      letter-spacing: 0.5px; opacity: 0.9; font-family: var(--font-body);
+    }
+    .data-card-emo .data-actions-emo { display: flex; gap: calc(var(--spacing-unit) * 0.7); margin-top: calc(var(--spacing-unit)*0.5); }
+    .data-card-emo .data-actions-emo .action-button-emo {
+      background-color: rgba(0, 255, 255, 0.1); color: var(--aiConnect-cyan);
+      border: 1px solid var(--aiConnect-border); font-weight: 500;
+      padding: 8px calc(var(--spacing-unit) * 0.8); border-radius: 6px; flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-size: 0.85rem; font-family: var(--font-display); transition: all var(--transition-speed);
+    }
+    .data-card-emo .data-actions-emo .action-button-emo .material-symbols-outlined { font-size: 1rem; font-variation-settings: 'wght' 500; }
+    .data-card-emo .data-actions-emo .action-button-emo:hover {
+        background-color: rgba(0, 255, 255, 0.2); border-color: var(--aiConnect-cyan);
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft); color: #fff;
+    }
+
+    .quick-actions-grid-emo { display: grid; grid-template-columns: repeat(4, 1fr); gap: calc(var(--spacing-unit) * 0.7); }
+    .grid-item-emo {
+        background-color: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius); box-shadow: var(--box-shadow-emo);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: calc(var(--spacing-unit) * 0.6) 5px; cursor: pointer; text-align: center;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        min-height: 85px; text-decoration: none; color: inherit;
+    }
+    .grid-item-emo:hover { transform: translateY(-3px); box-shadow: 0 0 15px var(--aiConnect-glow-medium); border-color: var(--aiConnect-cyan); }
+    .grid-item-emo:active { transform: scale(0.95) translateY(0px); }
+    .grid-item-emo .icon-background-emo { background-color: rgba(0, 255, 255, 0.1); border-radius: 6px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; transition: background-color 0.2s ease; }
+    .grid-item-emo:hover .icon-background-emo { background-color: rgba(0, 255, 255, 0.2); }
+    .grid-item-emo .material-symbols-outlined, .grid-item-emo .fas { font-size: 22px; color: var(--aiConnect-cyan); text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    .grid-item-emo .item-label-emo { font-size: 10px; font-weight: 500; color: var(--aiConnect-text-secondary); line-height: 1.2; margin-top: 2px; font-family: var(--font-body); }
+
+    .static-ad-banner-container-emo {
+        background-color: var(--aiConnect-panel-dark); border-radius: var(--border-radius-large);
+        border: 1px solid var(--aiConnect-border); box-shadow: var(--box-shadow-emo);
+        padding: 0; overflow: hidden; cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .static-ad-banner-container-emo:hover { transform: translateY(-2px); box-shadow: 0 0 20px rgba(0,0,0,0.6), 0 0 10px var(--aiConnect-glow-medium); }
+    .static-ad-banner-container-emo img { display: block; width: 100%; height: auto; border-radius: var(--border-radius-large); }
+
+    #pageLoading {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(13, 13, 26, 0.95);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1001; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0s; }
+    #pageLoading .loading-text { font-size: 1.1rem; font-weight: 500; color: var(--aiConnect-text-primary); font-family: var(--font-display); }
+    #pageLoading .spinner {
+        border: 4px solid rgba(0, 255, 255, 0.2); border-top: 4px solid var(--aiConnect-cyan);
+        border-radius: 50%; width: 30px; height: 30px;
+        animation: spin 1s linear infinite; margin-bottom: 15px;
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .bottom-nav {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid var(--aiConnect-border); width: 100%; max-width: 420px;
+        display: flex; justify-content: space-around; align-items: center;
+        padding: 5px 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+        z-index: 100; height: 60px; box-shadow: 0 -3px 15px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .nav-item {
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        color: var(--aiConnect-text-secondary); flex: 1; padding: 10px 0;
+        transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
+        height: 100%; border-radius: var(--border-radius); margin: 0 2px;
+    }
+    .nav-item.active { color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .nav-item:hover:not(.active) { color: var(--aiConnect-cyan); background-color: rgba(0, 255, 255, 0.08); }
+    .nav-item:active { transform: scale(0.95); }
+    .nav-item .material-symbols-outlined { font-size: 28px; }
+    .center-button-nav {
+        display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%;
+        background-color: var(--aiConnect-panel-dark); box-shadow: 0 0 15px rgba(0,0,0,0.7);
+        margin-top: -20px; cursor: pointer; border: 2px solid var(--aiConnect-border);
+        position: relative; flex-shrink: 0;
+        transition: transform 0.1s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .center-button-nav.active { border-color: var(--aiConnect-cyan); box-shadow: 0 0 15px var(--aiConnect-glow-strong); }
+    .center-button-nav:hover:not(.active) { box-shadow: 0 0 10px var(--aiConnect-glow-medium), 0 0 20px rgba(0,0,0,0.7); }
+    .center-button-nav:active { transform: scale(0.95); }
+    .center-button-nav img { width: 28px; height: 28px; object-fit: contain; }
+
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+      <div class="spinner"></div>
+      <p class="loading-text">Initializing ai-Connect...</p>
+  </div>
+
+  <header class="header">
+    <div class="header-logo-container">
+      <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="ai-Connect Logo" class="header-logo-img">
+      <span class="header-logo-text">EMX</span>
+    </div>
+    <div class="header-icons-right">
+      <div class="header-icon" id="notificationsIcon" title="Notifications">
+        <span class="material-symbols-outlined">notifications</span>
+        <span id="notificationBadge" class="badge"></span>
+      </div>
+      <div class="header-icon" id="messagesIcon" title="Messages">
+        <span class="material-symbols-outlined">mail</span>
+        <span id="messageBadge" class="badge"></span>
+      </div>
+      <div id="signOutIcon" class="header-icon" title="Sign Out">
+        <span class="material-symbols-outlined">logout</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="data-card-emo">
+      <div class="data-card-header-emo">
+        <div class="user-info">
+            <div class="user-name" id="userName">Welcome, Loading...</div>
+            <div class="user-id" id="memberId">ID: Loading...</div>
+        </div>
+      </div>
+      <div class="data-details-emo">
+        <div class="data-source-emo">
+          <div class="data-amount-emo" id="phpBalance">₱0.00</div>
+          <div class="data-label-emo">PHP Balance</div>
+        </div>
+        <div class="data-source-emo">
+           <div class="data-amount-emo" id="emoTokenBalance">0.00</div> <!-- Added EMX suffix here directly -->
+           <div class="data-label-emo">EMX Token</div>
+        </div>
+      </div>
+      <div class="data-actions-emo">
+        <button id="historyButton" class="action-button-emo">
+            <span class="material-symbols-outlined">history</span>
+            History
+        </button>
+        <button id="connectWalletButton" class="action-button-emo">
+            <span class="material-symbols-outlined">link</span>
+            Wallet
+        </button>
+      </div>
+    </div>
+
+    <div class="quick-actions-grid-emo">
+      <div class="grid-item-emo" data-action="stake" title="Stake"><div class="icon-background-emo"> <span class="material-symbols-outlined">savings</span> </div> <div class="item-label-emo">Stake</div></div>
+      <div class="grid-item-emo" data-action="burn" title="Burn"><div class="icon-background-emo"> <span class="material-symbols-outlined">local_fire_department</span> </div> <div class="item-label-emo">Burn</div></div>
+      <div class="grid-item-emo" data-action="insight" title="Insight"><div class="icon-background-emo"> <span class="material-symbols-outlined">insights</span> </div> <div class="item-label-emo">Insight</div></div>
+      <div class="grid-item-emo" data-action="tribe" title="Tribe"><div class="icon-background-emo"> <span class="material-symbols-outlined">groups</span> </div> <div class="item-label-emo">Tribe</div></div>
+      <div class="grid-item-emo" data-action="reward" title="Reward"><div class="icon-background-emo"> <span class="material-symbols-outlined">emoji_events</span> </div> <div class="item-label-emo">Reward</div></div>
+      <div class="grid-item-emo" data-action="link" title="Link"><div class="icon-background-emo"> <span class="material-symbols-outlined">link</span> </div> <div class="item-label-emo">AppHub</div></div>
+      <div class="grid-item-emo" data-action="trade" title="Trade"><div class="icon-background-emo"> <span class="material-symbols-outlined">currency_exchange</span> </div> <div class="item-label-emo">Trade</div></div>
+      <div class="grid-item-emo" data-action="train" title="Train"><div class="icon-background-emo"> <span class="material-symbols-outlined">model_training</span> </div> <div class="item-label-emo">Call us</div></div> <!-- Changed icon for "Assistant" -->
+      <div class="grid-item-emo" data-action="wallet" title="Wallet"><div class="icon-background-emo"> <span class="material-symbols-outlined">account_balance_wallet</span> </div> <div class="item-label-emo">Wallet</div></div>
+      <div class="grid-item-emo" data-action="market" title="Market"><div class="icon-background-emo"> <span class="material-symbols-outlined">storefront</span> </div> <div class="item-label-emo">NFT-Hero</div></div>
+      <div class="grid-item-emo" data-action="agent" title="Agent"><div class="icon-background-emo"> <span class="material-symbols-outlined">smart_toy</span> </div> <div class="item-label-emo">Agent</div></div>
+      <div class="grid-item-emo" data-action="whitepaper" title="Whitepaper"><div class="icon-background-emo"> <span class="material-symbols-outlined">description</span> </div> <div class="item-label-emo">Whitepaper</div></div>
+    </div>
+
+    <div class="static-ad-banner-container-emo" id="staticAdBanner" data-ad-link="https://memo.aitekchat.com/aiconnect-rewards.html">
+        <img src="assets/banner/ads1.gif" alt="ai-Connect Advertisement">
+    </div>
+  </main>
+
+<div class="bottom-nav">
+  <div class="nav-item" data-target-url="train2earn/emo.html" title="Train to Earn">
+    <span class="material-symbols-outlined">psychology</span>
+  </div>
+  <div class="nav-item" data-target-url="aiconnect-tools.html" title="Tools">
+    <span class="material-symbols-outlined">build</span>
+  </div>
+  <div class="center-button-nav active" data-target-url="index.html" title="Home">
+    <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="Home">
+  </div>
+  <div class="nav-item" data-target-url="course.html" title="Academy"> <!-- MODIFIED LINE -->
+    <span class="material-symbols-outlined">school</span> <!-- MODIFIED ICON -->
+  </div>
+  <div class="nav-item" data-target-url="aiconnect-userprofile.html" title="Profile">
+    <span class="material-symbols-outlined">account_circle</span>
+  </div>
+</div>
+
+  <script>
+    // ai-Connect Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com", 
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+    const authInstance = firebase.auth();
+    const rtDbInstance = firebase.database(); 
+
+    const userNameElement = document.getElementById('userName');
+    const memberIdElement = document.getElementById('memberId');
+    const phpBalanceElement = document.getElementById('phpBalance');
+    const emoTokenBalanceElement = document.getElementById('emoTokenBalance');
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const pageLoadingText = pageLoadingElement.querySelector('.loading-text');
+    const notificationsIcon = document.getElementById('notificationsIcon');
+    const messagesIcon = document.getElementById('messagesIcon');
+    const notificationBadge = document.getElementById('notificationBadge');
+    const messageBadge = document.getElementById('messageBadge');
+    const signOutIcon = document.getElementById('signOutIcon');
+    const historyButton = document.getElementById('historyButton');
+    const connectWalletButton = document.getElementById('connectWalletButton');
+    const staticAdBanner = document.getElementById('staticAdBanner');
+
+    let userRecordKeyGlobal = null; 
+    let userDataListener = null;
+
+    function hidePageLoader(message = 'Finalizing display...', delay = 200) {
+        if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+            if (pageLoadingText) pageLoadingText.textContent = message;
+            setTimeout(() => {
+                if (pageLoadingElement) pageLoadingElement.classList.add('hidden');
+            }, delay);
+        }
+    }
+
+    function triggerHapticFeedback(type = 'medium') { 
+        if (window.navigator.vibrate) {
+            let duration = 50;
+            if (type === 'light') duration = 20;
+            else if (type === 'strong') duration = 100;
+            else if (type === 'selection') duration = 10;
+            window.navigator.vibrate(duration);
+        }
+    }
+
+    function formatCurrency(amount, includeSymbol = true) {
+      const numericAmount = Number(amount) || 0;
+      const formatted = numericAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return includeSymbol ? '₱' + formatted : formatted;
+    }
+
+    function formatToken(amount, decimals = 2, includeSymbol = true) {
+      const numericAmount = Number(amount) || 0;
+      const formattedNumber = numericAmount.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+      });
+      return includeSymbol ? formattedNumber + " EMX" : formattedNumber;
+    }
+
+    function updateDashboardUI(userData) {
+        if (!userData) {
+            console.warn("updateDashboardUI called with no userData");
+            if(userNameElement) userNameElement.textContent = `Welcome, Guest`;
+            if(memberIdElement) memberIdElement.textContent = `ID: Not Found`;
+            if(phpBalanceElement) phpBalanceElement.textContent = formatCurrency(0);
+            if(emoTokenBalanceElement) emoTokenBalanceElement.textContent = formatToken(0, 2);
+            if(notificationBadge) notificationBadge.classList.remove('visible');
+            if(messageBadge) messageBadge.classList.remove('visible');
+            return;
+        }
+
+        const displayName = userData.phoneNumberFormatted || `User ${userRecordKeyGlobal ? userRecordKeyGlobal.slice(-4) : '...'}`;
+        if(userNameElement) userNameElement.textContent = `${displayName}`;
+        if(memberIdElement) memberIdElement.textContent = `ID: ${userData.phoneNumberE164 || userRecordKeyGlobal || '...'}`;
+        
+        if(phpBalanceElement) phpBalanceElement.textContent = formatCurrency(userData.php_balance || 0); 
+        if(emoTokenBalanceElement) emoTokenBalanceElement.textContent = formatToken(userData.emx_token_balance || 0, 2);
+
+        const notificationsCount = userData.unreadNotifications || 0;
+        if (notificationBadge) {
+             if (notificationsCount > 0) {
+                 notificationBadge.textContent = notificationsCount > 9 ? '9+' : notificationsCount;
+                 notificationBadge.classList.add('visible');
+             } else {
+                 notificationBadge.textContent = '';
+                 notificationBadge.classList.remove('visible');
+             }
+        }
+        const messagesCount = userData.unreadMessages || 0;
+        if (messageBadge) {
+              if (messagesCount > 0) {
+                  messageBadge.textContent = messagesCount > 9 ? '9+' : messagesCount;
+                  messageBadge.classList.add('visible');
+              } else {
+                  messageBadge.textContent = '';
+                  messageBadge.classList.remove('visible');
+              }
+        }
+    }
+
+    function listenToUserData(phoneKey) {
+        if (!phoneKey) {
+            console.error("Cannot listen: phoneKey is null.");
+            updateDashboardUI(null);
+            hidePageLoader('Profile key error.', 500);
+            return;
+        }
+        
+        if (userDataListener && userRecordKeyGlobal) {
+             rtDbInstance.ref(`users_info/${userRecordKeyGlobal}`).off('value', userDataListener);
+             console.log("Detached previous user data listener for key:", userRecordKeyGlobal);
+        }
+        
+        userRecordKeyGlobal = phoneKey;
+        const userSpecificDataRef = rtDbInstance.ref(`users_info/${phoneKey}`);
+        let initialDataProcessed = false;
+        
+        userDataListener = userSpecificDataRef.on('value', (snapshot) => {
+            const userData = snapshot.exists() ? snapshot.val() : null;
+            if (snapshot.exists()) {
+                console.log("Real-time update received for user data:", userData);
+            } else {
+                console.warn(`Real-time listener: No data for user with phoneKey ${phoneKey}`);
+            }
+            updateDashboardUI(userData);
+
+            if (!initialDataProcessed) {
+                hidePageLoader('Sync Complete.', 200);
+                initialDataProcessed = true;
+            }
+        }, (error) => {
+            console.error("Error listening to real-time user data:", error);
+            updateDashboardUI(null);
+            if (!initialDataProcessed) {
+                hidePageLoader('Error syncing data.', 500);
+                initialDataProcessed = true;
+            }
+        });
+        console.log("Attached new user data listener for key:", phoneKey);
+    }
+
+    async function fetchInitialUserData(user) {
+        if (!user || !user.uid) {
+            console.error("fetchInitialUserData: Invalid user object (UID missing).", user);
+            if (pageLoadingText) pageLoadingText.textContent = 'Session error. Redirecting...';
+            hidePageLoader('Session error.', 0); 
+            return;
+        }
+
+        try {
+            const usersInfoRef = rtDbInstance.ref('users_info');
+            const query = usersInfoRef.orderByChild('firebaseUid').equalTo(user.uid);
+            const snapshot = await query.once('value');
+
+            if (snapshot.exists()) {
+                let tempUserRecordKey = null;
+                snapshot.forEach(childSnapshot => {
+                    tempUserRecordKey = childSnapshot.key; 
+                    return true; 
+                });
+
+                if (tempUserRecordKey) {
+                    listenToUserData(tempUserRecordKey);
+                } else {
+                     console.warn("User data structure issue or no data after query for UID:", user.uid);
+                     updateDashboardUI(null);
+                     hidePageLoader('Profile data incomplete...', 500);
+                }
+            } else {
+                console.warn("No user record found for UID:", user.uid, "- Possible new device login or data sync issue.");
+                updateDashboardUI(null);
+                hidePageLoader('Profile not found. Displaying defaults.', 500);
+            }
+        } catch (error) {
+            console.error("Error fetching initial user data:", error);
+            updateDashboardUI(null);
+            hidePageLoader('Data Sync Failed.', 500);
+        }
+    }
+
+    authInstance.onAuthStateChanged((user) => {
+        if (pageLoadingElement && pageLoadingElement.classList.contains('hidden')) {
+             pageLoadingElement.classList.remove('hidden');
+        }
+        if (pageLoadingText && pageLoadingText.textContent === 'Initializing ai-Connect...') {
+             pageLoadingText.textContent = 'Verifying session...';
+        }
+
+        if (user) {
+            if (pageLoadingText) pageLoadingText.textContent = 'Syncing ai-Connect Data...';
+            fetchInitialUserData(user);
+        } else {
+            if (pageLoadingText) pageLoadingText.textContent = 'Session ended. Redirecting to sign in...';
+            if (userDataListener && userRecordKeyGlobal) {
+                rtDbInstance.ref(`users_info/${userRecordKeyGlobal}`).off('value', userDataListener);
+                console.log("Detached user data listener on sign out for key:", userRecordKeyGlobal);
+                userRecordKeyGlobal = null;
+                userDataListener = null;
+            }
+            updateDashboardUI(null);
+            setTimeout(() => {
+                hidePageLoader('Redirecting...', 0);
+                window.location.href = 'signin.html'; 
+            }, 800);
+        }
+    });
+
+    // --- Event Listeners for Buttons ---
+    if (notificationsIcon) { 
+        notificationsIcon.addEventListener('click', () => {
+            triggerHapticFeedback('light'); window.location.href = 'aiconnect-notifications.html';
+        });
+    }
+    if (messagesIcon) {
+        messagesIcon.addEventListener('click', () => {
+            triggerHapticFeedback('light'); window.location.href = 'aiconnect-messages.html';
+        });
+    }
+    if(signOutIcon) { 
+        signOutIcon.addEventListener('click', async () => {
+            triggerHapticFeedback('light');
+            if (confirm("Sign out from ai-Connect?")) {
+                try {
+                    if(pageLoadingElement) pageLoadingElement.classList.remove('hidden');
+                    if(pageLoadingText) pageLoadingText.textContent = 'Signing out...';
+                    
+                    if (userDataListener && userRecordKeyGlobal) {
+                        rtDbInstance.ref(`users_info/${userRecordKeyGlobal}`).off('value', userDataListener);
+                         console.log("Detached user data listener on manual sign out for key:", userRecordKeyGlobal);
+                        userRecordKeyGlobal = null;
+                        userDataListener = null;
+                    }
+                    await authInstance.signOut();
+                } catch (error) {
+                    console.error("Error signing out:", error); alert("Failed to sign out.");
+                    hidePageLoader('Sign out error.', 500);
+                }
+            }
+        });
+    }
+    if(historyButton) { 
+        historyButton.addEventListener('click', () => {
+            triggerHapticFeedback(); window.location.href = 'aiconnect-transactions.html';
+        });
+    }
+    if(connectWalletButton) {
+        connectWalletButton.addEventListener('click', () => {
+            triggerHapticFeedback(); window.location.href = 'aiconnect-wallet-connect.html';
+        });
+    }
+    document.querySelectorAll('.bottom-nav .nav-item, .bottom-nav .center-button-nav').forEach(item => {
+        item.addEventListener('click', () => {
+            triggerHapticFeedback();
+            const targetUrl = item.dataset.targetUrl;
+            if (targetUrl && !item.classList.contains('active')) { window.location.href = targetUrl; }
+            else if (item.classList.contains('active')) { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        });
+    });
+    document.querySelectorAll('.quick-actions-grid-emo .grid-item-emo').forEach(item => {
+        item.addEventListener('click', () => {
+            triggerHapticFeedback();
+            const action = item.dataset.action;
+            const title = item.getAttribute('title') || action;
+            const actionMap = {
+                'stake': 'aiconnect-stake.html', 'burn': 'aiconnect-burn.html',
+                'insight': 'aiconnect-analytics.html', 'tribe': 'aiconnect-community.html',
+                'reward': 'aiconnect-rewards.html', 'link': 'aiconnect-media.html',
+                'trade': 'aiconnect-exchange.html', 'train': 'kapwa/call.html', 
+                'wallet': 'aiconnect-wallet-details.html', 'market': 'aiconnect-market.html',
+                'agent': 'aiconnect-ai-agents.html', 'whitepaper': 'emx-token-whitepaper.html'
+            };
+            const targetUrl = actionMap[action];
+            if (targetUrl) {
+                if (targetUrl.startsWith('http')) { window.open(targetUrl, '_blank'); }
+                else { window.location.href = targetUrl; }
+            }
+            else { alert(`ai-Connect Action: "${title}" (Navigation for "${action}" TBD)`); }
+        });
+    });
+    if (staticAdBanner && staticAdBanner.dataset.adLink) {
+        staticAdBanner.addEventListener('click', () => {
+            triggerHapticFeedback('light'); window.open(staticAdBanner.dataset.adLink, '_blank');
+        });
+    }
+    
+    // --- Touch Gestures & Fallback Loader Hiding on Load ---
+    document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    let lastTouchEnd = 0; 
+    document.addEventListener('touchend', function(event) {
+      const now = Date.now(); if (now - lastTouchEnd <= 300) event.preventDefault(); lastTouchEnd = now;
+    }, { passive: false });
+
+    window.addEventListener('load', () => {
+        const LOADER_FALLBACK_TIMEOUT = 12000; 
+
+        setTimeout(() => {
+          if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+            console.warn(`Page loader still visible after ${LOADER_FALLBACK_TIMEOUT}ms. Forcing hide.`);
+            let message = 'Loading is taking longer than usual...';
+            if (!authInstance.currentUser && !window.location.pathname.endsWith('signin.html')) {
+                message = 'Authentication check is slow. Displaying page with current data...';
+            }
+            hidePageLoader(message, 0);
+          }
+        }, LOADER_FALLBACK_TIMEOUT); 
+    });
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - Stake AIX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <style>
+    /* --- CSS Variables (EMO Theme from index.html) --- */
+    :root {
+      --emo-bg-dark: #0d0d1a;
+      --emo-panel-dark: #121225;
+      --emo-glass-bg: rgba(18, 18, 37, 0.85);
+      --emo-border: rgba(0, 255, 255, 0.25);
+      --emo-cyan: #00ffff;
+      --emo-cyan-dark: #00cccc;
+      --emo-glow-soft: rgba(0, 255, 255, 0.2);
+      --emo-glow-medium: rgba(0, 255, 255, 0.4);
+      --emo-glow-strong: rgba(0, 255, 255, 0.7);
+      --emo-gold: #ffc107;
+      --emo-gold-glow: rgba(255, 193, 7, 0.6);
+      --emo-text-primary: #e0e0f0;
+      --emo-text-secondary: #a0a0c0;
+      --emo-success: #00ff88;
+      --emo-error: #ff4444;
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace;
+      --spacing-unit: 15px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      --transition-speed: 0.3s;
+    }
+
+    /* --- Base Styles (from index.html) --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--emo-bg-dark);
+        color: var(--emo-text-primary);
+        min-height: 100vh;
+        padding-bottom: calc(60px + var(--spacing-unit)); /* Space for bottom nav */
+        max-width: 420px;
+        margin: 0 auto;
+        overflow-x: hidden;
+        position: relative;
+    }
+    a { color: var(--emo-cyan); text-decoration: none; }
+    a:hover { color: var(--emo-cyan-dark); text-decoration: underline; text-shadow: 0 0 5px var(--emo-glow-soft); }
+    button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--border-radius); transition: background-color var(--transition-speed), transform 0.1s, box-shadow var(--transition-speed); }
+    button:active { transform: translateY(1px) scale(0.98); }
+
+    /* --- Utility Classes (from index.html) --- */
+    .primary-button {
+        background-color: var(--emo-cyan);
+        color: var(--emo-bg-dark);
+        padding: 10px var(--spacing-unit);
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-align: center;
+        font-family: var(--font-display);
+        box-shadow: 0 0 10px var(--emo-glow-medium);
+        width: 100%;
+    }
+    .primary-button:hover { background-color: var(--emo-cyan-dark); box-shadow: 0 0 15px var(--emo-glow-strong); }
+    .secondary-button {
+        background-color: transparent;
+        color: var(--emo-cyan);
+        border: 1px solid var(--emo-cyan);
+        padding: 10px var(--spacing-unit);
+        font-size: 0.95rem;
+        font-weight: 700;
+        text-align: center;
+        font-family: var(--font-display);
+        box-shadow: 0 0 5px var(--emo-glow-soft);
+         width: 100%;
+    }
+    .secondary-button:hover { background-color: rgba(0, 255, 255, 0.1); box-shadow: 0 0 10px var(--emo-glow-medium); }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+
+    /* --- Header (from index.html) --- */
+    .header {
+        background-color: var(--emo-glass-bg);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        color: var(--emo-text-primary); padding: 10px var(--spacing-unit);
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; z-index: 100;
+        border-bottom: 1px solid var(--emo-border); height: 56px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+    }
+    .header-logo-container { display: flex; align-items: center; }
+    .header-logo-img { width: 30px; height: 30px; object-fit: contain; }
+    .header-logo-text { font-size: 1.1rem; font-weight: 700; margin-left: 8px; color: var(--emo-cyan); font-family: var(--font-display); text-shadow: 0 0 5px var(--emo-glow-soft); }
+    .header-title { flex-grow: 1; text-align: center; font-size: 1.1rem; font-family: var(--font-display); color: var(--emo-text-primary); }
+    .header-back-icon { color: var(--emo-text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; }
+    .header-back-icon:hover { color: var(--emo-cyan); }
+
+
+    /* --- Main Content Area --- */
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+
+    /* --- Card Styles (Generic for EMO Theme) --- */
+    .emo-card {
+        background: var(--emo-panel-dark);
+        border: 1px solid var(--emo-border);
+        color: var(--emo-text-primary);
+        border-radius: var(--border-radius-large);
+        padding: var(--spacing-unit);
+        box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+    .emo-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: inherit; box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.08);
+        pointer-events: none; z-index: 0;
+    }
+    .emo-card > * { position: relative; z-index: 1; }
+    .emo-card-title {
+        font-family: var(--font-display);
+        color: var(--emo-cyan);
+        font-size: 1rem;
+        margin-bottom: calc(var(--spacing-unit) * 0.75);
+        padding-bottom: calc(var(--spacing-unit) * 0.5);
+        border-bottom: 1px solid var(--emo-border);
+        text-shadow: 0 0 5px var(--emo-glow-soft);
+    }
+
+    /* --- Staking Stats Boxes --- */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--spacing-unit);
+        margin-bottom: var(--spacing-unit);
+    }
+    .stat-box {
+        background: rgba(18, 18, 37, 0.7); /* Slightly darker panel */
+        padding: var(--spacing-unit);
+        border-radius: var(--border-radius);
+        text-align: center;
+        border: 1px solid rgba(0, 255, 255, 0.15);
+    }
+    .stat-box-label {
+        font-size: 0.75rem;
+        color: var(--emo-text-secondary);
+        margin-bottom: 5px;
+        text-transform: uppercase;
+    }
+    .stat-box-value {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        color: var(--emo-gold);
+        text-shadow: 0 0 8px var(--emo-gold-glow);
+    }
+    .stat-box-value.cyan {
+        color: var(--emo-cyan);
+        text-shadow: 0 0 8px var(--emo-glow-medium);
+    }
+
+    /* --- Form Styles --- */
+    .form-group { margin-bottom: var(--spacing-unit); }
+    .form-group label {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--emo-text-secondary);
+        margin-bottom: 6px;
+        font-family: var(--font-display);
+    }
+    .form-group input[type="number"], .form-group input[type="text"] {
+        width: 100%;
+        padding: 10px;
+        background-color: var(--emo-bg-dark);
+        border: 1px solid var(--emo-border);
+        border-radius: var(--border-radius);
+        color: var(--emo-text-primary);
+        font-family: var(--font-data);
+        font-size: 1rem;
+        box-shadow: inset 0 0 8px rgba(0, 255, 255, 0.1);
+    }
+    .form-group input[type="number"]:focus, .form-group input[type="text"]:focus {
+        outline: none;
+        border-color: var(--emo-cyan);
+        box-shadow: 0 0 10px var(--emo-glow-soft), inset 0 0 8px rgba(0, 255, 255, 0.2);
+    }
+
+    /* Lock Period Radio Buttons */
+    .lock-period-options { display: flex; justify-content: space-between; gap: 10px; margin-bottom: var(--spacing-unit); }
+    .lock-period-options input[type="radio"] { display: none; }
+    .lock-period-options label {
+        flex: 1;
+        padding: 10px;
+        background-color: rgba(0, 255, 255, 0.1);
+        border: 1px solid var(--emo-border);
+        color: var(--emo-cyan);
+        border-radius: var(--border-radius);
+        text-align: center;
+        cursor: pointer;
+        font-family: var(--font-display);
+        font-size: 0.85rem;
+        transition: all var(--transition-speed);
+    }
+    .lock-period-options input[type="radio"]:checked + label {
+        background-color: var(--emo-cyan);
+        color: var(--emo-bg-dark);
+        box-shadow: 0 0 10px var(--emo-glow-medium);
+        border-color: var(--emo-cyan);
+    }
+    .lock-period-options label:hover:not(.checked) { /* .checked is class from JS */
+        background-color: rgba(0, 255, 255, 0.2);
+        border-color: var(--emo-cyan);
+    }
+
+    .action-buttons { display: flex; gap: var(--spacing-unit); margin-top: var(--spacing-unit); }
+
+    /* Reward Calculator */
+    .reward-calculator-preview {
+        margin-top: var(--spacing-unit);
+        padding: var(--spacing-unit);
+        background: rgba(18, 18, 37, 0.5);
+        border-radius: var(--border-radius);
+        border: 1px solid rgba(0, 255, 255, 0.1);
+        font-size: 0.9rem;
+    }
+    .reward-calculator-preview p { margin: 0; line-height: 1.6; }
+    .reward-calculator-preview .value {
+        font-family: var(--font-display);
+        color: var(--emo-gold);
+        font-weight: bold;
+    }
+
+    /* --- Loading Spinner (from index.html) --- */
+    #pageLoading {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(13, 13, 26, 0.95);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1001; transition: opacity 0.3s ease, visibility 0s linear 0.3s; visibility: hidden; opacity: 0;
+    }
+    #pageLoading.visible { visibility: visible; opacity: 1; transition: opacity 0.3s ease, visibility 0s linear 0s;}
+    #pageLoading .loading-text { font-size: 1.1rem; font-weight: 500; color: var(--emo-text-primary); font-family: var(--font-display); }
+    #pageLoading .spinner {
+        border: 4px solid rgba(0, 255, 255, 0.2);
+        border-top: 4px solid var(--emo-cyan);
+        border-radius: 50%; width: 30px; height: 30px;
+        animation: spin 1s linear infinite; margin-bottom: 15px;
+        box-shadow: 0 0 10px var(--emo-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* --- Bottom Navigation (from index.html, modified for stake page) --- */
+    .bottom-nav {
+        background-color: var(--emo-glass-bg);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid var(--emo-border);
+        width: 100%; max-width: 420px; display: flex; justify-content: space-around; align-items: center;
+        padding: 5px 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+        z-index: 100; height: 60px; box-shadow: 0 -3px 15px rgba(0, 0, 0, 0.4);
+    }
+    .nav-item {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer;
+        color: var(--emo-text-secondary); flex: 1; padding: 5px 0;
+        transition: color 0.2s ease, text-shadow 0.2s ease;
+        height: 100%; border-radius: var(--border-radius); margin: 0 2px;
+    }
+    .nav-item.active { color: var(--emo-cyan); text-shadow: 0 0 8px var(--emo-glow-medium); }
+    .nav-item:hover:not(.active) { color: var(--emo-cyan); }
+    .nav-item .material-symbols-outlined { font-size: 28px; }
+    .nav-item .nav-label { font-size: 10px; margin-top: 2px; font-family: var(--font-body); }
+    .center-button-nav { /* Not used here, but kept for consistency if copied elsewhere */ }
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+      <div class="spinner"></div>
+      <p class="loading-text">Processing...</p>
+  </div>
+
+  <header class="header">
+    <div class="header-back-icon" onclick="window.history.back();">
+        <span class="material-symbols-outlined">arrow_back_ios_new</span>
+    </div>
+    <span class="header-title">Stake AIX</span>
+    <div style="width: 40px;"></div> <!-- Spacer -->
+  </header>
+
+  <main class="main-content">
+    <div class="stats-grid">
+        <div class="stat-box">
+            <div class="stat-box-label">Total AIX Staked</div>
+            <div class="stat-box-value cyan" id="totalGlobalStaked">-- AIX</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Current APY</div>
+            <div class="stat-box-value" id="currentApy">-- %</div>
+        </div>
+    </div>
+
+    <div class="emo-card" id="userStakeCard">
+        <div class="emo-card-title">Your Stake</div>
+        <div class="stat-box" style="background: transparent; border: none; padding: 0; margin-bottom: var(--spacing-unit);">
+            <div class="stat-box-label">Your Active Staked AIX</div>
+            <div class="stat-box-value cyan" id="userActiveStaked">0.00 AIX</div>
+            <div id="userStakeDetails" style="font-size: 0.75rem; color: var(--emo-text-secondary); margin-top: 5px;"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="stakeAmount">Amount to Stake/Unstake (AIX)</label>
+            <input type="number" id="stakeAmount" placeholder="Enter AIX amount">
+        </div>
+
+        <div class="form-group">
+            <label>Lock Period (for new stakes)</label>
+            <div class="lock-period-options">
+                <input type="radio" name="lockPeriod" id="lock30" value="30" checked>
+                <label for="lock30" onclick="updateCalculator()">30 Days</label>
+                <input type="radio" name="lockPeriod" id="lock90" value="90">
+                <label for="lock90" onclick="updateCalculator()">90 Days</label>
+                <input type="radio" name="lockPeriod" id="lock180" value="180">
+                <label for="lock180" onclick="updateCalculator()">180 Days</label>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button id="stakeButton" class="primary-button">Stake AIX</button>
+            <button id="unstakeButton" class="secondary-button">Unstake AIX</button>
+        </div>
+    </div>
+
+    <div class="emo-card" id="rewardCalculatorCard">
+        <div class="emo-card-title">Reward Calculator</div>
+        <div class="form-group">
+            <label for="calcAmount">AIX Amount</label>
+            <input type="number" id="calcAmount" placeholder="Enter AIX to calculate" oninput="updateCalculator()">
+        </div>
+        <!-- Lock period for calculator will use the selection from staking form -->
+        <div class="reward-calculator-preview">
+            <p>Estimated APY: <span class="value" id="calcApyPreview">-- %</span></p>
+            <p>Selected Lock Period: <span class="value" id="calcLockPeriodPreview">-- Days</span></p>
+            <p>Estimated Rewards: <span class="value" id="estimatedRewards">0.00 AIX</span></p>
+        </div>
+    </div>
+
+  </main>
+
+  <div class="bottom-nav">
+    <div class="nav-item" data-target-url="index.html" title="Home">
+      <span class="material-symbols-outlined">home</span>
+      <span class="nav-label">Home</span>
+    </div>
+    <div class="nav-item active" data-target-url="stake.html" title="Stake"> <!-- Active Stake page -->
+      <span class="material-symbols-outlined">savings</span> <!-- Icon for Staking -->
+      <span class="nav-label">Stake</span>
+    </div>
+    <div class="nav-item" data-target-url="wallet-connect.html" title="Wallet"> <!-- Or your main wallet page -->
+      <span class="material-symbols-outlined">account_balance_wallet</span>
+      <span class="nav-label">Wallet</span>
+    </div>
+    <div class="nav-item" data-target-url="userprofile.html" title="Profile">
+      <span class="material-symbols-outlined">account_circle</span>
+      <span class="nav-label">Profile</span>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8", // Replace with your actual config
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // DOM Elements
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const totalGlobalStakedElement = document.getElementById('totalGlobalStaked');
+    const currentApyElement = document.getElementById('currentApy');
+    const userActiveStakedElement = document.getElementById('userActiveStaked');
+    const userStakeDetailsElement = document.getElementById('userStakeDetails');
+    const stakeAmountInput = document.getElementById('stakeAmount');
+    const stakeButton = document.getElementById('stakeButton');
+    const unstakeButton = document.getElementById('unstakeButton');
+    const calcAmountInput = document.getElementById('calcAmount');
+    const calcApyPreviewElement = document.getElementById('calcApyPreview');
+    const calcLockPeriodPreviewElement = document.getElementById('calcLockPeriodPreview');
+    const estimatedRewardsElement = document.getElementById('estimatedRewards');
+
+    const FIXED_APY = 15; // Example: 15% APY, can be fetched or dynamic
+
+    function showLoader(text = 'Processing...') {
+        pageLoadingElement.querySelector('.loading-text').textContent = text;
+        pageLoadingElement.classList.add('visible');
+    }
+    function hideLoader() {
+        pageLoadingElement.classList.remove('visible');
+    }
+
+    function formatToken(amount, decimals = 2, symbol = 'AIX') {
+        const numericAmount = Number(amount) || 0;
+        return numericAmount.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (symbol ? ' ' + symbol : '');
+    }
+
+    function updateCalculator() {
+        const amount = parseFloat(calcAmountInput.value) || parseFloat(stakeAmountInput.value) || 0;
+        if (calcAmountInput.value && parseFloat(calcAmountInput.value) > 0) {
+            // If calculator has specific input, use it
+        } else if (parseFloat(stakeAmountInput.value) > 0) {
+             calcAmountInput.value = stakeAmountInput.value; // Sync if stake amount is primary
+        }
+
+
+        const selectedLockPeriodElement = document.querySelector('input[name="lockPeriod"]:checked');
+        const lockPeriodDays = selectedLockPeriodElement ? parseInt(selectedLockPeriodElement.value) : 30;
+
+        calcApyPreviewElement.textContent = FIXED_APY + '%';
+        calcLockPeriodPreviewElement.textContent = lockPeriodDays + ' Days';
+
+        if (amount > 0) {
+            const dailyRate = (FIXED_APY / 100) / 365;
+            const rewards = amount * dailyRate * lockPeriodDays;
+            estimatedRewardsElement.textContent = formatToken(rewards, 2);
+        } else {
+            estimatedRewardsElement.textContent = formatToken(0, 2);
+        }
+    }
+    
+    // Call initially and on lock period change
+    document.querySelectorAll('input[name="lockPeriod"]').forEach(radio => {
+        radio.addEventListener('change', updateCalculator);
+    });
+    // Initial call for calculator
+    updateCalculator();
+
+
+    async function fetchUserData(userId) {
+        showLoader('Loading stake data...');
+        try {
+            const userDocRef = db.collection('users').doc(userId);
+            const userDoc = await userDocRef.get();
+
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                // SIMPLIFIED: Assuming a single stakeDetails object on user doc
+                // In a real app, this would be more complex (e.g., summing active stakes from a subcollection)
+                const stakeDetails = userData.stakeDetails; 
+                if (stakeDetails && stakeDetails.amount > 0) {
+                    userActiveStakedElement.textContent = formatToken(stakeDetails.amount);
+                    const stakeDate = stakeDetails.stakeDate ? new Date(stakeDetails.stakeDate.seconds * 1000).toLocaleDateString() : 'N/A';
+                    const endDate = new Date(stakeDate);
+                    endDate.setDate(endDate.getDate() + parseInt(stakeDetails.lockPeriodDays));
+
+                    userStakeDetailsElement.innerHTML = `
+                        Locked for: ${stakeDetails.lockPeriodDays} days<br>
+                        Staked on: ${stakeDate}<br>
+                        Unlocks approx: ${endDate.toLocaleDateString()}
+                    `;
+                    stakeAmountInput.value = stakeDetails.amount; // Pre-fill for potential unstake
+                } else {
+                    userActiveStakedElement.textContent = formatToken(0);
+                    userStakeDetailsElement.textContent = 'No active stake found.';
+                }
+            } else {
+                userActiveStakedElement.textContent = formatToken(0);
+                userStakeDetailsElement.textContent = 'User data not found.';
+            }
+        } catch (error) {
+            console.error("Error fetching user stake data:", error);
+            userActiveStakedElement.textContent = 'Error loading';
+            userStakeDetailsElement.textContent = 'Could not load stake details.';
+            alert("Error fetching your staking data.");
+        } finally {
+            hideLoader();
+        }
+    }
+
+    async function handleStake(userId) {
+        const amount = parseFloat(stakeAmountInput.value);
+        const selectedLockPeriodElement = document.querySelector('input[name="lockPeriod"]:checked');
+        const lockPeriodDays = selectedLockPeriodElement ? parseInt(selectedLockPeriodElement.value) : null;
+
+        if (isNaN(amount) || amount <= 0) {
+            alert("Please enter a valid amount to stake.");
+            return;
+        }
+        if (!lockPeriodDays) {
+            alert("Please select a lock period.");
+            return;
+        }
+
+        // Placeholder: Check user's AIX balance before staking
+        // const userAixBalance = await fetchUserAixBalance(userId);
+        // if (amount > userAixBalance) {
+        //     alert("Insufficient AIX balance to stake this amount.");
+        //     return;
+        // }
+        
+        showLoader('Staking AIX...');
+        try {
+            const userDocRef = db.collection('users').doc(userId);
+            // SIMPLIFIED: Overwrites any existing stakeDetails.
+            // A real app would add to a list or handle multiple stakes.
+            const newStakeDetails = {
+                amount: amount,
+                lockPeriodDays: lockPeriodDays,
+                stakeDate: firebase.firestore.FieldValue.serverTimestamp(),
+                apyAtStakeTime: FIXED_APY, // Store APY at time of stake
+                isActive: true
+            };
+
+            await userDocRef.set({ stakeDetails: newStakeDetails }, { merge: true });
+
+            // Placeholder: Deduct 'amount' from user's main AIX balance
+            // await updateUserAixBalance(userId, -amount);
+
+            alert("Successfully staked " + formatToken(amount) + " for " + lockPeriodDays + " days!");
+            fetchUserData(userId); // Refresh display
+            stakeAmountInput.value = '';
+            updateCalculator();
+        } catch (error) {
+            console.error("Error staking AIX:", error);
+            alert("An error occurred while staking. Please try again.");
+        } finally {
+            hideLoader();
+        }
+    }
+
+    async function handleUnstake(userId) {
+        // SIMPLIFIED: Assumes unstaking the 'current' stake.
+        // A real app would need to identify which stake to unstake, check lock period, calculate rewards.
+        const currentStakedAmountText = userActiveStakedElement.textContent;
+        const currentStakedAmount = parseFloat(currentStakedAmountText.replace(/[^0-9.-]+/g,""));
+
+        if (currentStakedAmount <= 0) {
+            alert("No active stake to unstake.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to unstake ${formatToken(currentStakedAmount)}? Early unstaking might forfeit rewards (feature not fully implemented in this demo).`)) {
+            return;
+        }
+
+        showLoader('Unstaking AIX...');
+        try {
+            const userDocRef = db.collection('users').doc(userId);
+            
+            // Placeholder: Logic for calculating rewards earned
+            // const rewardsEarned = calculateAccruedRewards(userData.stakeDetails);
+            // await updateUserAixBalance(userId, currentStakedAmount + rewardsEarned);
+
+            // Remove stakeDetails or mark as inactive
+            await userDocRef.update({
+                stakeDetails: firebase.firestore.FieldValue.delete() // Or update isActive to false
+            });
+
+            alert("Successfully unstaked " + formatToken(currentStakedAmount) + " AIX. Rewards (if any) would be added to your balance.");
+            fetchUserData(userId); // Refresh display
+            stakeAmountInput.value = '';
+            updateCalculator();
+        } catch (error) {
+            console.error("Error unstaking AIX:", error);
+            alert("An error occurred while unstaking. Please try again.");
+        } finally {
+            hideLoader();
+        }
+    }
+    
+    auth.onAuthStateChanged((user) => {
+        if (user) {
+            // Populate global/fixed data
+            totalGlobalStakedElement.textContent = formatToken(1250345.78); // Placeholder
+            currentApyElement.textContent = FIXED_APY + '%';
+            calcApyPreviewElement.textContent = FIXED_APY + '%';
+
+            fetchUserData(user.uid);
+
+            if (stakeButton) stakeButton.addEventListener('click', () => handleStake(user.uid));
+            if (unstakeButton) unstakeButton.addEventListener('click', () => handleUnstake(user.uid));
+
+        } else {
+            hideLoader();
+            window.location.href = 'signin.html';
+        }
+    });
+
+    // Bottom Nav Click Handlers
+    document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const targetUrl = item.dataset.targetUrl;
+            if (targetUrl && !item.classList.contains('active')) {
+                window.location.href = targetUrl;
+            }
+        });
+    });
+
+    // Initial setup for calculator based on stake amount input
+    if (stakeAmountInput) {
+        stakeAmountInput.addEventListener('input', () => {
+            if (!calcAmountInput.value || parseFloat(calcAmountInput.value) === 0) { // Only sync if calc is empty
+                 calcAmountInput.value = stakeAmountInput.value;
+            }
+            updateCalculator();
+        });
+    }
+     if (calcAmountInput) {
+        calcAmountInput.addEventListener('input', updateCalculator);
+    }
+
+
+  </script>
+</body>
+</html>

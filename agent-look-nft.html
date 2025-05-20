@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Digital Agent Profile - EMX Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0f1f; /* Deep space blue */
+            --bg-secondary: #101830; /* Slightly lighter panel blue */
+            --accent-cyan: #00ffff;
+            --accent-cyan-transparent: rgba(0, 255, 255, 0.1);
+            --accent-cyan-glow: rgba(0, 255, 255, 0.5);
+            --accent-purple: #9c27b0;
+            --accent-purple-transparent: rgba(156, 39, 176, 0.1);
+            --accent-purple-glow: rgba(156, 39, 176, 0.5);
+            --accent-gold: #ffeb3b;
+            --text-primary: #e0e6f0;
+            --text-secondary: #a0a8c0;
+            --glass-bg: rgba(20, 30, 60, 0.5); /* Glassmorphism bg */
+            --glass-border: rgba(0, 255, 255, 0.3);
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Roboto Mono', monospace;
+            --border-radius-sm: 8px;
+            --border-radius-md: 12px;
+            --border-radius-lg: 16px;
+            --shadow-soft: 0 2px 10px rgba(0,0,0,0.3);
+            --shadow-glow: 0 0 15px var(--accent-cyan-glow);
+            --shadow-glow-purple: 0 0 15px var(--accent-purple-glow);
+            --transition-fast: 0.2s ease-out;
+            --transition-medium: 0.3s ease-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Prevent scrollbars on body for full-screen app feel */
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative; /* For particle container */
+        }
+
+        /* Particle Background Effect */
+        #particle-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+            background: 
+                linear-gradient(45deg, rgba(10, 15, 31, 0.95) 25%, transparent 25%, transparent 75%, rgba(10, 15, 31, 0.95) 75%),
+                linear-gradient(-45deg, rgba(10, 15, 31, 0.95) 25%, transparent 25%, transparent 75%, rgba(10, 15, 31, 0.95) 75%);
+            background-size: 60px 60px;
+            animation: backgroundShift 60s linear infinite;
+        }
+        @keyframes backgroundShift {
+            0% { background-position: 0 0; }
+            100% { background-position: 1200px 600px; }
+        }
+        .particle {
+            position: absolute;
+            background-color: var(--accent-cyan);
+            border-radius: 50%;
+            opacity: 0;
+            animation: float 20s infinite linear;
+            box-shadow: 0 0 5px var(--accent-cyan), 0 0 10px var(--accent-cyan);
+        }
+        @keyframes float {
+            0% { transform: translateY(0) translateX(0) scale(0.5); opacity: 0; }
+            25% { opacity: 0.6; }
+            50% { transform: translateY(-100vh) translateX(calc(var(--x-drift) * 1px)) scale(1); opacity: 0.8; }
+            75% { opacity: 0.4; }
+            100% { transform: translateY(-200vh) translateX(calc(var(--x-drift) * 2px)) scale(0.5); opacity: 0; }
+        }
+
+        /* Main App Wrapper */
+        .app-wrapper {
+            width: 100%;
+            height: 100%;
+            max-width: 420px; /* Mobile portrait constraint */
+            max-height: 850px; /* Common mobile height constraint */
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 30px var(--accent-cyan-glow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative; /* Ensure it's above particles */
+            z-index: 1;
+        }
+
+        /* Header Section */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--glass-border);
+            animation: slideInDown 0.5s var(--transition-medium) forwards;
+            opacity: 0;
+        }
+        @keyframes slideInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-right: 15px;
+        }
+        .avatar-image {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%; /* Circular avatar */
+            object-fit: cover;
+            border: 3px solid var(--accent-cyan);
+            box-shadow: 0 0 15px var(--accent-cyan), inset 0 0 10px rgba(0, 255, 255, 0.3);
+            animation: pulseAvatarBorder 2s infinite ease-in-out;
+        }
+        @keyframes pulseAvatarBorder {
+            0%, 100% { box-shadow: 0 0 15px var(--accent-cyan), inset 0 0 10px rgba(0, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 25px var(--accent-cyan-glow), inset 0 0 15px rgba(0, 255, 255, 0.5); }
+        }
+        .avatar-ring {
+            position: absolute;
+            top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border: 2px dashed var(--accent-cyan-transparent);
+            border-radius: 50%;
+            animation: spinRing 15s linear infinite;
+        }
+        @keyframes spinRing {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .agent-info {
+            flex-grow: 1;
+        }
+        .agent-name {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-shadow: 0 0 8px var(--accent-cyan-glow);
+        }
+        .agent-code {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .agent-status {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 3px 8px;
+            border-radius: var(--border-radius-sm);
+            display: inline-block;
+            cursor: pointer;
+            transition: background-color var(--transition-fast), color var(--transition-fast);
+        }
+        .agent-status.listening { background-color: var(--accent-purple-transparent); color: var(--accent-purple); border: 1px solid var(--accent-purple);}
+        .agent-status.active { background-color: var(--accent-cyan-transparent); color: var(--accent-cyan); border: 1px solid var(--accent-cyan);}
+        .agent-status.idle { background-color: rgba(160, 168, 192, 0.2); color: var(--text-secondary); border: 1px solid var(--text-secondary);}
+
+
+        /* Main Controls Section */
+        .main-controls {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            gap: 25px; /* Gap between main talk button and surrounding ones */
+            animation: fadeInScaleUp 0.7s var(--transition-medium) 0.2s forwards;
+            opacity: 0;
+        }
+        @keyframes fadeInScaleUp {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .talk-button {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(145deg, var(--accent-cyan), var(--accent-cyan-dark));
+            color: var(--bg-primary);
+            border-radius: 50%;
+            border: none;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px var(--accent-cyan-glow), 0 0 30px var(--accent-cyan), inset 0 0 10px rgba(255,255,255,0.3);
+            transition: var(--transition-medium);
+            animation: pulseTalkButton 2.5s infinite ease-in-out;
+        }
+        @keyframes pulseTalkButton {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px var(--accent-cyan-glow), 0 0 30px var(--accent-cyan), inset 0 0 10px rgba(255,255,255,0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px var(--accent-cyan-glow), 0 0 40px var(--accent-cyan), inset 0 0 15px rgba(255,255,255,0.4); }
+        }
+        .talk-button.recording {
+            background: linear-gradient(145deg, var(--accent-purple), #7b1fa2);
+            box-shadow: 0 0 20px var(--accent-purple-glow), 0 0 30px var(--accent-purple);
+            animation: pulseRecording 1.5s infinite ease-in-out;
+        }
+        @keyframes pulseRecording {
+             0%, 100% { opacity: 1; }
+             50% { opacity: 0.7; }
+        }
+        .talk-button:hover { transform: scale(1.08); }
+        .talk-button:active { transform: scale(0.95); }
+        .talk-button .material-symbols-outlined { font-size: 3.5rem; }
+
+
+        .function-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 300px; /* Limit width of this grid */
+        }
+
+        .function-button {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            border-radius: var(--border-radius-md);
+            padding: 12px;
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-medium);
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+        }
+        .function-button:hover {
+            background: var(--accent-cyan-transparent);
+            color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--accent-cyan-glow);
+        }
+        .function-button .material-symbols-outlined {
+            font-size: 1.8rem; /* Smaller icons for these buttons */
+            margin-bottom: 5px;
+        }
+
+        /* Bottom Command Hub */
+        .command-hub {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 15px;
+            background: var(--glass-bg);
+            border-top: 1px solid var(--glass-border);
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            animation: slideInUp 0.5s var(--transition-medium) 0.4s forwards;
+            opacity: 0;
+        }
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hub-button {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%; /* Circular hub buttons */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            position: relative;
+        }
+         .hub-button::before { /* Holographic sheen */
+            content: "";
+            position: absolute;
+            top: 0; left: -75%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.0) 20%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.0) 80%, rgba(255,255,255,0) 100%);
+            transform: skewX(-25deg);
+            opacity: 0;
+            transition: opacity 0.3s, left 0.4s;
+         }
+        .hub-button:hover {
+            color: var(--accent-cyan);
+            background: var(--accent-cyan-transparent);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 12px var(--accent-cyan-glow);
+        }
+        .hub-button:hover::before {
+            opacity: 0.8;
+            left: 125%;
+            transition: opacity 0.3s, left 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        .hub-button:active {
+            transform: scale(0.9);
+        }
+        .hub-button .material-symbols-outlined {
+            font-size: 1.8rem;
+            transition: var(--transition-fast);
+        }
+        .hub-button:hover .material-symbols-outlined {
+             text-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+    </style>
+</head>
+<body>
+    <div id="particle-container"></div>
+
+    <div class="app-wrapper">
+        <header class="profile-header">
+            <div class="avatar-container">
+                <img src="https://memo.aitekchat.com/assets/emo-user.png" alt="Agent Avatar" class="avatar-image" id="agentAvatar">
+                <div class="avatar-ring"></div>
+            </div>
+            <div class="agent-info">
+                <div class="agent-name" id="agentName">EMO-07</div>
+                <div class="agent-code" id="agentCode">ID: XZ-774-Alpha</div>
+                <div class="agent-status active" id="agentStatus">Listening</div>
+            </div>
+        </header>
+
+        <main class="main-controls">
+            <button class="talk-button" id="talkButton" title="Talk to Agent">
+                <span class="material-symbols-outlined">mic</span>
+            </button>
+
+            <div class="function-buttons-grid">
+                <button class="function-button" id="recordVoiceBtn" title="Record Voice Input">
+                    <span class="material-symbols-outlined">voice_chat</span>
+                    Record
+                </button>
+                <button class="function-button" id="sendCommandBtn" title="Send Text Command">
+                    <span class="material-symbols-outlined">terminal</span>
+                    Command
+                </button>
+                <button class="function-button" id="runSkillBtn" title="Execute Predefined Skill">
+                    <span class="material-symbols-outlined">smart_toy</span>
+                    Skill
+                </button>
+                <button class="function-button" id="openSettingsBtn" title="Agent Settings">
+                    <span class="material-symbols-outlined">tune</span>
+                    Settings
+                </button>
+            </div>
+        </main>
+
+        <footer class="command-hub">
+            <button class="hub-button" title="Activate Microphone">
+                <span class="material-symbols-outlined">mic</span>
+            </button>
+            <button class="hub-button" title="Voice Waveform">
+                <span class="material-symbols-outlined">graphic_eq</span>
+            </button>
+            <button class="hub-button" title="Execute Action">
+                <span class="material-symbols-outlined">bolt</span>
+            </button>
+            <button class="hub-button" title="Configuration">
+                <span class="material-symbols-outlined">settings</span>
+            </button>
+            <button class="hub-button" title="Send Message/Data">
+                <span class="material-symbols-outlined">send</span>
+            </button>
+        </footer>
+    </div>
+
+    <script>
+        const particleContainer = document.getElementById('particle-container');
+        const numParticles = 30;
+
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            const size = Math.random() * 3 + 1; // Particle size 1px to 4px
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100 + 100}%`; // Start below the screen
+            
+            // Custom property for varied horizontal drift
+            particle.style.setProperty('--x-drift', (Math.random() - 0.5) * 200); 
+
+            const animDuration = Math.random() * 15 + 10; // Duration 10s to 25s
+            particle.style.animationDuration = `${animDuration}s`;
+            particle.style.animationDelay = `${Math.random() * 5}s`; // Stagger start times
+
+            particleContainer.appendChild(particle);
+
+            // Remove particle after animation to prevent too many elements
+            particle.addEventListener('animationend', () => {
+                particle.remove();
+                createParticle(); // Create a new one to maintain count
+            });
+        }
+
+        for (let i = 0; i < numParticles; i++) {
+            createParticle();
+        }
+
+        // Agent Status Toggler
+        const agentStatusElement = document.getElementById('agentStatus');
+        const statuses = [
+            { text: 'Listening', class: 'listening', colorVar: '--accent-purple', glowVar: '--accent-purple-glow' },
+            { text: 'Active', class: 'active', colorVar: '--accent-cyan', glowVar: '--accent-cyan-glow' },
+            { text: 'Idle', class: 'idle', colorVar: '--text-secondary', glowVar: 'rgba(160, 168, 192, 0.3)' }
+        ];
+        let currentStatusIndex = 1; // Start with 'Active'
+
+        agentStatusElement.addEventListener('click', () => {
+            currentStatusIndex = (currentStatusIndex + 1) % statuses.length;
+            const newStatus = statuses[currentStatusIndex];
+            agentStatusElement.textContent = newStatus.text;
+            agentStatusElement.className = `agent-status ${newStatus.class}`;
+            // Haptic feedback for status change
+            if (navigator.vibrate) navigator.vibrate(30);
+        });
+
+        // Talk Button Interaction
+        const talkButton = document.getElementById('talkButton');
+        const talkButtonIcon = talkButton.querySelector('.material-symbols-outlined');
+        let isAgentTalking = false;
+
+        talkButton.addEventListener('click', () => {
+            isAgentTalking = !isAgentTalking;
+            if (isAgentTalking) {
+                talkButton.classList.add('recording');
+                talkButtonIcon.textContent = 'graphic_eq'; // Change to waveform or stop icon
+                if (agentStatusElement.textContent !== 'Active') { // If not active, make it active
+                     currentStatusIndex = statuses.findIndex(s => s.class === 'active');
+                     agentStatusElement.textContent = statuses[currentStatusIndex].text;
+                     agentStatusElement.className = `agent-status ${statuses[currentStatusIndex].class}`;
+                }
+                 // Haptic feedback for starting talk
+                if (navigator.vibrate) navigator.vibrate([50, 20, 50]);
+            } else {
+                talkButton.classList.remove('recording');
+                talkButtonIcon.textContent = 'mic';
+                 // Haptic feedback for stopping talk
+                if (navigator.vibrate) navigator.vibrate(50);
+            }
+        });
+        
+        // Haptic feedback for function buttons
+        const functionButtons = document.querySelectorAll('.function-button, .hub-button');
+        functionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                console.log(`${button.title || button.textContent.trim()} button clicked (simulated haptic)`);
+                if (navigator.vibrate) navigator.vibrate(50); // Standard click vibration
+                // Placeholder alert for functionality
+                alert(`Action: ${button.title || button.textContent.trim()}`);
+            });
+        });
+        
+        // Dynamic Agent Data (Placeholder)
+        // In a real app, you'd fetch this or have it passed in.
+        const agentData = {
+            name: "EMO-07",
+            code: "ID: XZ-774-Alpha",
+            avatar: "https://memo.aitekchat.com/assets/emo-user.png", // Replace with actual or dynamic path
+            status: "Active" // Initial status
+        };
+
+        document.getElementById('agentName').textContent = agentData.name;
+        document.getElementById('agentCode').textContent = agentData.code;
+        document.getElementById('agentAvatar').src = agentData.avatar;
+        const initialStatus = statuses.find(s => s.text.toLowerCase() === agentData.status.toLowerCase()) || statuses[1];
+        currentStatusIndex = statuses.indexOf(initialStatus);
+        agentStatusElement.textContent = initialStatus.text;
+        agentStatusElement.className = `agent-status ${initialStatus.class}`;
+
+
+    </script>
+</body>
+</html>

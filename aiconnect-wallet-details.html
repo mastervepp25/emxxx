@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ai-Connect - Account Overview & Affiliates</title>
+    
+    <link rel="manifest" href="/manifest.json"> 
+    <link rel="apple-touch-icon" href="assets/logo/logo.png"> 
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script> 
+    
+    <style>
+        :root {
+            /* ai-Connect Theme Variables */
+            --aiConnect-bg-dark: #0d0d1a;
+            --aiConnect-panel-dark: #121225;
+            --aiConnect-glass-bg: rgba(18, 18, 37, 0.85);
+            --aiConnect-border: rgba(0, 255, 255, 0.25);
+            --aiConnect-cyan: #00ffff;
+            --aiConnect-cyan-dark: #00cccc;
+            --aiConnect-gold: #ffc107;
+            --aiConnect-text-primary: #e0e0f0;
+            --aiConnect-text-secondary: #a0a0c0;
+            --aiConnect-success: #00ff88;
+            --aiConnect-error: #ff4444;
+
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Roboto Mono', monospace;
+            
+            --spacing-unit: 15px;
+            --border-radius: 8px;
+            --border-radius-large: 12px;
+            --glow-soft: rgba(0, 255, 255, 0.2);
+            --shadow-emo: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px var(--glow-soft);
+            --header-height: 56px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 14px; 
+            background-color: var(--aiConnect-bg-dark);
+            color: var(--aiConnect-text-primary);
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            overscroll-behavior-y: contain;
+        }
+        .app-container { 
+            width: 100%;
+            max-width: 450px; 
+            min-height: 100dvh; 
+            display: flex;
+            flex-direction: column;
+            background-color: var(--aiConnect-bg-dark); 
+            position: relative; 
+            overflow-x: hidden; 
+            border-left: 1px solid var(--aiConnect-border); 
+            border-right: 1px solid var(--aiConnect-border);
+        }
+
+        .header-bg { 
+            background-color: var(--aiConnect-panel-dark) !important;
+            border-bottom: 1px solid var(--aiConnect-border);
+            color: var(--aiConnect-text-primary);
+            box-shadow: var(--shadow-emo);
+            height: var(--header-height);
+            padding: 0 var(--spacing-unit);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky; 
+            top: 0;
+            z-index: 100;
+            width: 100%; 
+        }
+        .header-bg .material-icons { color: var(--aiConnect-cyan); cursor: pointer; }
+        .header-bg .header-title-text { 
+            font-family: var(--font-display);
+            text-shadow: 0 0 5px var(--glow-soft);
+            flex-grow: 1; 
+            text-align: center; 
+            font-size: 1.1rem; 
+        }
+         .header-placeholder { width: 44px; }
+
+
+        main.content-area { 
+            padding: var(--spacing-unit);
+            flex-grow: 1; 
+            overflow-y: auto; 
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, var(--aiConnect-panel-dark) 0%, var(--aiConnect-bg-dark) 100%);
+            border: 1px solid var(--aiConnect-border);
+            color: var(--aiConnect-text-primary);
+            border-radius: var(--border-radius-large);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-emo);
+        }
+        .balance-title {
+            font-family: var(--font-display); font-size: 1rem; font-weight: 600;
+            color: var(--aiConnect-cyan); margin-bottom: 10px;
+        }
+        .balance-amount, .token-balance {
+            font-family: var(--font-display); font-size: 1.25rem; font-weight: bold;
+            text-shadow: 0 0 5px var(--glow-soft);
+        }
+        .balance-label { font-size: 0.8rem; color: var(--aiConnect-text-secondary); }
+        .balance-card .material-icons { color: var(--aiConnect-cyan) !important; }
+        .balance-card .icon-bg-circle { 
+            background-color: rgba(0, 255, 255, 0.1) !important;
+            border: 1px solid var(--aiConnect-border); width: 40px; height: 40px;
+            border-radius: 9999px; display: flex; align-items: center; justify-content: center;
+        }
+
+        .data-box-grid { 
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); /* Adjust minmax for 3 items */
+            gap: calc(var(--spacing-unit) * 0.75); /* Slightly reduced gap */
+            margin-bottom: calc(var(--spacing-unit) * 1.5);
+        }
+        .data-box {
+            border-radius: var(--border-radius-large); padding: var(--spacing-unit); text-align: center;
+            color: var(--aiConnect-text-primary); box-shadow: var(--shadow-emo);
+            border: 1px solid var(--aiConnect-border);
+        }
+        .data-box.total-rewards { background: linear-gradient(135deg, var(--aiConnect-success), var(--aiConnect-panel-dark) 70%); } 
+        .data-box.direct-referrals { background: linear-gradient(135deg, var(--aiConnect-gold), var(--aiConnect-panel-dark) 70%); }
+        .data-box.link-clicks { background: linear-gradient(135deg, var(--aiConnect-cyan), var(--aiConnect-panel-dark) 70%); }
+        .data-box.link-registrations { background: linear-gradient(135deg, #be75ff, var(--aiConnect-panel-dark) 70%); } /* Example: Purple for registrations */
+        
+        .data-number {
+            font-family: var(--font-display); font-size: 1.15rem; /* Adjusted for more boxes */
+            font-weight: bold;
+        }
+        .data-label { font-size: 0.7rem; /* Adjusted */
+            color: var(--aiConnect-text-secondary); margin-top: 5px; }
+
+        .section-card { 
+            background-color: var(--aiConnect-panel-dark);
+            border: 1px solid var(--aiConnect-border);
+            color: var(--aiConnect-text-primary);
+            border-radius: var(--border-radius-large);
+            padding: var(--spacing-unit);
+            margin-bottom: 20px; 
+            box-shadow: var(--shadow-emo);
+        }
+        .section-title {
+            font-family: var(--font-display); color: var(--aiConnect-cyan);
+            font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;
+            padding-bottom: 8px; border-bottom: 1px solid var(--aiConnect-border);
+        }
+
+        .share-link {
+            background-color: var(--aiConnect-bg-dark); padding: 10px;
+            border-radius: var(--border-radius); margin-top: 10px; display: flex;
+            align-items: center; justify-content: space-between; border: 1px solid var(--aiConnect-border);
+        }
+        .share-link input {
+            flex: 1; padding: 8px; border: 1px solid var(--aiConnect-border);
+            background-color: var(--aiConnect-bg-dark); color: var(--aiConnect-text-primary);
+            border-radius: var(--border-radius); margin-right: 8px; font-size: 0.8rem; 
+        }
+        .share-link button { 
+            background-color: var(--aiConnect-cyan) !important; color: var(--aiConnect-bg-dark) !important;
+            font-weight: bold; padding: 8px 12px; border-radius: var(--border-radius); border: none;
+        }
+         .share-link button .material-icons { color: var(--aiConnect-bg-dark) !important; font-size: 1.1rem; vertical-align: middle;}
+        .share-earn-card p.text-sm { font-size: 0.875rem; color: var(--aiConnect-text-secondary); margin-top: 0.5rem; }
+
+        .unilevel-list { list-style: none; padding: 0; margin-top: 10px; }
+        .unilevel-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 5px; /* Increased padding */
+            border-bottom: 1px solid var(--aiConnect-border);
+            font-size: 0.9rem; /* Increased base size */
+        }
+        .unilevel-list-item:last-child { border-bottom: none; }
+        .unilevel-level-label { color: var(--aiConnect-text-secondary); }
+        .unilevel-level-count { font-weight: 500; color: var(--aiConnect-text-primary); font-family: var(--font-data); }
+
+
+        /* Share Menu */
+        .share-menu {
+            position: fixed; bottom: -100%; left: 50%; transform: translateX(-50%); 
+            width: 100%; max-width: 450px; background: var(--aiConnect-panel-dark); 
+            padding: 20px; border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.5), 0 0 20px var(--glow-soft);
+            transition: bottom 0.3s ease-in-out; z-index: 1000;
+            border-top: 1px solid var(--aiConnect-border);
+        }
+        .share-menu.show { bottom: 0; }
+        .share-menu .share-menu-header { 
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; 
+        }
+        .share-menu .share-menu-header h2 { 
+            color: var(--aiConnect-cyan); font-family: var(--font-display);
+            font-size: 1.2rem; font-weight: 500;
+        }
+        .share-menu .close-icon { color: var(--aiConnect-text-secondary); cursor: pointer; padding: 5px; }
+        .share-menu .close-icon:hover { color: var(--aiConnect-cyan); }
+        .share-menu .share-icons {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 10px;
+        }
+        .share-menu .share-icons .icon {
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; color: var(--aiConnect-text-secondary); text-align: center;
+            padding: 5px 0; transition: color 0.2s ease-out;
+        }
+        .share-menu .share-icons .icon:hover { color: var(--aiConnect-cyan); }
+        .share-menu .share-icons .icon span:last-child { font-size: 0.7rem; margin-top: 6px; line-height: 1.2; }
+        .share-menu .share-icons .icon .material-icons,
+        .share-menu .share-icons .icon .custom-share-icon { 
+            font-size: 1.8rem; width: 28px; height: 28px; 
+            display: flex; align-items: center; justify-content: center;
+        }
+        .share-menu .share-icons .icon .custom-share-icon svg { width: 100%; height: 100%; fill: currentColor; }
+
+    </style>
+</head>
+<body>
+    <div class="app-container"> 
+        <header class="header-bg"> 
+            <span class="material-icons" onclick="window.history.back()">arrow_back_ios_new</span>
+            <div class="header-title-text">Account & Affiliates</div>
+            <span class="material-icons" id="calendarIcon">calendar_today</span> <!-- Made it an ID for potential JS interaction -->
+        </header>
+
+        <main class="content-area"> 
+            <div class="balance-card">
+                <div class="balance-title">My Balances</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div class="balance-amount" id="currentBalanceDisplay">₱0.00</div>
+                        <div class="balance-label">PHP Wallet</div>
+                        <div class="token-balance" style="margin-top: 0.5rem;" id="emxTokenBalanceDisplay">0.00 EMX</div>
+                        <div class="balance-label">EMX Token</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;"> 
+                        <div class="icon-bg-circle"><span class="material-icons">account_balance_wallet</span></div>
+                        <div class="icon-bg-circle"><span class="material-icons">toll</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-box-grid">
+                <div class="data-box total-rewards">
+                    <div class="data-number" id="totalRewardsDisplay">₱0.00</div>
+                    <div class="data-label">Total Rewards (PHP)</div>
+                </div>
+                <div class="data-box direct-referrals">
+                    <div class="data-number" id="directReferralsCountDisplay">0</div>
+                    <div class="data-label">Direct Referrals</div>
+                </div>
+                <div class="data-box link-clicks">
+                    <div class="data-number" id="linkClicksDisplay">0</div>
+                    <div class="data-label">Link Clicks</div>
+                </div>
+                <div class="data-box link-registrations">
+                    <div class="data-number" id="linkRegistrationsDisplay">0</div>
+                    <div class="data-label">Registrations via Link</div>
+                </div>
+            </div>
+
+            <div class="section-card share-earn-card"> 
+                <h2 class="section-title">Share Your Referral Link</h2>
+                <div class="share-link">
+                    <input type="text" id="referralLinkInput" readonly> 
+                    <button onclick="copyShareLink()" title="Copy Referral Link"> 
+                        <span class="material-icons">content_copy</span>
+                    </button>
+                </div>
+                <p class="text-sm" style="margin-top: 0.5rem;">Share this link to invite new members and earn rewards!</p>
+            </div>
+
+            <div class="section-card unilevel-container"> 
+                 <div class="section-title">My Unilevel Network</div>
+                 <ul class="unilevel-list" id="unilevelDetailsList">
+                    <!-- Unilevel counts (Level 1 to 10) will be populated by JavaScript -->
+                 </ul>
+            </div>
+        </main>
+
+        <!-- Share Menu Modal -->
+        <div class="share-menu" id="socialShareMenu">
+            <div class="share-menu-header">
+                <h2>Share Link Via</h2>
+                <span class="material-icons close-icon" onclick="hideShareMenu()">close</span>
+            </div>
+            <div class="share-icons">
+                <div class="icon" onclick="shareVia('facebook')"> <span class="material-icons">facebook</span> <span>Facebook</span> </div>
+                <div class="icon" onclick="shareVia('whatsapp')"> <span class="material-icons">whatsapp</span> <span>WhatsApp</span> </div>
+                <div class="icon" onclick="shareVia('telegram')"> <span class="material-icons">telegram</span> <span>Telegram</span> </div>
+                <div class="icon" onclick="shareVia('twitter')"> 
+                    <span class="custom-share-icon"> 
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </span> 
+                    <span>X (Twitter)</span> 
+                </div>
+                <div class="icon" onclick="shareVia('linkedin')"> 
+                    <span class="custom-share-icon"> 
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.16v8.37h2.16v-4.55c0-.83.48-1.52 1.29-1.52.81 0 1.29.69 1.29 1.52v4.55h2.16zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69.75 1.69 1.69 0 0 0-.01 2.63c.01.01 1.69.75 1.69.75zM8 18.5v-8.37H5.83V18.5H8z"/></svg>
+                    </span>
+                    <span>LinkedIn</span>
+                </div>
+                <div class="icon" onclick="shareVia('email')"> 
+                    <span class="material-icons">email</span> 
+                    <span>Email</span> 
+                </div>
+                <div class="icon" onclick="shareVia('sms')"> 
+                    <span class="material-icons">sms</span> 
+                    <span>SMS</span> 
+                </div>
+                <div class="icon" onclick="shareVia('copy')"> 
+                    <span class="material-icons">link</span> 
+                    <span>Copy Link</span> 
+                </div>
+            </div>
+        </div>
+    </div> 
+
+    <script>
+        const firebaseConfig = { /* ... Your ai-Connect Firebase Config ... */ 
+            apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+            authDomain: "daisy-n7g20a.firebaseapp.com",
+            databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+            projectId: "daisy-n7g20a",
+            storageBucket: "daisy-n7g20a.appspot.com",
+            messagingSenderId: "225362605902",
+            appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const rtDb = firebase.database(); 
+        const auth = firebase.auth();
+
+        let userNormalizedPhoneKeyGlobal = null; // Changed variable name for clarity 
+
+        // DOM Elements
+        const currentBalanceEl = document.getElementById('currentBalanceDisplay');
+        const tokenBalanceEl = document.getElementById('emxTokenBalanceDisplay');
+        const totalRewardsDisplayEl = document.getElementById('totalRewardsDisplay');
+        const directReferralsCountEl = document.getElementById('directReferralsCountDisplay');
+        const referralLinkInputEl = document.getElementById('referralLinkInput'); // Changed ID
+        // const currentDateEl = document.getElementById('currentDate'); // Removed, not in this HTML anymore
+        const linkClicksDisplayEl = document.getElementById('linkClicksDisplay');
+        const linkRegistrationsDisplayEl = document.getElementById('linkRegistrationsDisplay');
+        const viewsBarEl = document.querySelector('.bar.views'); // Keep if you re-add manual bar chart
+        const registeredBarEl = document.querySelector('.bar.registered'); // Keep if you re-add manual bar chart
+        const unilevelDetailsListEl = document.getElementById('unilevelDetailsList'); // Changed ID
+        const socialShareMenuEl = document.getElementById('socialShareMenu'); // Changed ID
+
+        // Function to format currency (₱ for PHP, symbol for others)
+        function formatMonetaryValue(amount, currency = "PHP") {
+            const numericAmount = Number(amount) || 0;
+            if (currency === "PHP") {
+                return `₱${numericAmount.toFixed(2)}`;
+            } else if (currency === "EMX") {
+                return `${numericAmount.toFixed(2)} EMX`;
+            }
+            return `${numericAmount.toFixed(2)} ${currency}`;
+        }
+        
+        // Function to generate and display share link
+        function generateAndDisplayShareLink(phoneKey) { 
+            const shareUrl = `https://memo.aitekchat.com/signup.html?ref=${phoneKey}`;
+            if(referralLinkInputEl) referralLinkInputEl.value = shareUrl;
+            return shareUrl;
+        }
+
+        // Copy and Share Menu functions
+        function copyShareLink() { 
+            if (!referralLinkInputEl || !referralLinkInputEl.value) {
+                alert("Referral link not yet generated."); return;
+            }
+            referralLinkInputEl.select(); 
+            referralLinkInputEl.setSelectionRange(0, 99999); 
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) { alert('Referral link copied!'); showShareMenu(); } 
+                else { alert('Failed to copy link.'); }
+            } catch (err) { alert('Failed to copy link.'); console.error('Copy failed:', err); }
+        }
+        function showShareMenu() { if(socialShareMenuEl) socialShareMenuEl.classList.add('show'); }
+        function hideShareMenu() { if(socialShareMenuEl) socialShareMenuEl.classList.remove('show'); }
+
+        function shareVia(platform) { /* ... (Keep your existing shareVia logic) ... */
+            if (!referralLinkInputEl || !referralLinkInputEl.value) { alert("Referral link is not available."); return; }
+            const shareUrl = referralLinkInputEl.value;
+            let shareLink = '';
+            const textContent = `Join ai-Connect with my link! ${shareUrl}`;
+            switch (platform) {
+                case 'facebook': shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`; break;
+                case 'whatsapp': shareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(textContent)}`; break;
+                case 'telegram': shareLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent("Join ai-Connect!")}`; break;
+                case 'twitter': shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Join ai-Connect with my link!")}&url=${encodeURIComponent(shareUrl)}`; break;
+                case 'linkedin': shareLink = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent("Join ai-Connect!")}&summary=${encodeURIComponent("Check out ai-Connect!")}`; break;
+                case 'sms':      shareLink = `sms:?body=${encodeURIComponent(textContent)}`; break;
+                case 'email':    shareLink = `mailto:?subject=${encodeURIComponent("Join me on ai-Connect")}&body=${encodeURIComponent(textContent)}`; break;
+                case 'copy':     copyShareLink(); return; 
+                default: alert(`Sharing via ${platform} may not be fully supported. Link copied.`); copyShareLink(); return;
+            }
+            window.open(shareLink, '_blank');
+            hideShareMenu();
+        }
+        
+        // Function to render unilevel counts
+        function renderUnilevelCounts(unilevelCountsData = {}) {
+            if (!unilevelDetailsListEl) return;
+            unilevelDetailsListEl.innerHTML = ''; 
+            if (Object.keys(unilevelCountsData).length === 0) {
+                const listItem = document.createElement('li');
+                listItem.className = 'unilevel-list-item';
+                listItem.style.justifyContent = 'center';
+                listItem.textContent = 'No unilevel network data yet.';
+                unilevelDetailsListEl.appendChild(listItem);
+                return;
+            }
+
+            for (let i = 1; i <= 10; i++) { // Loop for 10 levels
+                const count = unilevelCountsData[`level${i}`] || 0;
+                const listItem = document.createElement('li');
+                listItem.className = 'unilevel-list-item';
+                
+                const levelLabel = document.createElement('span');
+                levelLabel.className = 'unilevel-level-label';
+                levelLabel.textContent = `Level ${i}:`;
+                
+                const levelCount = document.createElement('span');
+                levelCount.className = 'unilevel-level-count';
+                levelCount.textContent = `${count} affiliates`;
+                
+                listItem.appendChild(levelLabel);
+                listItem.appendChild(levelCount);
+                unilevelDetailsListEl.appendChild(listItem);
+            }
+        }
+
+        // Main data fetching and UI update logic
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = 'signin.html'; 
+                return;
+            }
+
+            try {
+                const usersInfoRef = rtDb.ref('users_info');
+                const query = usersInfoRef.orderByChild('firebaseUid').equalTo(user.uid);
+                const userSnapshot = await query.once('value');
+
+                if (userSnapshot.exists()) {
+                    userSnapshot.forEach(childSnapshot => { 
+                        userNormalizedPhoneKeyGlobal = childSnapshot.key; // Set the global phone key
+                        return true; 
+                    });
+
+                    if (userNormalizedPhoneKeyGlobal) {
+                        const userDataRef = rtDb.ref(`users_info/${userNormalizedPhoneKeyGlobal}`);
+                        userDataRef.on('value', (dataSnapshot) => { 
+                            if (dataSnapshot.exists()) {
+                                const userData = dataSnapshot.val();
+                                const affiliateStats = userData.affiliate_stats || {}; // Get affiliate_stats or empty object
+                                
+                                // Balances
+                                if(currentBalanceEl) currentBalanceEl.textContent = formatMonetaryValue(userData.php_balance || 0, 'PHP');
+                                if(tokenBalanceEl) tokenBalanceEl.textContent = formatMonetaryValue(userData.emx_token_balance || 0, 'EMX');
+                                
+                                // Share Link
+                                generateAndDisplayShareLink(userNormalizedPhoneKeyGlobal); 
+
+                                // Affiliate Data Boxes
+                                if(totalRewardsDisplayEl) totalRewardsDisplayEl.textContent = formatMonetaryValue(userData.total_rewards || 0, 'PHP'); // Or totalRewardsPHP
+                                if(directReferralsCountEl) directReferralsCountEl.textContent = affiliateStats.directReferralsCount || 0;
+                                
+                                // Link Analytics (from affiliate_stats)
+                                const linkClicks = affiliateStats.referralLinkClicks || 0; 
+                                const registeredFromLink = affiliateStats.referralLinkRegistrations || 0;
+                                if(linkClicksDisplayEl) linkClicksDisplayEl.textContent = linkClicks;
+                                if(linkRegistrationsDisplayEl) linkRegistrationsDisplayEl.textContent = registeredFromLink;
+                                
+                                // Update manual bar chart heights (if you keep this HTML)
+                                const totalAnalytics = Math.max(1, linkClicks + registeredFromLink); 
+                                if(viewsBarEl) viewsBarEl.style.height = `${Math.min(100, (linkClicks / totalAnalytics) * 100 || 5)}%`;
+                                if(registeredBarEl) registeredBarEl.style.height = `${Math.min(100, (registeredFromLink / totalAnalytics) * 100 || 5)}%`;
+
+                                // Unilevel Counts (from affiliate_stats)
+                                renderUnilevelCounts(affiliateStats.unilevelCounts || {});
+                            } else {
+                                console.warn("User data node removed or does not exist for phone key:", userNormalizedPhoneKeyGlobal);
+                            }
+                        });
+                    } else { throw new Error("User's phone key association not found."); }
+                } else { throw new Error("User profile not found. Cannot fetch account details."); }
+            } catch (error) {
+                console.error("Error fetching user data: ", error);
+                // Display error states for UI elements
+                if(currentBalanceEl) currentBalanceEl.textContent = "Error";
+                if(tokenBalanceEl) tokenBalanceEl.textContent = "Error";
+                if(totalRewardsDisplayEl) totalRewardsDisplayEl.textContent = "Error";
+                if(directReferralsCountEl) directReferralsCountEl.textContent = "Error";
+                if(linkClicksDisplayEl) linkClicksDisplayEl.textContent = "Error";
+                if(linkRegistrationsDisplayEl) linkRegistrationsDisplayEl.textContent = "Error";
+                renderUnilevelCounts({}); // Show empty unilevel
+            }
+            // displayCurrentDate(); // Call this if you add back the date element
+        });
+        
+    </script>
+</body>
+</html>

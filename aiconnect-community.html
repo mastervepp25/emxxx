@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - Community Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <style>
+    :root {
+      /* ai-Connect EMX Theme Variables */
+      --aiConnect-bg-dark: #0d0d1a;         
+      --aiConnect-panel-dark: #121225;      
+      --aiConnect-glass-bg: rgba(18, 18, 37, 0.85); 
+      --aiConnect-border: rgba(0, 255, 255, 0.25);  
+      --aiConnect-cyan: #00ffff;            
+      --aiConnect-cyan-dark: #00cccc;       
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-text-primary: #e0e0f0;    
+      --aiConnect-text-secondary: #a0a0c0;  
+      --aiConnect-success: #00ff88;         
+      --aiConnect-gold: #ffc107;       
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace; 
+
+      --header-height: 56px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --transition-speed: 0.3s;
+      --box-shadow-panel: 0 2px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+      --spacing-unit: 15px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body); background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary); min-height: 100vh;
+        padding-top: var(--header-height); padding-bottom: calc(60px + var(--spacing-unit));
+        max-width: 420px; margin: 0 auto; overflow-x: hidden; position: relative;
+    }
+    .header {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        color: var(--aiConnect-text-primary); padding: 0 var(--spacing-unit);
+        display: flex; align-items: center; justify-content: space-between;
+        position: fixed; top: 0; left: 0; right: 0;
+        width: 100%; max-width: 420px; margin: 0 auto;
+        z-index: 100; border-bottom: 1px solid var(--aiConnect-border);
+        height: var(--header-height); box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+    }
+    .header-logo-container { display: flex; align-items: center; }
+    .header-logo-img { width: 30px; height: 30px; object-fit: contain; margin-right: 8px; }
+    .header-logo-text { font-size: 1.1rem; font-weight: 700; color: var(--aiConnect-cyan); font-family: var(--font-display); text-shadow: 0 0 5px var(--aiConnect-glow-medium); }
+    .header-page-title { font-family: var(--font-display); color: var(--aiConnect-text-primary); font-size: 1rem; font-weight: 500; position: absolute; left: 50%; transform: translateX(-50%); text-shadow: 0 0 3px var(--aiConnect-glow-soft); }
+    .header-icons-right { display: flex; align-items: center; gap: calc(var(--spacing-unit) * 0.5); }
+    .header-icon { cursor: pointer; color: var(--aiConnect-text-secondary); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; transition: all 0.2s; }
+    .header-icon:hover { background-color: rgba(0, 255, 255, 0.1); color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .header-icon .material-symbols-outlined { font-size: 22px; }
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+    .panel-emo {
+        background-color: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large); padding: var(--spacing-unit);
+        margin-bottom: calc(var(--spacing-unit) * 1.5); box-shadow: var(--box-shadow-panel);
+    }
+    .panel-emo h2, .panel-emo h3 {
+        font-family: var(--font-display); color: var(--aiConnect-cyan);
+        margin-bottom: var(--spacing-unit); padding-bottom: calc(var(--spacing-unit) * 0.5);
+        border-bottom: 1px solid var(--aiConnect-border); display: flex; align-items: center; gap: 8px;
+    }
+    .panel-emo h2 .fas, .panel-emo h2 .material-symbols-outlined { font-size: 1.1em; }
+    .panel-emo p { color: var(--aiConnect-text-secondary); margin-bottom: var(--spacing-unit); font-size: 0.9rem; line-height: 1.6; }
+    
+    .btn-emo {
+        font-family: var(--font-display); font-size: 0.95rem; padding: 10px 18px;
+        border-radius: var(--border-radius); border: 1px solid var(--aiConnect-border);
+        background: linear-gradient(145deg, rgba(0, 255, 255, 0.15), rgba(0, 255, 255, 0.08));
+        color: var(--aiConnect-cyan); cursor: pointer;
+        transition: all var(--transition-speed) ease; box-shadow: 0 0 8px var(--aiConnect-glow-soft);
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-align: center;
+    }
+    .btn-emo:hover {
+        background: linear-gradient(145deg, rgba(0, 255, 255, 0.25), rgba(0, 255, 255, 0.15));
+        color: #fff; box-shadow: 0 0 15px var(--aiConnect-glow-medium);
+        transform: translateY(-1px); border-color: var(--aiConnect-cyan);
+    }
+    .btn-emo.w-100 { width: 100%; }
+
+    .community-links-grid { display: grid; grid-template-columns: 1fr; gap: var(--spacing-unit); }
+    @media (min-width: 350px) { .community-links-grid { grid-template-columns: repeat(2, 1fr); } }
+    .community-link-card {
+        background-color: rgba(18,18,37,0.7); border: 1px solid var(--aiConnect-border);
+        padding: var(--spacing-unit); border-radius: var(--border-radius);
+        text-align: center; color: var(--aiConnect-text-primary); text-decoration: none;
+        transition: all var(--transition-speed) ease; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px;
+    }
+    .community-link-card:hover { transform: translateY(-3px); border-color: var(--aiConnect-cyan); box-shadow: 0 0 10px var(--aiConnect-glow-medium); background-color: rgba(0,255,255,0.05);}
+    .community-link-card .fab, .community-link-card .fas { font-size: 2rem; color: var(--aiConnect-cyan); margin-bottom: 10px; text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    .community-link-card span { font-family: var(--font-display); font-size: 0.9rem; }
+
+    .forum-section .forum-category {
+        margin-bottom: var(--spacing-unit); padding-bottom: var(--spacing-unit);
+        border-bottom: 1px solid rgba(0,255,255,0.1);
+    }
+    .forum-section .forum-category:last-child { border-bottom: none; margin-bottom: 0; }
+    .forum-section .forum-category h4 { color: var(--aiConnect-gold); font-size: 1rem; margin-bottom: 10px; border:none; padding:0; }
+    .forum-section .forum-topic {
+        display: block; color: var(--aiConnect-text-secondary); font-size: 0.85rem;
+        padding: 8px 0; border-top: 1px solid rgba(0,255,255,0.05);
+        transition: color var(--transition-speed);
+    }
+    .forum-section .forum-topic:first-of-type { border-top: none; }
+    .forum-section .forum-topic:hover { color: var(--aiConnect-cyan); }
+    .forum-section .forum-topic .topic-replies { font-size: 0.7rem; opacity: 0.7; margin-left: 5px;}
+
+    .event-card {
+        background-color: rgba(13,13,26,0.7); border: 1px solid var(--aiConnect-border);
+        padding: 12px; border-radius: var(--border-radius); margin-bottom: 10px;
+    }
+    .event-card .event-title { font-family: var(--font-display); color: var(--aiConnect-gold); font-size: 0.95rem; margin-bottom: 5px;}
+    .event-card .event-date { font-size: 0.75rem; color: var(--aiConnect-text-secondary); margin-bottom: 8px;}
+    .event-card .event-description { font-size: 0.8rem; color: var(--aiConnect-text-primary); margin-bottom: 8px; line-height: 1.5;}
+
+    #pageLoading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(13, 13, 26, 0.95); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1001; transition: opacity 0.3s ease, visibility 0s linear 0.3s; }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; }
+    #pageLoading .loading-text { font-size: 1.1rem; font-weight: 500; color: var(--aiConnect-text-primary); font-family: var(--font-display); }
+    #pageLoading .spinner { border: 4px solid rgba(0, 255, 255, 0.2); border-top: 4px solid var(--aiConnect-cyan); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-bottom: 15px; box-shadow: 0 0 10px var(--aiConnect-glow-soft); }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .bottom-nav { background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--aiConnect-border); width: 100%; max-width: 420px;  display: flex; justify-content: space-around; align-items: center; padding: 5px 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); z-index: 100; height: 60px; box-shadow: 0 -3px 15px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft); }
+    .nav-item { display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--aiConnect-text-secondary); flex: 1; padding: 10px 0; transition: all 0.2s ease; height: 100%; border-radius: var(--border-radius); margin: 0 2px; }
+    .nav-item.active { color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .nav-item:hover:not(.active) { color: var(--aiConnect-cyan); background-color: rgba(0, 255, 255, 0.08); }
+    .nav-item .material-symbols-outlined { font-size: 28px; }
+    .center-button-nav { display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%; background-color: var(--aiConnect-panel-dark); box-shadow: 0 0 15px rgba(0,0,0,0.7); margin-top: -20px; cursor: pointer; border: 2px solid var(--aiConnect-border); position: relative; flex-shrink: 0; transition: all 0.2s ease; }
+    .center-button-nav img { width: 28px; height: 28px; object-fit: contain; }
+    .center-button-nav.active { border-color: var(--aiConnect-cyan); box-shadow: 0 0 15px var(--aiConnect-glow-strong); }
+
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading ai-Connect Community...</p>
+  </div>
+
+  <header class="header">
+    <div class="header-logo-container">
+      <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="ai-Connect Logo" class="header-logo-img">
+      <span class="header-logo-text">EMX</span>
+    </div>
+    <div class="header-page-title">Community Hub</div>
+    <div class="header-icons-right">
+      <div id="signOutIcon" class="header-icon" title="Sign Out">
+        <span class="material-symbols-outlined">logout</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <section class="panel-emo" id="welcome-community">
+        <h2><i class="fas fa-users"></i> Welcome to the Tribe!</h2>
+        <p>Connect with fellow EMX Token holders, AI enthusiasts, and ai-Connect users. Share insights, ask questions, and participate in the future of our ecosystem.</p>
+    </section>
+
+    <section class="panel-emo" id="community-links">
+        <h3><i class="fas fa-link"></i> Join Our Channels</h3>
+        <div class="community-links-grid">
+            <a href="#" class="community-link-card" id="telegramLink">
+                <i class="fab fa-telegram-plane"></i>
+                <span>Telegram Group</span>
+            </a>
+            <a href="#" class="community-link-card" id="discordLink">
+                <i class="fab fa-discord"></i>
+                <span>Discord Server</span>
+            </a>
+            <a href="#" class="community-link-card" id="twitterLink">
+                <i class="fab fa-twitter"></i>
+                <span>Follow on X</span>
+            </a>
+            <a href="#" class="community-link-card" id="forumLink">
+                 <i class="fas fa-comments"></i>
+                <span>Community Forum</span>
+            </a>
+        </div>
+    </section>
+    
+    <section class="panel-emo forum-section" id="featured-discussions">
+        <h3><i class="fas fa-fire"></i> Hot Discussions</h3>
+        <div id="discussionList">
+            <p style="text-align: center; color: var(--aiConnect-text-secondary);">Loading discussions...</p>
+        </div>
+         <button class="btn-emo w-100 mt-3" id="viewAllDiscussions"><i class="fas fa-external-link-alt"></i> View All Forum Topics</button>
+    </section>
+
+    <section class="panel-emo" id="upcoming-events">
+        <h3><i class="fas fa-calendar-alt"></i> Upcoming Community Events</h3>
+        <div id="eventList">
+            <p style="text-align: center; color: var(--aiConnect-text-secondary);">Checking for upcoming events...</p>
+        </div>
+    </section>
+
+    <section class="panel-emo" id="governance-preview">
+        <h2><i class="fas fa-vote-yea"></i> Governance & Proposals</h2>
+        <p>As the EMO ecosystem matures, token holders will be able to participate in governance. Stay tuned for updates on proposal submissions and voting mechanisms.</p>
+        <button class="btn-emo w-100" id="learnMoreGovernance" disabled><i class="fas fa-info-circle"></i> Learn More (Coming Soon)</button>
+    </section>
+  </main>
+
+  <div class="bottom-nav">
+    <div class="nav-item" data-target-url="aiconnect-content.html" title="Content"> <span class="material-symbols-outlined">edit_square</span> </div>
+    <div class="nav-item" data-target-url="aiconnect-tools.html" title="Tools"> <span class="material-symbols-outlined">build</span> </div>
+    <div class="center-button-nav" data-target-url="index.html" title="Home"> <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="Home"> </div>
+    <div class="nav-item" data-target-url="aiconnect-business.html" title="Business"> <span class="material-symbols-outlined">business_center</span> </div>
+    <div class="nav-item" data-target-url="aiconnect-userprofile.html" title="Profile"> <span class="material-symbols-outlined">account_circle</span> </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const authInstance = firebase.auth();
+    const dbInstance = firebase.firestore(); 
+
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const signOutIcon = document.getElementById('signOutIcon');
+    const discussionListEl = document.getElementById('discussionList');
+    const eventListEl = document.getElementById('eventList');
+    
+    const telegramLink = document.getElementById('telegramLink');
+    const discordLink = document.getElementById('discordLink');
+    const twitterLink = document.getElementById('twitterLink');
+    const forumLink = document.getElementById('forumLink');
+    const viewAllDiscussionsBtn = document.getElementById('viewAllDiscussions');
+    const learnMoreGovernanceBtn = document.getElementById('learnMoreGovernance');
+
+    let currentAuthUser = null;
+
+    function triggerHapticFeedback(type = 'selection') { 
+        if (window.navigator.vibrate) {
+            let duration = 10;
+            if (type === 'light') duration = 20; else if (type === 'medium') duration = 50; else if (type === 'strong') duration = 100;
+            window.navigator.vibrate(duration);
+        }
+    }
+    
+    async function loadCommunityData() {
+        pageLoadingElement.classList.remove('hidden');
+        await loadFeaturedDiscussions();
+        await loadUpcomingEvents();
+        pageLoadingElement.classList.add('hidden');
+    }
+
+    async function loadFeaturedDiscussions(limitCount = 3) {
+        discussionListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-text-secondary);">Loading discussions...</p>';
+        try {
+            const querySnapshot = await dbInstance.collection('community_discussions') 
+                                        .where('isFeatured', '==', true)
+                                        .orderBy('lastActivity', 'desc')
+                                        .limit(limitCount)
+                                        .get();
+            if (querySnapshot.empty) {
+                discussionListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-text-secondary);">No featured discussions right now. Be the first to start one!</p>';
+                return;
+            }
+            let discussionsHtml = '<div class="forum-category"><h4 style="color: var(--aiConnect-cyan);">Featured Topics</h4>';
+            querySnapshot.forEach(doc => {
+                const discussion = doc.data();
+                discussionsHtml += `
+                    <a href="#" class="forum-topic" data-id="${doc.id}">
+                        ${discussion.title} 
+                        <span class="topic-replies">(${discussion.replyCount || 0} replies)</span>
+                    </a>`;
+            });
+            discussionsHtml += '</div>';
+            discussionListEl.innerHTML = discussionsHtml;
+            discussionListEl.querySelectorAll('.forum-topic').forEach(topic => {
+                topic.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    triggerHapticFeedback();
+                    alert(`Navigating to discussion: ${e.currentTarget.textContent.trim().split('(')[0].trim()} (ID: ${e.currentTarget.dataset.id}) - Placeholder`);
+                });
+            });
+        } catch (error) {
+            console.error("Error loading featured discussions:", error);
+            discussionListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-error);">Could not load discussions.</p>';
+        }
+    }
+
+    async function loadUpcomingEvents(limitCount = 2) {
+        eventListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-text-secondary);">Checking for events...</p>';
+        try {
+            const querySnapshot = await dbInstance.collection('community_events') 
+                                        .where('eventDate', '>=', new Date().toISOString().split('T')[0]) 
+                                        .orderBy('eventDate', 'asc')
+                                        .limit(limitCount)
+                                        .get();
+            if (querySnapshot.empty) {
+                eventListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-text-secondary);">No upcoming community events scheduled yet.</p>';
+                return;
+            }
+            let eventsHtml = '';
+            querySnapshot.forEach(doc => {
+                const event = doc.data();
+                const eventDateISO = event.eventDate; // Assuming eventDate is stored as 'YYYY-MM-DD' or full ISO
+                let eventDateFormatted = 'Date TBD';
+                if (eventDateISO) {
+                    // Attempt to parse, handling potential inconsistencies
+                    let dateObj;
+                    if (eventDateISO.includes('T')) { // Full ISO string
+                        dateObj = new Date(eventDateISO);
+                    } else { // Just YYYY-MM-DD, append time to avoid timezone issues during parsing
+                        dateObj = new Date(eventDateISO + 'T00:00:00');
+                    }
+                    eventDateFormatted = dateObj.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: event.eventTime ? 'numeric' : undefined, minute: event.eventTime ? '2-digit' : undefined });
+                }
+
+                eventsHtml += `
+                    <div class="event-card">
+                        <div class="event-title">${event.title}</div>
+                        <div class="event-date"><i class="fas fa-calendar-check" style="color:var(--aiConnect-gold); margin-right:5px;"></i> ${eventDateFormatted}</div>
+                        <p class="event-description">${(event.description || '').substring(0,100)}...</p>
+                        <button class="btn-emo" data-event-id="${doc.id}" style="font-size:0.8rem; padding: 6px 10px;"><i class="fas fa-info-circle"></i> Details & RSVP</button>
+                    </div>
+                `;
+            });
+            eventListEl.innerHTML = eventsHtml;
+            eventListEl.querySelectorAll('.btn-emo').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    triggerHapticFeedback();
+                    alert(`Viewing details for event ID: ${e.currentTarget.dataset.eventId} (Placeholder)`);
+                });
+            });
+        } catch (error) {
+            console.error("Error loading upcoming events:", error);
+            eventListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-error);">Could not load events.</p>';
+        }
+    }
+
+    authInstance.onAuthStateChanged((user) => {
+        if (user) {
+            currentAuthUser = user;
+            loadCommunityData();
+        } else {
+            currentAuthUser = null;
+            // For a public-facing community page, we might not redirect immediately
+            // but rather disable certain actions or show a "login to participate" message.
+            // For now, keeping the redirect for consistency with other auth-gated pages.
+            window.location.href = 'aiconnect-signin.html'; 
+        }
+    });
+
+    if(signOutIcon) { 
+        signOutIcon.addEventListener('click', async () => { 
+            triggerHapticFeedback('medium');
+            if (confirm("Sign out from ai-Connect?")) {
+                try {
+                    pageLoadingElement.classList.remove('hidden');
+                    await authInstance.signOut();
+                } catch (error) {
+                    console.error("Error signing out:", error); alert("Failed to sign out.");
+                    pageLoadingElement.classList.add('hidden');
+                }
+            }
+        }); 
+    }
+    document.querySelectorAll('.bottom-nav .nav-item, .bottom-nav .center-button-nav').forEach(item => { 
+        item.addEventListener('click', () => {
+            triggerHapticFeedback();
+            const targetUrl = item.dataset.targetUrl;
+            if (targetUrl && !item.classList.contains('active')) { window.location.href = targetUrl; }
+            else if (item.classList.contains('active')) { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        });
+    });
+    
+    const communityChannelBaseUrl = "https://"; // Replace with actual URLs
+    if(telegramLink) telegramLink.href = communityChannelBaseUrl + "t.me/aiconnect_official"; // Example
+    if(discordLink) discordLink.href = communityChannelBaseUrl + "discord.gg/aiconnect"; // Example
+    if(twitterLink) twitterLink.href = communityChannelBaseUrl + "twitter.com/aiconnect";   // Example
+    if(forumLink) forumLink.addEventListener('click', (e) => { e.preventDefault(); triggerHapticFeedback(); alert("Navigating to ai-Connect Community Forum (Placeholder)");}); 
+    if(viewAllDiscussionsBtn) viewAllDiscussionsBtn.addEventListener('click', () => { triggerHapticFeedback(); alert("Navigating to full forum (Placeholder)");});
+    if(learnMoreGovernanceBtn) learnMoreGovernanceBtn.addEventListener('click', () => { triggerHapticFeedback(); alert("Governance details and portal coming soon!");});
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (pageLoadingElement.classList.contains('hidden') && !authInstance.currentUser) {
+           pageLoadingElement.classList.remove('hidden'); 
+        } else if (authInstance.currentUser) {
+            pageLoadingElement.classList.add('hidden'); 
+        }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ai-Connect – Sign Up</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- libphonenumber-js for phone number parsing/formatting -->
+  <script src="https://unpkg.com/libphonenumber-js@1.10.57/bundle/libphonenumber-min.js"></script>
+  <style>
+    :root {
+      --bg:#0d0d1a; --panel:#121225; --cyan:#00ffff; --cyan-faded:rgba(0,255,255,0.2);
+      --glow:rgba(0,255,255,0.3); --txt:#e0e0f0; --font-d:'Orbitron',sans-serif; --font-b:'Roboto Mono',monospace;
+      --err: #ff4444;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      height:100vh;background:var(--bg);font-family:var(--font-b);color:var(--cyan);
+    }
+    .card{
+      width:100%;max-width:380px;padding:40px 30px;
+      background:var(--panel);border:1px solid var(--cyan-faded);
+      border-radius:16px;text-align:center;box-shadow:0 0 30px var(--glow);
+    }
+    .logo{width:80px;margin-bottom:30px;filter:drop-shadow(0 0 10px var(--glow))}
+    h2{font-family:var(--font-d);margin-bottom:30px;text-shadow:0 0 10px var(--glow)}
+    
+    .input-field {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 25px;
+      background: transparent;
+      border: 2px solid var(--cyan-faded);
+      border-radius: 8px;
+      color: var(--txt);
+      font-family: var(--font-b);
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+    .input-field::placeholder { color: rgba(224, 224, 240, 0.7); }
+    .input-field:focus {
+      outline: none; border-color: var(--cyan); box-shadow: 0 0 10px var(--glow);
+    }
+    .input-field.error { border-color: var(--err); }
+
+    .btn{
+      position:relative;width:100%;padding:16px;font-family:var(--font-d);
+      font-size:1.1em;font-weight:700;color:var(--cyan);
+      border:2px solid var(--cyan);border-radius:8px;background:transparent;
+      cursor:pointer;overflow:hidden;transition:all .4s;
+    }
+    .btn::before{
+      content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(135deg,var(--cyan),#00cccc);
+      transform:translateY(101%);transition:transform .4s;z-index:-1;
+    }
+    .btn:hover:not(:disabled){
+      color:var(--bg);transform:translateY(-3px); box-shadow:0 5px 25px var(--glow);
+    }
+    .btn:hover:not(:disabled)::before{transform:translateY(0)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    
+    .status-container { margin-top:15px; min-height: 1.4em; }
+    .status{
+      font-size:.9em;color:var(--txt);
+      min-height:1.4em;text-shadow:0 0 5px rgba(160,160,192,.3);
+    }
+    .status.error { color: var(--err); }
+
+    .action-links { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
+    .signin-link {
+        display: block; font-size: 0.9em; color: var(--cyan-faded); 
+        text-decoration: none; padding: 5px; border-radius: 4px;
+        transition: color 0.3s, background-color 0.3s;
+    }
+    .signin-link:hover {
+        color: var(--cyan); background-color: rgba(0, 255, 255, 0.1); text-decoration: underline;
+    }
+    .conditional-signin-link { display: none; }
+    .referred-by-notice {
+        font-size: 0.8em; color: var(--aiConnect-text-secondary); margin-top: 10px;
+        border: 1px dashed var(--aiConnect-border); padding: 8px; border-radius: var(--border-radius);
+        background-color: rgba(0,255,255,0.05);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="assets/logo/logo.png" alt="Logo" class="logo">
+    <h2>Create your AI-Connect account</h2>
+
+    <input type="tel" id="phoneNumberInput" class="input-field" placeholder="Phone e.g. +14155552671" required>
+    <div id="referredByNotice" class="referred-by-notice" style="display: none;"></div>
+
+    <button class="btn" id="initBtn">Initialize Session</button>
+    
+    <div class="status-container">
+        <div class="status" id="statusMessage">Please enter your phone number.</div>
+    </div>
+    <div class="action-links">
+        <a href="signin.html" id="conditionalGoToSignInLink" class="signin-link conditional-signin-link">Go to Sign In (Account Exists)</a>
+        <a href="signin.html" class="signin-link">Already have an account? Sign In</a>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = { /* ... Your ai-Connect Firebase Config ... */ 
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    const initButton = document.getElementById("initBtn");
+    const statusMessageDiv = document.getElementById("statusMessage");
+    const phoneNumberField = document.getElementById("phoneNumberInput");
+    const conditionalGoToSignInLink = document.getElementById("conditionalGoToSignInLink");
+    const referredByNoticeElement = document.getElementById("referredByNotice");
+
+    const REFERRER_COOKIE_NAME = "aiConnectRef";
+    const COOKIE_EXPIRY_DAYS = 30;
+
+    // --- Cookie Helper Functions ---
+    function setCookie(name, value, days) {
+        let expires = "";
+        if (days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Lax; Secure"; // Added Secure
+    }
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+        }
+        return null;
+    }
+    function eraseCookie(name) {   
+        document.cookie = name +'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax; Secure';
+    }
+    // --- End Cookie Helper Functions ---
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .catch((error) => { console.error("Error setting Firebase auth persistence:", error); });
+
+    function showStatus(message, isError = false, showConditionalLink = false) {
+        statusMessageDiv.textContent = message;
+        statusMessageDiv.classList.toggle('error', isError);
+        phoneNumberField.classList.toggle('error', isError && message.toLowerCase().includes("phone"));
+        conditionalGoToSignInLink.style.display = showConditionalLink ? 'block' : 'none';
+    }
+    
+    phoneNumberField.addEventListener('input', () => {
+        if (statusMessageDiv.classList.contains('error') || conditionalGoToSignInLink.style.display === 'block') {
+            showStatus("Enter phone number to proceed.", false, false); 
+        }
+    });
+
+    // On page load, check for referral ID in URL and set cookie
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refFromUrl = urlParams.get('ref');
+        const refFromCookie = getCookie(REFERRER_COOKIE_NAME);
+
+        let effectiveReferrer = null;
+
+        if (refFromUrl) {
+            // Validate refFromUrl (e.g., basic length check, or check if it's a valid phone key format if possible)
+            // For now, we'll assume it's a valid format if present
+            setCookie(REFERRER_COOKIE_NAME, refFromUrl, COOKIE_EXPIRY_DAYS);
+            effectiveReferrer = refFromUrl;
+            console.log(`Referrer ID ${refFromUrl} from URL saved to cookie for ${COOKIE_EXPIRY_DAYS} days.`);
+            // Optional: remove ?ref from URL after processing to keep URL clean
+            // window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (refFromCookie) {
+            effectiveReferrer = refFromCookie;
+            console.log(`Using existing referrer ID ${refFromCookie} from cookie.`);
+        }
+
+        if (effectiveReferrer) {
+            referredByNoticeElement.textContent = `Active Sponsor ID: Phone ending ...${effectiveReferrer.slice(-4)}`;
+            referredByNoticeElement.style.display = 'block';
+        }
+    });
+
+
+    initButton.addEventListener("click", async () => {
+      const rawPhoneNumber = phoneNumberField.value.trim();
+      const deviceAgent = navigator.userAgent;
+
+      phoneNumberField.classList.remove('error');
+      conditionalGoToSignInLink.style.display = 'none'; 
+
+      if (!rawPhoneNumber) {
+        showStatus("Phone number is required.", true, false); 
+        phoneNumberField.focus(); return;
+      }
+
+      initButton.disabled = true;
+      showStatus("Validating phone & checking availability…", false, false);
+
+      let parsedPhoneNumber;
+      try {
+        parsedPhoneNumber = libphonenumber.parsePhoneNumberFromString(rawPhoneNumber);
+      } catch (e) {
+        showStatus("Invalid phone number format. Include country code (e.g., +1, +63).", true, false);
+        initButton.disabled = false; phoneNumberField.focus(); return;
+      }
+
+      if (!parsedPhoneNumber || !parsedPhoneNumber.isValid()) {
+        let errorMessage = "Invalid phone number.";
+        if (rawPhoneNumber.startsWith('+')) errorMessage = "Invalid phone number. Check number and country code.";
+        else errorMessage = "Enter phone number with country code (e.g. +1, +63).";
+        showStatus(errorMessage, true, false);
+        initButton.disabled = false; phoneNumberField.focus(); return;
+      }
+
+      const e164Number = parsedPhoneNumber.format('E.164'); 
+      const normalizedPhoneKey = e164Number.substring(1); 
+      const internationalFormat = parsedPhoneNumber.formatInternational(); 
+      const country = parsedPhoneNumber.country; 
+
+      try {
+        const userRef = database.ref(`users_info/${normalizedPhoneKey}`);
+        const snapshot = await userRef.once('value');
+
+        if (snapshot.exists()) {
+          showStatus("This phone number is already registered.", true, true); 
+          conditionalGoToSignInLink.textContent = `Account for ${internationalFormat} exists. Go to Sign In?`; 
+          initButton.disabled = false; 
+          return; 
+        }
+
+        if (auth.currentUser) { await auth.signOut(); }
+        
+        showStatus("Phone available. Initializing session…", false, false);
+        const { user } = await auth.signInAnonymously();
+        const firebaseUid = user.uid;
+
+        const userData = {
+          firebaseUid: firebaseUid, 
+          deviceAgent: deviceAgent,
+          phoneNumberRaw: rawPhoneNumber,
+          phoneNumberE164: e164Number,
+          phoneNumberFormatted: internationalFormat,
+          country: country,
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          lastLoginAttempt: firebase.database.ServerValue.TIMESTAMP,
+          accountStatus: "Signed Up" // Initial status
+        };
+
+        // Check for referrer from cookie
+        const referrerId = getCookie(REFERRER_COOKIE_NAME);
+        if (referrerId) {
+            // Basic validation: ensure referrerId is not the same as the new user's phone key
+            if (referrerId !== normalizedPhoneKey) {
+                userData.referredBy = referrerId; // Store sponsor ID
+                console.log(`New user ${normalizedPhoneKey} was referred by ${referrerId}.`);
+                
+                // Create a notification for the sponsor (conceptual client-side creation)
+                // This would ideally be a Cloud Function triggered by the new user write.
+                createSponsorNotification(referrerId, normalizedPhoneKey, internationalFormat, "Signed Up");
+            } else {
+                console.warn("User cannot refer themselves. Referrer ID ignored.");
+            }
+        }
+        
+        await userRef.set(userData);
+        console.log("New user data saved for:", normalizedPhoneKey, "with UID:", firebaseUid);
+
+        // Erase the referral cookie after it has been successfully used
+        if (referrerId && referrerId !== normalizedPhoneKey) {
+            eraseCookie(REFERRER_COOKIE_NAME);
+            console.log("Referrer cookie erased after use.");
+        }
+        
+        showStatus("Success! Redirecting to set PIN…", false, false);
+        setTimeout(() => { window.location.href = "create-pin.html"; }, 1200);
+
+      } catch (error) {
+        console.error("Firebase operation or Auth failed:", error);
+        showStatus(`Initialization failed: ${error.message}. Please try again.`, true, false);
+        initButton.disabled = false;
+      }
+    });
+
+    async function createSponsorNotification(sponsorPhoneKey, newUserNameOrId, newUserPhoneFormatted, status) {
+        if (!sponsorPhoneKey) return;
+        try {
+            const notificationRef = database.ref(`user_notifications/${sponsorPhoneKey}`).push();
+            const notificationData = {
+                message: `Congrats! User ${newUserPhoneFormatted} (${newUserNameOrId.slice(-4)}) just ${status} under your referral.`,
+                type: "new_referral",
+                statusDetail: status, // e.g., "Signed Up", "Subscribed to $20", "Availed EMX Commander"
+                referredUserKey: newUserNameOrId, // The phoneKey of the new user
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                isRead: false
+            };
+            await notificationRef.set(notificationData);
+            console.log(`Notification created for sponsor ${sponsorPhoneKey} about new user ${newUserNameOrId}.`);
+        } catch (error) {
+            console.error("Error creating sponsor notification:", error);
+        }
+    }
+    // Note: The logic to update notification status (e.g. "Subscribed", "Availed EMX")
+    // would happen in other parts of your application when those events occur,
+    // and would likely trigger another notification or update an existing one.
+
+  </script>
+</body>
+</html>

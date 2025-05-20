@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ai-Connect – Create PIN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    :root {
+      --bg:#0d0d1a; --panel:#121225; --cyan:#00ffff; --cyan-faded:rgba(0,255,255,0.2);
+      --glow:rgba(0,255,255,0.3); --txt:#e0e0f0; --err:#ff4444; --succ:#00ff88;
+      --font-d:'Orbitron',sans-serif; --font-b:'Roboto Mono',monospace;
+      --claim-bg: linear-gradient(135deg, #ffc107, #ff8f00); /* Gold gradient for claim button */
+      --claim-glow: rgba(255, 193, 7, 0.5);
+      --claim-text: #121225;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      height:100vh;background:var(--bg);font-family:var(--font-b);color:var(--cyan);
+    }
+    .card{
+      width:100%;max-width:380px; 
+      background:var(--panel);
+      padding:40px 30px;border:1px solid var(--cyan-faded);
+      border-radius:16px;text-align:center;box-shadow:0 0 30px var(--glow);
+    }
+    .logo{width:70px;margin-bottom:25px;filter:drop-shadow(0 0 8px var(--glow))}
+    h2{font-family:var(--font-d);margin-bottom:20px;text-shadow:0 0 8px var(--glow);}
+    
+    .pin-label {
+        font-size: 0.9em;
+        color: var(--txt);
+        margin-bottom: 8px;
+        text-align: left;
+    }
+    .pin-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px; 
+    }
+    .pin-digit-input {
+        width: 22%; 
+        height: 50px;
+        border: 2px solid var(--cyan-faded);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--txt);
+        font-size: 1.5em; 
+        text-align: center;
+        font-family: var(--font-b);
+        caret-color: var(--cyan);
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    .pin-digit-input:focus {
+        outline: none;
+        border-color: var(--cyan);
+        box-shadow: 0 0 10px var(--glow);
+    }
+    .pin-digit-input[type=number] { -moz-appearance: textfield; }
+    .pin-digit-input::-webkit-outer-spin-button,
+    .pin-digit-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    .btn{
+      position:relative;width:100%;padding:14px; margin-top: 10px;
+      font-family:var(--font-d);font-weight:700;font-size:1.1em;
+      color:var(--cyan);border:2px solid var(--cyan);
+      border-radius:8px;background:transparent;cursor:pointer;
+      transition:all .35s ease-out; /* Smooth transition for all properties */
+      overflow: hidden; /* Important for the ::before pseudo-element transition */
+    }
+    .btn::before{
+      content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+      background:var(--succ); /* Default for Save PIN */
+      transform:translateY(101%);transition:transform .35s ease-out;z-index:-1;
+    }
+    .btn:hover:not(:disabled){
+      color:var(--bg);transform:translateY(-3px);box-shadow:0 5px 20px var(--succ);
+    }
+    .btn:hover:not(:disabled)::before{transform:translateY(0)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    
+    /* Styles for the "Claim Token" button state */
+    .btn.claim-token-btn {
+        color: var(--claim-text); /* Dark text for better contrast on gold */
+        border-color: #ffc107; /* Gold border */
+        background: var(--claim-bg); /* Gold background directly on button */
+    }
+    .btn.claim-token-btn::before { /* Hide the green ::before for claim state */
+        background: transparent; /* Or a different gradient if desired */
+        transform: translateY(101%); 
+    }
+    .btn.claim-token-btn:hover:not(:disabled) {
+        color: var(--claim-text); /* Keep text color dark on hover */
+        box-shadow: 0 8px 25px var(--claim-glow); /* Brighter gold glow */
+        transform: translateY(-5px) scale(1.02); /* Slightly more pronounced hover effect */
+        /* Optional: if you want the background to intensify or change on hover */
+        /* background: linear-gradient(135deg, #ffca28, #ffa000); */
+    }
+
+
+    .msg{margin-top:20px;font-size:.9em;min-height:1.4em;color:var(--txt)} 
+    .msg.error {color:var(--err)}
+    .msg.success {color:var(--succ)}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="assets/logo/logo.png" alt="Logo" class="logo">
+    <h2 id="pageTitle">Set Your 4-Digit PIN</h2>
+
+    <div id="pinEntrySection">
+        <div class="pin-label">Enter PIN:</div>
+        <div class="pin-container" id="pinContainer">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="0">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="1">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="2">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="3">
+        </div>
+
+        <div class="pin-label">Confirm PIN:</div>
+        <div class="pin-container" id="confirmPinContainer">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="0">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="1">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="2">
+          <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="3">
+        </div>
+    </div>
+
+    <button class="btn" id="actionButton">Save PIN</button>
+    <div class="msg" id="messageDiv">Enter and confirm your PIN.</div>
+  </div>
+
+  <script>
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8", 
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    const pinEntrySection = document.getElementById('pinEntrySection');
+    const pinContainer = document.getElementById('pinContainer');
+    const confirmPinContainer = document.getElementById('confirmPinContainer');
+    const actionButton = document.getElementById('actionButton');
+    const messageDiv = document.getElementById('messageDiv');
+    const pageTitle = document.getElementById('pageTitle');
+
+    let currentNormalizedPhoneKey = null; 
+    let pinIsSet = false; // Flag to track if PIN has been successfully set
+
+    function setupPinInputs(container) {
+        const inputs = Array.from(container.getElementsByClassName('pin-digit-input'));
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                input.value = input.value.replace(/[^0-9]/g, '');
+                if (input.value && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+                checkAllInputsFilled();
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === "Backspace" && !input.value && index > 0) {
+                    inputs[index - 1].focus(); inputs[index - 1].value = ''; 
+                } else if (e.key === "ArrowLeft" && index > 0) inputs[index - 1].focus();
+                else if (e.key === "ArrowRight" && index < inputs.length - 1) inputs[index + 1].focus();
+            });
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                for (let i = 0; i < pasteData.length && (index + i) < inputs.length; i++) {
+                    inputs[index + i].value = pasteData[i];
+                    if ((index + i) < inputs.length - 1) inputs[index + i + 1].focus();
+                    else inputs[index + i].focus();
+                }
+                checkAllInputsFilled();
+            });
+        });
+    }
+
+    setupPinInputs(pinContainer);
+    setupPinInputs(confirmPinContainer);
+
+    function getPinFromContainer(container) {
+        return Array.from(container.getElementsByClassName('pin-digit-input')).map(input => input.value).join('');
+    }
+    
+    function checkAllInputsFilled() {
+        if (pinIsSet) return; // Don't auto-focus button if PIN is already set
+        const pin = getPinFromContainer(pinContainer);
+        const confirmPin = getPinFromContainer(confirmPinContainer);
+        if (pin.length === 4 && confirmPin.length === 4) {
+            actionButton.focus(); 
+        }
+    }
+
+    function showMessage(text, type = 'info') { 
+        messageDiv.textContent = text;
+        messageDiv.className = 'msg'; 
+        if (type === 'error') messageDiv.classList.add('error');
+        else if (type === 'success') messageDiv.classList.add('success');
+    }
+
+    auth.onAuthStateChanged(async (user) => {
+        if (user) {
+            const currentUid = user.uid;
+            showMessage("Authenticating...", "info");
+            try {
+                const userRecordsSnapshot = await database.ref('users_info').orderByChild('firebaseUid').equalTo(currentUid).once('value');
+                if (userRecordsSnapshot.exists()) {
+                    const records = userRecordsSnapshot.val();
+                    const phoneKeys = Object.keys(records);
+                    if (phoneKeys.length > 0) {
+                        currentNormalizedPhoneKey = phoneKeys[0]; 
+                        const userPinRecord = records[currentNormalizedPhoneKey];
+                        if (userPinRecord && userPinRecord.pin) {
+                            // PIN already set, transform to "Claim Token" mode directly
+                            pinIsSet = true;
+                            transformToClaimTokenMode("PIN already set. You can claim your token.");
+                        } else {
+                           showMessage("Enter and confirm your new PIN.", "info");
+                           if(pinContainer.getElementsByClassName('pin-digit-input').length > 0) {
+                               pinContainer.getElementsByClassName('pin-digit-input')[0].focus();
+                           }
+                        }
+                    } else { throw new Error("User record structure issue for UID."); }
+                } else { throw new Error("No user data found for your session. Please sign up again."); }
+            } catch (error) {
+                console.error("Error checking PIN status:", error);
+                showMessage(error.message || "Failed to check PIN status. Please try signing up again.", "error");
+                actionButton.disabled = true;
+            }
+        } else {
+            showMessage("Not authenticated. Redirecting to sign up...", "error");
+            actionButton.disabled = true;
+            setTimeout(() => window.location.href = "signup.html", 2000); 
+        }
+    });
+
+    function transformToClaimTokenMode(message = "PIN saved successfully! Hover to claim your token.") {
+        pinIsSet = true;
+        pageTitle.textContent = "Claim Your Token";
+        if (pinEntrySection) {
+            pinEntrySection.style.opacity = '0';
+            pinEntrySection.style.maxHeight = '0';
+            pinEntrySection.style.overflow = 'hidden';
+            pinEntrySection.style.padding = '0';
+            pinEntrySection.style.margin = '0';
+            // After transition, set display none to remove from layout
+            setTimeout(() => { pinEntrySection.style.display = 'none'; }, 350);
+        }
+        
+        actionButton.textContent = "Claim Token";
+        actionButton.classList.remove('btn'); // Remove default btn styles before adding new ones
+        actionButton.classList.add('btn', 'claim-token-btn'); // Add base btn and new claim-token-btn
+        actionButton.disabled = false; // Re-enable if it was disabled
+        showMessage(message, "success");
+    }
+
+
+    actionButton.addEventListener("click", async () => {
+        if (pinIsSet) { // If button is in "Claim Token" mode
+            showMessage("Redirecting to token claim...", "info");
+            actionButton.disabled = true;
+            // Simulate token claim and redirect
+            setTimeout(() => {
+                window.location.href = "aiconnect-token-claim.html"; // Actual token claim page
+            }, 1000);
+            return;
+        }
+
+        // --- Logic for saving PIN ---
+        if (!currentNormalizedPhoneKey) {
+            showMessage("User identity not confirmed. Please try again or re-signup.", "error");
+            return;
+        }
+
+        const pinValue = getPinFromContainer(pinContainer);
+        const confirmPinValue = getPinFromContainer(confirmPinContainer);
+        
+        actionButton.disabled = true;
+        showMessage("Processing...", "info");
+
+        if (!/^\d{4}$/.test(pinValue)) {
+            showMessage("PIN must be 4 digits.", "error");
+            if (pinContainer.getElementsByClassName('pin-digit-input').length > 0) {
+                 pinContainer.getElementsByClassName('pin-digit-input')[0].focus();
+            }
+            actionButton.disabled = false;
+            return;
+        }
+        if (pinValue !== confirmPinValue) {
+            showMessage("PINs do not match.", "error");
+            if (confirmPinContainer.getElementsByClassName('pin-digit-input').length > 0) {
+                confirmPinContainer.getElementsByClassName('pin-digit-input')[0].focus();
+            }
+            Array.from(confirmPinContainer.getElementsByClassName('pin-digit-input')).forEach(i => i.value = '');
+            actionButton.disabled = false;
+            return;
+        }
+
+        try {
+            await database.ref(`users_info/${currentNormalizedPhoneKey}/pin`).set(pinValue);
+            await database.ref(`users_info/${currentNormalizedPhoneKey}/pinLastSet`).set(firebase.database.ServerValue.TIMESTAMP);
+            
+            transformToClaimTokenMode(); // Transform UI after successful PIN save
+
+        } catch (error) {
+            console.error("Failed to save PIN:", error);
+            showMessage("Failed to save PIN. Please try again.", "error");
+            actionButton.disabled = false;
+        }
+    });
+
+  </script>
+</body>
+</html>

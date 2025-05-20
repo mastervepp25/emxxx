@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ai-Connect - EMX Token Claim</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    :root {
+      --aiConnect-bg-dark: #0d0d1a;
+      --aiConnect-panel-dark: #121225;
+      --aiConnect-neon-blue: #00ffff;
+      --aiConnect-neon-blue-dark: #00cccc;
+      --aiConnect-neon-glow: rgba(0, 255, 255, 0.3);
+      --aiConnect-neon-blue-faded: rgba(0, 255, 255, 0.2);
+      --aiConnect-text-primary: #e0e0f0;
+      --aiConnect-text-secondary: #a0a0c0;
+      --aiConnect-success: #00ff88;
+      --aiConnect-success-glow: rgba(0, 255, 136, 0.5);
+      --aiConnect-error: #ff4444;
+      --aiConnect-error-glow: rgba(255, 68, 68, 0.5);
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Roboto Mono', monospace;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      touch-action: manipulation;
+    }
+
+    body {
+      background-color: var(--aiConnect-bg-dark);
+      color: var(--aiConnect-neon-blue);
+      font-family: var(--font-body); 
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    .confirm-box {
+      width: 100%;
+      max-width: 420px;
+      padding: 35px 30px;
+      background-color: var(--aiConnect-panel-dark);
+      border: 1px solid var(--aiConnect-neon-blue-faded);
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 0 30px var(--aiConnect-neon-glow);
+      transform: translateY(0);
+      opacity: 1;
+      transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.5s ease-out;
+    }
+
+    .confirm-box.animating-out {
+      transform: translateY(50px) scale(0.9);
+      opacity: 0;
+    }
+
+    .wallet-logo {
+      width: 70px; 
+      height: auto;
+      margin-bottom: 25px;
+      filter: drop-shadow(0 0 10px var(--aiConnect-neon-glow));
+    }
+
+    h2 {
+      font-size: 1.4em; 
+      font-family: var(--font-display);
+      margin-bottom: 25px;
+      font-weight: 700; 
+      letter-spacing: 0.5px;
+      text-shadow: 0 0 8px var(--aiConnect-neon-glow);
+    }
+
+    .info-display {
+        background-color: rgba(0, 0, 0, 0.25); 
+        border: 1px solid var(--aiConnect-neon-blue-faded);
+        border-radius: 8px;
+        padding: 10px 15px; 
+        margin-bottom: 18px; 
+        font-size: 0.85em; 
+        color: var(--aiConnect-text-primary);
+        word-break: break-all;
+        text-align: left;
+    }
+    .info-display strong {
+        color: var(--aiConnect-neon-blue);
+        font-family: var(--font-display); 
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 500;
+        font-size: 0.9em;
+    }
+    .info-display span {
+        font-family: var(--font-data); 
+    }
+
+    .claim-btn {
+      position: relative;
+      width: 100%;
+      padding: 15px; 
+      margin-top: 25px; 
+      font-size: 1em; 
+      font-weight: 700;
+      font-family: var(--font-display);
+      background: transparent;
+      color: var(--aiConnect-success);
+      border: 2px solid var(--aiConnect-success);
+      border-radius: 8px;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 0 15px rgba(0, 255, 136, 0);
+      z-index: 1;
+    }
+
+    .claim-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--aiConnect-success), #00dd77); 
+      transform: translateY(101%);
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      z-index: -1;
+    }
+
+    .claim-btn:hover:not(:disabled) {
+      color: var(--aiConnect-bg-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 5px 25px var(--aiConnect-success-glow);
+    }
+
+    .claim-btn:hover:not(:disabled)::before {
+      transform: translateY(0);
+    }
+
+    .claim-btn:active:not(:disabled) {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 2px 15px var(--aiConnect-success-glow);
+    }
+
+    .claim-btn:disabled {
+        border-color: #444; 
+        color: #666; 
+        cursor: not-allowed;
+        background-color: rgba(68, 68, 68, 0.2);
+        box-shadow: none;
+        transform: none;
+    }
+    .claim-btn:disabled::before {
+        transform: translateY(101%);
+    }
+
+    .claim-btn.loading {
+      pointer-events: none;
+      background-color: transparent !important;
+      box-shadow: none !important;
+      transform: none !important;
+      border-color: rgba(0, 255, 136, 0.3);
+      color: transparent !important;
+    }
+    .claim-btn.loading span { visibility: hidden; opacity: 0; }
+    .claim-btn.loading::before { transform: translateY(101%); }
+
+    .claim-btn.loading::after {
+      content: ''; box-sizing: border-box; position: absolute;
+      top: 50%; left: 50%; width: 22px; height: 22px; 
+      margin-top: -11px; margin-left: -11px; border-radius: 50%;
+      border: 3px solid rgba(0, 255, 136, 0.3);
+      border-top-color: var(--aiConnect-success);
+      animation: spin 0.8s linear infinite; display: block;
+    }
+
+    .claim-btn.success {
+      background: var(--aiConnect-success) !important;
+      border-color: var(--aiConnect-success) !important;
+      color: var(--aiConnect-bg-dark) !important;
+      box-shadow: 0 0 25px var(--aiConnect-success-glow) !important;
+      pointer-events: none;
+    }
+    .claim-btn.success span { visibility: visible; opacity: 1; }
+    .claim-btn.success::before, .claim-btn.success::after { display: none; }
+
+    .claim-btn.error {
+      background: var(--aiConnect-error) !important;
+      border-color: var(--aiConnect-error) !important;
+      color: white !important;
+      box-shadow: 0 0 25px var(--aiConnect-error-glow) !important;
+      pointer-events: auto;
+    }
+    .claim-btn.error span { visibility: visible; opacity: 1; }
+    .claim-btn.error::before, .claim-btn.error::after { display: none; }
+
+    .status {
+      margin-top: 20px; font-size: 0.85em; 
+      color: var(--aiConnect-text-secondary); min-height: 1.5em;
+      line-height: 1.5; transition: all 0.3s ease;
+      text-shadow: 0 0 5px rgba(160, 160, 192, 0.3);
+    }
+    .status.success { color: var(--aiConnect-success); text-shadow: 0 0 8px var(--aiConnect-success-glow); }
+    .status.error { color: var(--aiConnect-error); text-shadow: 0 0 8px var(--aiConnect-error-glow); }
+
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="confirm-box" id="confirmBox">
+    <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="ai-Connect Logo" class="wallet-logo">
+    <h2>EMX Token Claim</h2>
+    
+    <div class="info-display">
+      <strong>User ID (ai-Connect):</strong>
+      <span id="userUidDisplay">Loading...</span>
+    </div>
+
+    <div class="info-display">
+      <strong>Your EMO Wallet Address:</strong>
+      <span id="walletAddressDisplay">Generating...</span>
+    </div>
+
+    <button class="claim-btn" id="claimBtn" disabled><span>Claim 10,000 EMX Tokens</span></button>
+
+    <div class="status" id="status">Please verify your details.</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+
+    const claimBtn = document.getElementById('claimBtn');
+    const statusEl = document.getElementById('status');
+    const confirmBox = document.getElementById('confirmBox');
+    const userUidDisplay = document.getElementById('userUidDisplay');
+    const walletAddressDisplay = document.getElementById('walletAddressDisplay');
+    const buttonTextSpan = claimBtn.querySelector('span');
+
+    let firebaseApp;
+    let auth;
+    let db; 
+    let firebaseInitialized = false;
+    let currentUserUid = null;
+
+    try {
+      if (!firebase.apps.length) {
+          firebaseApp = firebase.initializeApp(firebaseConfig);
+      } else {
+          firebaseApp = firebase.app();
+      }
+      auth = firebase.auth();
+      db = firebase.database(); 
+      firebaseInitialized = true;
+      console.log("ai-Connect Firebase Initialized (App, Auth, RTDB)");
+    } catch (error) {
+      console.error("Firebase initialization error:", error);
+      statusEl.textContent = "Service initialization failed. Please refresh.";
+      statusEl.className = "status error";
+      claimBtn.disabled = true;
+      if (buttonTextSpan) buttonTextSpan.textContent = "Init Error";
+    }
+
+    const updateUILoading = (message) => {
+      statusEl.textContent = message; statusEl.className = "status";
+      claimBtn.classList.remove('success', 'error'); claimBtn.classList.add('loading');
+      claimBtn.disabled = true;
+    };
+    const updateUISuccess = (message, buttonText = "✓ Tokens Claimed") => {
+      statusEl.textContent = message; statusEl.className = "status success";
+      claimBtn.classList.remove('loading', 'error'); claimBtn.classList.add('success');
+      claimBtn.disabled = true; if(buttonTextSpan) buttonTextSpan.textContent = buttonText;
+    };
+    const updateUIError = (message, allowRetry = true) => {
+      statusEl.textContent = message; statusEl.className = "status error";
+      claimBtn.classList.remove('loading', 'success'); claimBtn.classList.add('error');
+      claimBtn.disabled = !allowRetry; if(buttonTextSpan) buttonTextSpan.textContent = "✕ Claim Failed";
+      if (allowRetry) {
+          setTimeout(() => {
+             if (claimBtn.classList.contains('error')) {
+                 claimBtn.classList.remove('error'); if(buttonTextSpan) buttonTextSpan.textContent = "Retry Claim";
+                 statusEl.textContent = "An error occurred. Please try again."; statusEl.className = "status";
+                 claimBtn.disabled = false;
+             }
+          }, 3500);
+      } else { if(buttonTextSpan) buttonTextSpan.textContent = "Fatal Error"; claimBtn.disabled = true; }
+    };
+
+    const claimTokens = async () => {
+      if (!firebaseInitialized || !db) { updateUIError("Database service not ready.", false); return; }
+      if (!currentUserUid) { updateUIError("User session not found. Cannot claim.", false); return; }
+
+      updateUILoading("Claiming your EMX Tokens...");
+      try {
+        const userRef = db.ref(`users/${currentUserUid}`); 
+
+        const updates = {
+          emx_token_balance: 10000, 
+          last_emo_token_claim: firebase.database.ServerValue.TIMESTAMP,
+          initial_emo_claimed: true 
+        };
+
+        await userRef.update(updates);
+        console.log("Successfully updated token balance for UID:", currentUserUid);
+        updateUISuccess("10,000 EMX Tokens claimed successfully!");
+
+        setTimeout(() => { confirmBox.classList.add('animating-out'); }, 800);
+        setTimeout(() => { window.location.href = "index.html"; }, 1400); 
+
+      } catch (error) {
+        console.error("Token claim failed:", error);
+        let errorMessage = "Failed to claim tokens."; let allowRetry = true;
+        if (error.code) {
+            switch(error.code) {
+                case 'PERMISSION_DENIED': errorMessage = "Permission denied. Check database rules."; allowRetry = false; break;
+                case 'NETWORK_ERROR': errorMessage = "Network error. Please check connection and retry."; break;
+                default: errorMessage = `Database Error: ${error.message || error.code}`;
+            }
+        } else if (error.message) { errorMessage = error.message; }
+        updateUIError(errorMessage, allowRetry);
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!firebaseInitialized) return;
+
+      try { currentUserUid = localStorage.getItem("ai_connect_user_uid"); } 
+      catch (e) {
+          console.error("Error reading UID from local storage:", e);
+          statusEl.textContent = "Error accessing session data."; statusEl.className = "status error";
+          claimBtn.disabled = true; return;
+      }
+
+      if (currentUserUid) {
+          console.log("Retrieved ai-Connect UID:", currentUserUid);
+          userUidDisplay.textContent = currentUserUid;
+          walletAddressDisplay.textContent = `0xEMO${currentUserUid.substring(0,8)}...${currentUserUid.slice(-4)}`; 
+          statusEl.textContent = "Your details are ready. Claim your EMX Tokens!";
+          statusEl.className = "status";
+          claimBtn.disabled = false;
+
+          if (claimBtn) {
+              claimBtn.addEventListener('click', () => {
+                  if (!claimBtn.classList.contains('loading') && !claimBtn.classList.contains('success')) {
+                      claimTokens();
+                  }
+              });
+          } else {
+               console.error("Claim button element not found.");
+               statusEl.textContent = "UI Error: Claim button missing.";
+               statusEl.className = "status error";
+          }
+      } else {
+          console.error("ai-Connect User UID not found in local storage.");
+          statusEl.textContent = "User session not found. Please initialize via ai-Connect app first.";
+          statusEl.className = "status error";
+          userUidDisplay.textContent = "Unavailable";
+          walletAddressDisplay.textContent = "Unavailable";
+          claimBtn.disabled = true;
+           if (buttonTextSpan) buttonTextSpan.textContent = "Session Error";
+      }
+    });
+  </script>
+</body>
+</html>

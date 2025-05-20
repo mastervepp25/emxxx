@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - Transaction History</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <!-- Using Realtime Database SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    :root {
+      --aiConnect-bg-dark: #0d0d1a;
+      --aiConnect-panel-dark: #121225;
+      --aiConnect-glass-bg: rgba(18, 18, 37, 0.85);
+      --aiConnect-border: rgba(0, 255, 255, 0.25);
+      --aiConnect-cyan: #00ffff;
+      --aiConnect-cyan-dark: #00cccc;
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-glow-strong: rgba(0, 255, 255, 0.7);
+      --aiConnect-gold: #ffc107;
+      --aiConnect-gold-glow: rgba(255, 193, 7, 0.6);
+      --aiConnect-text-primary: #e0e0f0;
+      --aiConnect-text-secondary: #a0a0c0;
+      --aiConnect-success: #00ff88;
+      --aiConnect-error: #ff4444;
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace;
+
+      --spacing-unit: 15px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --box-shadow-emo: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+      --transition-speed: 0.3s;
+      --header-height: 56px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: var(--header-height);
+        padding-bottom: calc(60px + var(--spacing-unit)); /* Adjusted if bottom nav exists on this page */
+        max-width: 420px;
+        margin: 0 auto;
+        overflow-x: hidden;
+        position: relative;
+    }
+    a { color: var(--aiConnect-cyan); text-decoration: none; }
+    a:hover { color: var(--aiConnect-cyan-dark); text-decoration: underline; text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--border-radius); transition: background-color var(--transition-speed), transform 0.1s, box-shadow var(--transition-speed); }
+    button:active { transform: translateY(1px) scale(0.98); }
+    .material-symbols-outlined, .fas { vertical-align: middle; }
+
+    .header {
+        background-color: var(--aiConnect-glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: var(--aiConnect-text-primary);
+        padding: 0 var(--spacing-unit);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        z-index: 100;
+        border-bottom: 1px solid var(--aiConnect-border);
+        height: var(--header-height);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+    }
+    .header-back-button {
+        color: var(--aiConnect-cyan);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px; /* Make it easier to tap */
+        margin-right: 10px; /* Space from title */
+    }
+    .header-back-button .material-symbols-outlined { font-size: 24px; }
+    .header-title {
+        font-size: 1.1rem;
+        font-weight: 500; /* Slightly less bold than main logo */
+        color: var(--aiConnect-text-primary);
+        font-family: var(--font-display);
+        text-shadow: 0 0 5px var(--aiConnect-glow-medium);
+        flex-grow: 1; /* Allow title to take available space */
+        text-align: center;
+    }
+    .header-placeholder { /* To balance the back button if no right icons */
+        width: 40px; /* Approx width of an icon button */
+    }
+
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+
+    .data-card-emo {
+      background: var(--aiConnect-panel-dark);
+      border: 1px solid var(--aiConnect-border);
+      color: var(--aiConnect-text-primary);
+      border-radius: var(--border-radius-large);
+      padding: var(--spacing-unit);
+      box-shadow: 0 0 20px var(--aiConnect-glow-soft), inset 0 0 10px rgba(0,0,0,0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .data-card-emo::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: inherit;
+        box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.1);
+        pointer-events: none;
+        z-index: 0;
+    }
+    .data-card-emo > * { position: relative; z-index: 1; }
+    
+    #pageLoading {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(13, 13, 26, 0.95);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1001; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0s; }
+    #pageLoading .loading-text { font-size: 1.1rem; font-weight: 500; color: var(--aiConnect-text-primary); font-family: var(--font-display); }
+    #pageLoading .spinner {
+        border: 4px solid rgba(0, 255, 255, 0.2); border-top: 4px solid var(--aiConnect-cyan);
+        border-radius: 50%; width: 30px; height: 30px;
+        animation: spin 1s linear infinite; margin-bottom: 15px;
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .transaction-list-emo { list-style: none; padding: 0; }
+    .transaction-item-emo {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 5px;
+        border-bottom: 1px solid var(--aiConnect-border);
+        font-size: 0.9rem;
+    }
+    .transaction-item-emo:last-child { border-bottom: none; }
+    .transaction-details { flex-grow: 1; }
+    .transaction-description-emo { font-weight: 500; }
+    .transaction-date-emo { font-size: 0.75rem; color: var(--aiConnect-text-secondary); display: block; margin-top:2px; }
+    .transaction-amount-emo.credit { color: var(--aiConnect-success); font-weight: bold; }
+    .transaction-amount-emo.debit { color: var(--aiConnect-error); font-weight: bold; }
+    .empty-history-message {
+        text-align: center;
+        padding: 20px;
+        color: var(--aiConnect-text-secondary);
+        font-style: italic;
+    }
+
+    .filters-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        gap: 10px;
+        background: var(--aiConnect-panel-dark);
+        padding: var(--spacing-unit);
+        border-radius: var(--border-radius-large);
+        border: 1px solid var(--aiConnect-border);
+    }
+    .filters-container select, .filters-container input[type="date"] {
+        background-color: var(--aiConnect-bg-dark); /* Darker background for inputs */
+        color: var(--aiConnect-text-primary);
+        border: 1px solid var(--aiConnect-border);
+        padding: 10px;
+        border-radius: var(--border-radius);
+        font-family: var(--font-body);
+        font-size: 0.85rem;
+        flex-basis: calc(50% - 5px); 
+        min-width: 150px;
+    }
+    .filters-container input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1) sepia(100%) saturate(10000%) hue-rotate(180deg); 
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading History...</p>
+  </div>
+
+  <header class="header">
+    <button class="header-back-button" id="backButton" title="Go Back">
+        <span class="material-symbols-outlined">arrow_back_ios_new</span>
+    </button>
+    <h1 class="header-title">Transaction History</h1>
+    <div class="header-placeholder"></div> <!-- To balance back button -->
+  </header>
+
+  <main class="main-content">
+    <div class="filters-container">
+        <select id="transactionTypeFilter">
+            <option value="all">All Types</option>
+            <option value="subscription">Subscription</option>
+            <option value="emx_purchase">EMX Purchase</option>
+            <option value="bonus">Bonus</option> <!-- Added bonus type -->
+            <option value="referral_bonus">Referral Bonus</option>
+            <option value="staking_reward">Staking Reward</option>
+            <option value="withdrawal">Withdrawal</option>
+            <!-- Add more types as needed -->
+        </select>
+        <input type="date" id="transactionDateFilter">
+    </div>
+
+    <div class="data-card-emo">
+        <ul class="transaction-list-emo" id="transactionListContainer">
+            <!-- Transactions will be loaded here by JavaScript -->
+             <div class="empty-history-message" id="emptyHistoryMessage" style="display: none;">
+                No transactions found.
+            </div>
+        </ul>
+    </div>
+  </main>
+
+
+  <script>
+    // ai-Connect Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com", // Realtime DB
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+    const authInstance = firebase.auth();
+    const rtDbInstance = firebase.database(); // Using Realtime Database instance
+
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const pageLoadingText = pageLoadingElement?.querySelector('.loading-text');
+    const backButton = document.getElementById('backButton');
+
+    const transactionListContainer = document.getElementById('transactionListContainer');
+    const emptyHistoryMessageEl = document.getElementById('emptyHistoryMessage');
+    const typeFilterElement = document.getElementById('transactionTypeFilter');
+    const dateFilterElement = document.getElementById('transactionDateFilter');
+
+    let userNormalizedPhoneKey = null;
+    let allTransactions = []; // To store all fetched transactions for client-side filtering
+
+    function triggerHapticFeedback(type = 'light') {
+        if (window.navigator.vibrate) {
+            let duration = type === 'light' ? 20 : 50;
+            window.navigator.vibrate(duration);
+        }
+    }
+    
+    function formatDate(isoString) {
+        if (!isoString) return 'N/A';
+        try {
+            const date = new Date(isoString);
+            return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (e) {
+            return isoString; // Fallback to original string if parsing fails
+        }
+    }
+
+    function formatTransactionAmount(amount, currency) {
+        const numericAmount = Number(amount);
+        if (isNaN(numericAmount)) return 'N/A';
+
+        if (currency === "PHP") {
+            return `₱${numericAmount.toFixed(2)}`;
+        } else if (currency === "EMX") {
+            return `${numericAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} EMX`;
+        }
+        return `${numericAmount} ${currency}`; // Fallback
+    }
+
+
+    function renderTransactions(transactionsToRender) {
+        transactionListContainer.innerHTML = ''; // Clear previous list
+        if (!transactionsToRender || transactionsToRender.length === 0) {
+            if (emptyHistoryMessageEl) emptyHistoryMessageEl.style.display = 'block';
+            return;
+        }
+        if (emptyHistoryMessageEl) emptyHistoryMessageEl.style.display = 'none';
+
+        transactionsToRender.forEach(tx => {
+            const listItem = document.createElement('li');
+            listItem.className = 'transaction-item-emo';
+
+            const detailsDiv = document.createElement('div');
+            detailsDiv.className = 'transaction-details';
+
+            const descriptionSpan = document.createElement('span');
+            descriptionSpan.className = 'transaction-description-emo';
+            descriptionSpan.textContent = tx.description || 'N/A';
+            
+            const dateSpan = document.createElement('span');
+            dateSpan.className = 'transaction-date-emo';
+            dateSpan.textContent = formatDate(tx.date);
+
+            detailsDiv.appendChild(descriptionSpan);
+            detailsDiv.appendChild(dateSpan);
+
+            const amountDiv = document.createElement('div');
+            amountDiv.className = 'transaction-amount-emo';
+            amountDiv.classList.add(Number(tx.amount) >= 0 ? 'credit' : 'debit');
+            amountDiv.textContent = formatTransactionAmount(tx.amount, tx.currency);
+            
+            listItem.appendChild(detailsDiv);
+            listItem.appendChild(amountDiv);
+            transactionListContainer.appendChild(listItem);
+        });
+    }
+
+    function applyFilters() {
+        const selectedType = typeFilterElement.value;
+        const selectedDate = dateFilterElement.value; // YYYY-MM-DD
+
+        if (!allTransactions.length) {
+            renderTransactions([]); // Show empty message if no base data
+            return;
+        }
+
+        let filtered = [...allTransactions];
+
+        if (selectedType !== 'all') {
+            filtered = filtered.filter(tx => tx.type === selectedType);
+        }
+
+        if (selectedDate) {
+            filtered = filtered.filter(tx => {
+                if (!tx.date) return false;
+                // Compare just the date part, ignoring time
+                const txDate = new Date(tx.date).toISOString().slice(0, 10);
+                return txDate === selectedDate;
+            });
+        }
+        renderTransactions(filtered);
+    }
+
+    async function fetchTransactionHistory(phoneKey) {
+        if (!phoneKey) {
+            console.error("Phone key is missing, cannot fetch transactions.");
+            if(pageLoadingElement) pageLoadingElement.classList.add('hidden');
+            renderTransactions([]); // Show empty message
+            return;
+        }
+        if(pageLoadingText) pageLoadingText.textContent = 'Fetching transactions...';
+
+        try {
+            const transactionsRef = rtDbInstance.ref(`user_transactions/${phoneKey}`);
+            // Fetch once and order by date (if dates are stored as timestamps or sortable strings)
+            // For simplicity, fetching all and sorting client-side. For large datasets, use Firebase queries.
+            const snapshot = await transactionsRef.orderByChild('date').once('value'); 
+
+            if (snapshot.exists()) {
+                const transactionsData = snapshot.val();
+                // Convert object of transactions to an array and sort by date descending
+                allTransactions = Object.values(transactionsData)
+                                     .sort((a, b) => new Date(b.date) - new Date(a.date));
+                applyFilters(); // Render with current (or default) filters
+            } else {
+                allTransactions = [];
+                renderTransactions([]); // No transactions found for this user
+            }
+        } catch (error) {
+            console.error("Error fetching transaction history:", error);
+            allTransactions = [];
+            renderTransactions([]); // Show empty message on error
+            if(pageLoadingText && pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+                 pageLoadingText.textContent = 'Failed to load history.';
+            }
+        } finally {
+            if(pageLoadingElement) pageLoadingElement.classList.add('hidden');
+        }
+    }
+
+
+    authInstance.onAuthStateChanged(async (user) => {
+        if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+             // Keep loader visible until data or error shown
+        } else if (pageLoadingElement) {
+            pageLoadingElement.classList.remove('hidden');
+        }
+        
+        if (user) {
+            if(pageLoadingText) pageLoadingText.textContent = 'Verifying user...';
+            // Get the normalizedPhoneKey associated with this user's firebaseUid
+            try {
+                const usersInfoRef = rtDbInstance.ref('users_info');
+                const query = usersInfoRef.orderByChild('firebaseUid').equalTo(user.uid);
+                const userSnapshot = await query.once('value');
+
+                if (userSnapshot.exists()) {
+                    userSnapshot.forEach(childSnapshot => { // Should be only one
+                        userNormalizedPhoneKey = childSnapshot.key;
+                        return true;
+                    });
+                    if (userNormalizedPhoneKey) {
+                        fetchTransactionHistory(userNormalizedPhoneKey);
+                    } else {
+                        throw new Error("Could not determine user's phone key.");
+                    }
+                } else {
+                     throw new Error("User profile not found. Cannot fetch history.");
+                }
+            } catch (error) {
+                console.error("Auth state error:", error);
+                if(pageLoadingText) pageLoadingText.textContent = error.message || 'Authentication error.';
+                setTimeout(() => { if(pageLoadingElement) pageLoadingElement.classList.add('hidden'); }, 2000);
+                allTransactions = [];
+                renderTransactions([]);
+            }
+        } else {
+            if(pageLoadingText) pageLoadingText.textContent = 'Redirecting to sign in...';
+            setTimeout(() => {
+                if(pageLoadingElement) pageLoadingElement.classList.add('hidden');
+                window.location.href = 'signin.html'; 
+            }, 800);
+        }
+    });
+
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            triggerHapticFeedback();
+            window.history.back(); // Simple back navigation
+        });
+    }
+    
+    typeFilterElement?.addEventListener('change', () => { triggerHapticFeedback('selection'); applyFilters(); });
+    dateFilterElement?.addEventListener('change', () => { triggerHapticFeedback('selection'); applyFilters(); });
+
+
+    document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) event.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden') && !authInstance.currentUser) {
+             if(pageLoadingText) pageLoadingText.textContent = 'Authentication timed out. Redirecting...';
+             setTimeout(() => window.location.href = 'signin.html', 500);
+          } else if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+              if(pageLoadingText) pageLoadingText.textContent = 'Finalizing...';
+              pageLoadingElement.classList.add('hidden');
+          }
+        }, 7000); // Extended timeout for potentially slower data loads
+    });
+        
+  </script>
+</body>
+</html>

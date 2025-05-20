@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ai-Connect – EMX Token Claim</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <!-- Using Realtime Database SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    :root {
+      --bg:#0d0d1a; --panel:#121225; --cyan:#00ffff; --glow:rgba(0,255,255,.3);
+      --txt:#e0e0f0; --succ:#00ff88; --err:#ff4444;
+      --font-d:'Orbitron',sans-serif; --font-b:'Roboto Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;touch-action:manipulation}
+    body{
+      background:var(--bg);color:var(--cyan);
+      font-family:var(--font-b);min-height:100vh;
+      display:flex;align-items:center;justify-content:center;
+      padding:20px;overflow-y:auto;
+    }
+    .box{
+      width:100%;max-width:420px;padding:35px 30px;
+      background:var(--panel);border:1px solid rgba(0,255,255,0.2);
+      border-radius:16px;text-align:center;box-shadow:0 0 30px var(--glow);
+      transition:transform .6s ease-out,opacity .5s ease-out; /* Added ease-out */
+    }
+    .box.hide{transform:translateY(50px) scale(.9);opacity:0}
+    .logo{width:70px;margin-bottom:25px;filter:drop-shadow(0 0 10px var(--glow))}
+    h2{font-family:var(--font-d);margin-bottom:25px;text-shadow:0 0 8px var(--glow)}
+    .info{
+      background:rgba(0,0,0,0.25);border:1px solid rgba(0,255,255,0.2);
+      border-radius:8px;padding:10px 15px;margin-bottom:18px;
+      text-align:left;color:var(--txt);word-break:break-all;font-size:.85em;
+    }
+    .info strong{display:block;color:var(--cyan);margin-bottom:6px;font-family:var(--font-d)}
+    .claim-btn{
+      position:relative;width:100%;padding:15px;margin-top:25px;
+      font-family:var(--font-d);font-size:1em;font-weight:700;
+      color:var(--succ);border:2px solid var(--succ);
+      border-radius:8px;background:transparent;cursor:pointer;
+      overflow:hidden;transition:all .4s ease-out;box-shadow:0 0 15px rgba(0,255,136,0)
+    }
+    .claim-btn::before{
+      content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(135deg,var(--succ),#00dd77);
+      transform:translateY(101%);transition:transform .4s ease-out;z-index:-1
+    }
+    .claim-btn:hover:not(:disabled){
+      color:var(--bg);transform:translateY(-3px);box-shadow:0 5px 25px rgba(0,255,136,.5)
+    }
+    .claim-btn:hover:not(:disabled)::before{transform:translateY(0)}
+    .claim-btn:disabled{border-color:#444;color:#666;cursor:not-allowed;background:rgba(68,68,68,0.2)}
+    .status{margin-top:20px;font-size:.85em;min-height:1.5em;color:var(--txt);text-shadow:0 0 5px rgba(160,160,192,.3)}
+    .status.success{color:var(--succ);text-shadow:0 0 8px rgba(0,255,136,.5)}
+    .status.error{color:var(--err);text-shadow:0 0 8px rgba(255,68,68,.5)}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    .claim-btn.loading{pointer-events:none;color:transparent;border-color:rgba(0,255,136,.3)}
+    .claim-btn.loading::after{
+      content:'';position:absolute;top:50%;left:50%;margin:-11px;width:22px;height:22px;
+      border:3px solid rgba(0,255,136,.3);border-top-color:var(--succ);
+      border-radius:50%;animation:spin .8s linear infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="box" id="claimBoxUi">
+    <img src="assets/logo/logo.png" alt="Logo" class="logo">
+    <h2>EMX Token Welcome Bonus</h2>
+    <div class="info"><strong>Account (Phone Key):</strong><span id="displayPhoneKey">Loading…</span></div>
+    <div class="info"><strong>Wallet Address (Display):</strong><span id="displayWalletAddr">Generating…</span></div>
+    <div class="info"><strong>Bonus Amount:</strong><span>1,000 EMX</span></div>
+    <button class="claim-btn" id="claimTokenButton" disabled>Claim 1,000 EMX</button>
+    <div class="status" id="statusMessage">Verifying session…</div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com", // Realtime DB URL
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const database = firebase.database(); // Using Realtime Database
+
+    const claimButton = document.getElementById("claimTokenButton");
+    const statusMessageDiv = document.getElementById("statusMessage");
+    const claimBoxUiElement = document.getElementById("claimBoxUi");
+    const displayPhoneKeyEl = document.getElementById("displayPhoneKey");
+    const displayWalletAddrEl = document.getElementById("displayWalletAddr");
+
+    let currentFirebaseUid = null;
+    let userNormalizedPhoneKey = null; // To store the user's phone key for DB operations
+
+    // Function to update UI elements (button state, status message)
+    const updateUiState = (state, message) => {
+      claimBoxUiElement.classList.remove("hide"); // Ensure box is visible unless explicitly hidden
+      statusMessageDiv.textContent = message;
+      
+      statusMessageDiv.className = 'status'; // Reset class
+      if (state === "error") statusMessageDiv.classList.add("error");
+      else if (state === "success") statusMessageDiv.classList.add("success");
+
+      claimButton.className = 'claim-btn'; // Reset class
+      if (state === "loading") claimButton.classList.add("loading");
+      
+      // Enable button if idle and user is ready, disable otherwise
+      claimButton.disabled = !(state === "idle" && currentFirebaseUid && userNormalizedPhoneKey);
+    };
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        updateUiState("error", "Not authenticated. Redirecting to sign in...");
+        setTimeout(() => location.replace("signin.html"), 1500);
+        return;
+      }
+      currentFirebaseUid = user.uid;
+      updateUiState("loading", "Fetching account details...");
+
+      try {
+        // Find the user's record in Realtime Database using their firebaseUid
+        const usersInfoRef = database.ref('users_info');
+        const query = usersInfoRef.orderByChild('firebaseUid').equalTo(currentFirebaseUid);
+        const snapshot = await query.once('value');
+
+        if (snapshot.exists()) {
+          let userData;
+          snapshot.forEach(childSnapshot => { // Should be only one for a unique UID
+            userNormalizedPhoneKey = childSnapshot.key; // This is the phone key
+            userData = childSnapshot.val();
+            return true; // stop iterating
+          });
+
+          if (userData && userNormalizedPhoneKey) {
+            displayPhoneKeyEl.textContent = `...${userNormalizedPhoneKey.slice(-7)}`; // Show last 7 digits of phone key
+            displayWalletAddrEl.textContent = `0xEMX...${currentFirebaseUid.slice(-6)}`; // Example display wallet
+
+            // Check if the welcome bonus has already been claimed
+            if (userData.emx_welcome_bonus_claimed) {
+              updateUiState("success", "Welcome bonus already claimed!");
+              claimButton.textContent = "Bonus Claimed";
+              claimButton.disabled = true;
+              // Optional: Redirect after a few seconds if already claimed
+              // setTimeout(()=>claimBoxUiElement.classList.add("hide"),1500);
+              // setTimeout(()=>location.href="index.html",2000);
+            } else {
+              updateUiState("idle", "Ready to claim your 1,000 EMX bonus!");
+            }
+          } else {
+            throw new Error("User data structure error.");
+          }
+        } else {
+          throw new Error("User account not found in database. Please complete sign up.");
+        }
+      } catch (error) {
+        console.error("Error fetching user details:", error);
+        updateUiState("error", error.message || "Failed to load account details.");
+        claimButton.disabled = true;
+      }
+    });
+
+    claimButton.addEventListener("click", async () => {
+      if (!currentFirebaseUid || !userNormalizedPhoneKey) {
+        updateUiState("error", "Session or account details missing. Please refresh.");
+        return;
+      }
+      updateUiState("loading", "Claiming your EMX tokens…");
+
+      try {
+        const userAccountRef = database.ref(`users_info/${userNormalizedPhoneKey}`);
+        
+        // Transaction to safely update balance and mark as claimed
+        const result = await userAccountRef.transaction(currentUserData => {
+            if (currentUserData === null) {
+                return null; // User doesn't exist, abort
+            }
+            if (currentUserData.emx_welcome_bonus_claimed) {
+                // Abort transaction: Already claimed (this is a server-side check)
+                // Client-side should have caught this, but good to have redundancy
+                return undefined; // Returning undefined aborts the transaction
+            }
+            
+            // Initialize balance if it doesn't exist
+            if (typeof currentUserData.emx_token_balance !== 'number') {
+                currentUserData.emx_token_balance = 0;
+            }
+            
+            currentUserData.emx_token_balance += 1000; // Add 1000 EMX
+            currentUserData.emx_welcome_bonus_claimed = true;
+            currentUserData.last_emx_claim_timestamp = firebase.database.ServerValue.TIMESTAMP;
+            return currentUserData; // Return the new data to write
+        });
+
+        if (result.committed && result.snapshot.val() !== null) {
+            updateUiState("success", "Successfully claimed 1,000 EMX!");
+            claimButton.textContent = "1,000 EMX Claimed!";
+            setTimeout(() => claimBoxUiElement.classList.add("hide"), 1200); // Hide box
+            setTimeout(() => location.href = "index.html", 1800); // Redirect to home
+        } else {
+            // Transaction was aborted (e.g., already claimed, or data became null)
+             updateUiState("error", "Claim failed or already processed. Please check your balance.");
+             // If the reason was 'already claimed', the onAuthStateChanged logic might update UI too
+        }
+      } catch (error) {
+        console.error("Error during token claim transaction:", error);
+        updateUiState("error", "Claim failed. Please try again later.");
+      }
+    });
+  </script>
+</body>
+</html>

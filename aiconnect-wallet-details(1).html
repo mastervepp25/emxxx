@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ai-Connect - Account Overview</title>
+    
+    <link rel="manifest" href="/manifest.json"> 
+    <link rel="apple-touch-icon" href="assets/logo/logo.png"> 
+    
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script> 
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tailwind is included in your original, but much of the styling is custom now. 
+         If you are not using Tailwind utility classes directly in the HTML body, you might not need this. 
+         However, if some remnants use it, keep it. -->
+    <!-- <script src="https://cdn.tailwindcss.com"></script>  -->
+
+    <style>
+        :root {
+            /* ai-Connect Theme Variables */
+            --aiConnect-bg-dark: #0d0d1a;
+            --aiConnect-panel-dark: #121225;
+            --aiConnect-glass-bg: rgba(18, 18, 37, 0.85);
+            --aiConnect-border: rgba(0, 255, 255, 0.25);
+            --aiConnect-cyan: #00ffff;
+            --aiConnect-cyan-dark: #00cccc;
+            --aiConnect-gold: #ffc107;
+            --aiConnect-text-primary: #e0e0f0;
+            --aiConnect-text-secondary: #a0a0c0;
+            --aiConnect-success: #00ff88;
+            --aiConnect-error: #ff4444;
+
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Roboto Mono', monospace;
+            
+            --spacing-unit: 15px;
+            --border-radius: 8px;
+            --border-radius-large: 12px;
+            --glow-soft: rgba(0, 255, 255, 0.2);
+            --shadow-emo: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px var(--glow-soft);
+            --header-height: 56px;
+        }
+
+        /* Base and Tailwind Overrides for ai-Connect Theme */
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: var(--font-body);
+            font-size: 14px; 
+            background-color: var(--aiConnect-bg-dark);
+            color: var(--aiConnect-text-primary);
+            display: flex; /* Added for centering the .app-container */
+            flex-direction: column; /* Added */
+            align-items: center; /* Added for centering */
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            overscroll-behavior-y: contain;
+        }
+        .app-container { /* New wrapper for max-width and centering */
+            width: 100%;
+            max-width: 450px; /* Max width for mobile app feel */
+            min-height: 100dvh; /* Use dvh for mobile viewport height */
+            display: flex;
+            flex-direction: column;
+            background-color: var(--aiConnect-bg-dark); /* Ensure bg for the container */
+            position: relative; /* For fixed header/footer positioning */
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            border-left: 1px solid var(--aiConnect-border); /* Optional app frame */
+            border-right: 1px solid var(--aiConnect-border);
+        }
+
+        /* Header */
+        .header-bg { 
+            background-color: var(--aiConnect-panel-dark) !important;
+            border-bottom: 1px solid var(--aiConnect-border);
+            color: var(--aiConnect-text-primary);
+            box-shadow: var(--shadow-emo);
+            height: var(--header-height);
+            padding: 0 var(--spacing-unit);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky; /* Sticky header */
+            top: 0;
+            z-index: 100;
+            width: 100%; /* Take full width of .app-container */
+        }
+        .header-bg .material-icons {
+             color: var(--aiConnect-cyan);
+             cursor: pointer;
+        }
+        .header-bg .header-title-text { /* Custom class for the title text div */
+            font-family: var(--font-display);
+            text-shadow: 0 0 5px var(--glow-soft);
+            flex-grow: 1; /* Allow title to take space */
+            text-align: center; /* Center title */
+            font-size: 1.1rem; /* Example size */
+        }
+
+
+        /* Main Content Area */
+        main.content-area { /* Custom class for main */
+            padding: var(--spacing-unit);
+            flex-grow: 1; /* Allow main to take available space */
+            overflow-y: auto; /* Allow main content to scroll */
+        }
+
+
+        /* Balance Card */
+        .balance-card {
+            background: linear-gradient(135deg, var(--aiConnect-panel-dark) 0%, var(--aiConnect-bg-dark) 100%);
+            border: 1px solid var(--aiConnect-border);
+            color: var(--aiConnect-text-primary);
+            border-radius: var(--border-radius-large);
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-emo);
+        }
+        .balance-title {
+            font-family: var(--font-display);
+            font-size: 1rem; 
+            font-weight: 600;
+            color: var(--aiConnect-cyan);
+            margin-bottom: 10px;
+        }
+        .balance-amount, .token-balance {
+            font-family: var(--font-display);
+            font-size: 1.25rem; 
+            font-weight: bold;
+            text-shadow: 0 0 5px var(--glow-soft);
+        }
+        .balance-label {
+            font-size: 0.8rem; 
+            color: var(--aiConnect-text-secondary);
+        }
+        .balance-card .material-icons {
+            color: var(--aiConnect-cyan) !important;
+        }
+        .balance-card .icon-bg-circle { /* Replaced .bg-white */
+            background-color: rgba(0, 255, 255, 0.1) !important;
+            border: 1px solid var(--aiConnect-border);
+            width: 40px; /* Tailwind w-10 */
+            height: 40px; /* Tailwind h-10 */
+            border-radius: 9999px; /* Tailwind rounded-full */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+
+        /* Data Boxes (Affiliate, Network) */
+        .data-box-grid { /* Tailwind: grid grid-cols-2 gap-4 mb-6 */
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: var(--spacing-unit);
+            margin-bottom: calc(var(--spacing-unit) * 1.5);
+        }
+        .data-box {
+            border-radius: var(--border-radius-large);
+            padding: var(--spacing-unit);
+            text-align: center;
+            color: var(--aiConnect-text-primary);
+            box-shadow: var(--shadow-emo);
+            border: 1px solid var(--aiConnect-border);
+        }
+        .data-box.affiliate { 
+            background: linear-gradient(135deg, #2a004f, var(--aiConnect-panel-dark)); 
+        }
+        .data-box.network { 
+            background: linear-gradient(135deg, #004d40, var(--aiConnect-panel-dark)); 
+        }
+        .data-number {
+            font-family: var(--font-display);
+            font-size: 1.25rem; 
+            font-weight: bold;
+        }
+        .data-label {
+            font-size: 0.75rem; 
+            color: var(--aiConnect-text-secondary);
+        }
+
+        /* Share & Earn Section */
+        .share-earn-card, .analytics-container, .unilevel-container { 
+            background-color: var(--aiConnect-panel-dark);
+            border: 1px solid var(--aiConnect-border);
+            color: var(--aiConnect-text-primary);
+            border-radius: var(--border-radius-large);
+            padding: var(--spacing-unit);
+            margin-bottom: 20px; 
+            box-shadow: var(--shadow-emo);
+        }
+        .share-earn-card h2, .analytics-title, .unilevel-title {
+            font-family: var(--font-display);
+            color: var(--aiConnect-cyan);
+            font-size: 1.1rem; 
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .share-link {
+            background-color: var(--aiConnect-bg-dark); 
+            padding: 10px;
+            border-radius: var(--border-radius);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid var(--aiConnect-border);
+        }
+        .share-link input {
+            flex: 1;
+            padding: 8px; 
+            border: 1px solid var(--aiConnect-border);
+            background-color: var(--aiConnect-bg-dark);
+            color: var(--aiConnect-text-primary);
+            border-radius: var(--border-radius);
+            margin-right: 8px;
+            font-size: 0.8rem; 
+        }
+        .share-link button { 
+            background-color: var(--aiConnect-cyan) !important;
+            color: var(--aiConnect-bg-dark) !important;
+            font-weight: bold;
+            padding: 8px 12px; /* Tailwind py-2 px-4 */
+            border-radius: var(--border-radius);
+            border: none;
+        }
+         .share-link button .material-icons {
+            color: var(--aiConnect-bg-dark) !important;
+            font-size: 1.1rem; /* Tailwind text-sm */
+            vertical-align: middle; /* Tailwind align-middle */
+        }
+        .share-earn-card p.text-sm { /* Tailwind: text-sm text-gray-500 mt-2 */
+            font-size: 0.875rem;
+            color: var(--aiConnect-text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Analytics Chart */
+        .analytics-date {
+            font-size: 0.8rem; 
+            color: var(--aiConnect-text-secondary);
+        }
+        .analytics-chart-wrapper { /* For flex layout of chart */
+            display: flex;
+            justify-content: center; /* Center the chart if canvas is smaller */
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+        .analytics-chart { /* Styles for the canvas itself if needed, size set in JS */
+             max-width: 100%; /* Ensure it's responsive */
+        }
+        /* Bar chart elements from original if not using Chart.js fully */
+        .bar-chart-manual {
+            height: 100px; 
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+            border-radius: var(--border-radius);
+        }
+        .bar {
+            width: 45%;
+            background-color: var(--aiConnect-border); 
+            margin: 0 2.5%;
+            position: relative;
+            border-radius: 5px 5px 0 0;
+        }
+        .bar.views { background-color: var(--aiConnect-cyan); } 
+        .bar.registered { background-color: var(--aiConnect-gold); } 
+        .bar-value {
+            position: absolute;
+            top: -18px; 
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--aiConnect-text-primary);
+            font-size: 0.7rem; 
+        }
+        .bar-label-container { /* Tailwind: flex justify-around */
+            display: flex;
+            justify-content: space-around;
+        }
+        .bar-label {
+            text-align: center;
+            font-size: 0.7rem; 
+            color: var(--aiConnect-text-secondary);
+            margin-top: 5px;
+        }
+        .legend { /* Tailwind: mt-2 flex justify-center */
+            margin-top: 0.5rem;
+            display: flex;
+            justify-content: center;
+        }
+        .legend-item { display: flex; align-items: center; margin-right: 15px; }
+        .legend-color { width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+        .legend-color.views { background-color: var(--aiConnect-cyan); }
+        .legend-color.registered { background-color: var(--aiConnect-gold); }
+        .legend-text { font-size: 0.7rem; color: var(--aiConnect-text-secondary); }
+
+        /* Unilevel / Genealogy */
+        .genealogy-chart-container { /* Tailwind: flex justify-center mt-4 */
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+            min-height: 150px; /* From inline style */
+        }
+
+
+        /* Share Menu */
+        .share-menu {
+            position: fixed;
+            bottom: -100%; 
+            left: 50%; /* Centering trick */
+            transform: translateX(-50%); /* Centering trick */
+            width: 100%; /* Take full width of its offset parent (.app-container) */
+            max-width: 450px; /* Match app-container max-width */
+            background: var(--aiConnect-panel-dark); 
+            padding: 20px;
+            border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.5), 0 0 20px var(--glow-soft);
+            transition: bottom 0.3s ease-in-out; 
+            z-index: 1000;
+            border-top: 1px solid var(--aiConnect-border);
+        }
+        .share-menu.show { bottom: 0; }
+        .share-menu .share-menu-header { 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px; 
+        }
+        .share-menu .share-menu-header h2 { 
+            color: var(--aiConnect-cyan); 
+            font-family: var(--font-display);
+            font-size: 1.2rem; 
+            font-weight: 500;
+        }
+        .share-menu .close-icon { 
+            color: var(--aiConnect-text-secondary);
+            cursor: pointer;
+            padding: 5px; 
+        }
+        .share-menu .close-icon:hover { 
+            color: var(--aiConnect-cyan); 
+        }
+        .share-menu .share-icons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 20px 10px; /* Adjusted column gap */
+        }
+        .share-menu .share-icons .icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; 
+            cursor: pointer;
+            color: var(--aiConnect-text-secondary);
+            text-align: center;
+            padding: 5px 0; 
+            transition: color 0.2s ease-out;
+        }
+        .share-menu .share-icons .icon:hover { 
+            color: var(--aiConnect-cyan); 
+        }
+        .share-menu .share-icons .icon span:last-child { /* Text label */
+            font-size: 0.7rem; 
+            margin-top: 6px; 
+            line-height: 1.2;
+        }
+        .share-menu .share-icons .icon .material-icons,
+        .share-menu .share-icons .icon .custom-share-icon { 
+            font-size: 1.8rem; 
+            width: 28px; 
+            height: 28px; 
+            display: flex; 
+            align-items: center;
+            justify-content: center;
+        }
+        .share-menu .share-icons .icon .custom-share-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: currentColor; 
+        }
+
+    </style>
+</head>
+<body>
+    <div class="app-container"> <!-- Added wrapper for max-width and centering -->
+        <header class="header-bg"> <!-- Tailwind: p-4 text-lg font-semibold flex items-center justify-between sticky top-0 z-50 -->
+            <span class="material-icons" onclick="window.history.back()">
+                arrow_back_ios_new
+            </span>
+            <div class="header-title-text"> <!-- Tailwind: flex-1 text-center -->
+                Account Overview
+            </div>
+            <span class="material-icons"> 
+                calendar_today
+            </span>
+        </header>
+
+        <main class="content-area"> <!-- Tailwind: p-4 flex-1 -->
+            <div class="balance-card">
+                <div class="balance-title">My Balances</div>
+                <div style="display: flex; justify-content: space-between; align-items: center;"> <!-- Tailwind: flex justify-between items-center -->
+                    <div>
+                        <div class="balance-amount" id="currentBalance">₱0.00</div>
+                        <div class="balance-label">PHP Wallet</div>
+                        <div class="token-balance" style="margin-top: 0.5rem;" id="tokenBalance">0.00 EMX</div>
+                        <div class="balance-label">EMX Token</div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;"> <!-- Tailwind: flex items-center space-x-4 -->
+                        <div class="icon-bg-circle">
+                            <span class="material-icons">account_balance_wallet</span>
+                        </div>
+                        <div class="icon-bg-circle">
+                            <span class="material-icons">toll</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="data-box-grid">
+                <div class="data-box affiliate">
+                    <div class="data-number" id="affiliateRewards">₱0.00</div>
+                    <div class="data-label">Total Rewards</div>
+                </div>
+                <div class="data-box network">
+                    <div class="data-number" id="networkAffiliates">0</div>
+                    <div class="data-label">My Affiliates</div>
+                </div>
+            </div>
+
+            <div class="share-earn-card">
+                <h2 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem;">Share & Earn</h2> <!-- Tailwind: text-xl font-semibold mb-2 -->
+                <div class="share-link">
+                    <input type="text" id="shareUrl" readonly style="flex-grow: 1; padding: 0.5rem; border-width: 1px; border-radius: 0.5rem;"> <!-- Tailwind: flex-1 p-2 border border-gray-300 rounded-lg -->
+                    <button onclick="copyShareLink()" style="font-weight: bold; padding: 0.5rem 1rem; border-radius: 0.375rem;"> <!-- Tailwind: font-bold py-2 px-4 rounded -->
+                        <span class="material-icons">content_copy</span>
+                    </button>
+                </div>
+                <p class="text-sm" style="margin-top: 0.5rem;">Click the copy button to share your link.</p>
+            </div>
+
+            <div class="analytics-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;"> <!-- Tailwind: flex justify-between items-center mb-3 -->
+                    <div class="analytics-title">Referral Analytics</div>
+                    <div class="analytics-date" id="currentDate">Loading date...</div>
+                </div>
+                <div class="analytics-chart-wrapper">
+                    <canvas id="analyticsBarChart" class="analytics-chart" height="100"></canvas> <!-- Canvas for Chart.js -->
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color views"></div>
+                        <span class="legend-text">Total Link Views</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color registered"></div>
+                        <span class="legend-text">Registered Users</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="unilevel-container"> <!-- Tailwind: mt-6 -->
+                 <div class="unilevel-title">Affiliate Network (Levels 1-5)</div>
+                 <div class="genealogy-chart-container">
+                    <canvas id="genealogyChart"></canvas> <!-- Canvas for Chart.js -->
+                 </div>
+            </div>
+        </main>
+
+        <!-- Share Menu -->
+        <div class="share-menu" id="shareMenu">
+            <div class="share-menu-header">
+                <h2>Share Via</h2>
+                <span class="material-icons close-icon" onclick="hideShareMenu()">close</span>
+            </div>
+            <div class="share-icons">
+                <div class="icon" onclick="shareVia('facebook')"> <span class="material-icons">facebook</span> <span>Facebook</span> </div>
+                <div class="icon" onclick="shareVia('whatsapp')"> <span class="material-icons">whatsapp</span> <span>WhatsApp</span> </div>
+                <div class="icon" onclick="shareVia('telegram')"> <span class="material-icons">telegram</span> <span>Telegram</span> </div>
+                <div class="icon" onclick="shareVia('twitter')"> 
+                    <span class="custom-share-icon"> <!-- Placeholder for X/Twitter SVG -->
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    </span> 
+                    <span>X (Twitter)</span> 
+                </div>
+                <div class="icon" onclick="shareVia('linkedin')"> 
+                    <span class="custom-share-icon"> <!-- Placeholder for LinkedIn SVG -->
+                        <svg fill="currentColor" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.16v8.37h2.16v-4.55c0-.83.48-1.52 1.29-1.52.81 0 1.29.69 1.29 1.52v4.55h2.16zM6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69.75 1.69 1.69 0 0 0-.01 2.63c.01.01 1.69.75 1.69.75zM8 18.5v-8.37H5.83V18.5H8z"/></svg>
+                    </span>
+                    <span>LinkedIn</span>
+                </div>
+                <div class="icon" onclick="shareVia('email')"> 
+                    <span class="material-icons">email</span> 
+                    <span>Email</span> 
+                </div>
+                <div class="icon" onclick="shareVia('sms')"> 
+                    <span class="material-icons">sms</span> 
+                    <span>SMS</span> 
+                </div>
+                <div class="icon" onclick="shareVia('copy')"> 
+                    <span class="material-icons">link</span> 
+                    <span>Copy Link</span> 
+                </div>
+            </div>
+        </div>
+    </div> <!-- End of .app-container -->
+
+    <script>
+        // ai-Connect Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+            authDomain: "daisy-n7g20a.firebaseapp.com",
+            databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+            projectId: "daisy-n7g20a",
+            storageBucket: "daisy-n7g20a.appspot.com",
+            messagingSenderId: "225362605902",
+            appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const rtDb = firebase.database(); 
+        const auth = firebase.auth();
+
+        let userNormalizedPhoneKey = null; 
+
+        function displayCurrentDate() {
+            const today = new Date();
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const dateEl = document.getElementById('currentDate');
+            if(dateEl) dateEl.textContent = today.toLocaleDateString(undefined, options);
+        }
+
+        function generateShareLink(phoneKey) { 
+            const shareUrl = `https://memo.aitekchat.com/signup.html?ref=${phoneKey}`;
+            const shareUrlInput = document.getElementById('shareUrl');
+            if(shareUrlInput) shareUrlInput.value = shareUrl;
+            return shareUrl;
+        }
+
+        function copyShareLink() {
+            const shareUrlInput = document.getElementById('shareUrl');
+            if (!shareUrlInput || !shareUrlInput.value) {
+                alert("Share link not yet available.");
+                return;
+            }
+            shareUrlInput.select();
+            shareUrlInput.setSelectionRange(0, 99999); 
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    alert('Share link copied!');
+                    showShareMenu();
+                } else {
+                    alert('Failed to copy. Please copy manually.');
+                }
+            } catch (err) {
+                alert('Failed to copy. Please copy manually.');
+                console.error('Copy failed:', err);
+            }
+        }
+        function showShareMenu() { 
+            const menu = document.getElementById('shareMenu');
+            if(menu) menu.classList.add('show');
+        }
+        function hideShareMenu() { 
+            const menu = document.getElementById('shareMenu');
+            if(menu) menu.classList.remove('show');
+        }
+
+        function shareVia(platform) {
+            const shareUrlInput = document.getElementById('shareUrl');
+            if (!shareUrlInput || !shareUrlInput.value) { alert("Share link is not available."); return; }
+            const shareUrl = shareUrlInput.value;
+            let shareLink = '';
+            const textContent = `Join ai-Connect with my link! ${shareUrl}`;
+
+            switch (platform) {
+                case 'facebook': shareLink = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`; break;
+                case 'whatsapp': shareLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(textContent)}`; break;
+                case 'telegram': shareLink = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent("Join ai-Connect!")}`; break;
+                case 'twitter': shareLink = `https://twitter.com/intent/tweet?text=${encodeURIComponent("Join ai-Connect with my link!")}&url=${encodeURIComponent(shareUrl)}`; break;
+                case 'linkedin': shareLink = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent("Join ai-Connect!")}&summary=${encodeURIComponent("Check out ai-Connect!")}`; break;
+                case 'sms':      shareLink = `sms:?body=${encodeURIComponent(textContent)}`; break;
+                case 'email':    shareLink = `mailto:?subject=${encodeURIComponent("Join me on ai-Connect")}&body=${encodeURIComponent(textContent)}`; break;
+                case 'copy':     copyShareLink(); return; // Already handled, just call it and exit
+                default: alert(`Sharing via ${platform} is not directly implemented. Link copied if possible.`); copyShareLink(); return;
+            }
+            window.open(shareLink, '_blank');
+            hideShareMenu();
+        }
+        
+        function formatCurrency(amount, currency = 'PHP') {
+            const numericAmount = Number(amount) || 0;
+            if (currency === 'PHP') {
+                return `₱${numericAmount.toFixed(2)}`;
+            }
+            return `${numericAmount.toFixed(2)} ${currency}`;
+        }
+
+
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = 'signin.html'; 
+                return;
+            }
+
+            try {
+                const usersInfoRef = rtDb.ref('users_info');
+                const query = usersInfoRef.orderByChild('firebaseUid').equalTo(user.uid);
+                const userSnapshot = await query.once('value');
+
+                if (userSnapshot.exists()) {
+                    userSnapshot.forEach(childSnapshot => { 
+                        userNormalizedPhoneKey = childSnapshot.key;
+                        return true; 
+                    });
+
+                    if (userNormalizedPhoneKey) {
+                        const userDataRef = rtDb.ref(`users_info/${userNormalizedPhoneKey}`);
+                        userDataRef.on('value', (dataSnapshot) => { 
+                            if (dataSnapshot.exists()) {
+                                const userData = dataSnapshot.val();
+                                
+                                const phpBalance = userData.php_balance || 0;
+                                const emxBalance = userData.emx_token_balance || 0; 
+                                if(document.getElementById('currentBalance')) document.getElementById('currentBalance').textContent = formatCurrency(phpBalance, 'PHP');
+                                if(document.getElementById('tokenBalance')) document.getElementById('tokenBalance').textContent = `${emxBalance.toFixed(2)} EMX`;
+
+                                generateShareLink(userNormalizedPhoneKey); 
+
+                                if(document.getElementById('affiliateRewards')) document.getElementById('affiliateRewards').textContent = formatCurrency(userData.total_rewards || 0, 'PHP');
+                                if(document.getElementById('networkAffiliates')) document.getElementById('networkAffiliates').textContent = userData.affiliate_count || 0;
+                                
+                                const linkViews = userData.link_views || 0; 
+                                const registeredFromLink = userData.link_registrations || 0;
+                                const linkViewsEl = document.getElementById('linkViews');
+                                const registeredViewsEl = document.getElementById('registeredViews');
+                                if(linkViewsEl) linkViewsEl.textContent = linkViews;
+                                if(registeredViewsEl) registeredViewsEl.textContent = registeredFromLink;
+                                
+                                // Update bar chart heights
+                                const totalAnalytics = Math.max(1, linkViews + registeredFromLink); // Avoid division by zero
+                                const viewsBar = document.querySelector('.bar.views');
+                                const registeredBar = document.querySelector('.bar.registered');
+                                if(viewsBar) viewsBar.style.height = `${Math.min(100, (linkViews / totalAnalytics) * 100 || 5)}%`;
+                                if(registeredBar) registeredBar.style.height = `${Math.min(100, (registeredFromLink / totalAnalytics) * 100 || 5)}%`;
+
+
+                                const genealogyData = userData.genealogy_levels || { level1: 0, level2: 0, level3: 0, level4: 0, level5: 0 };
+                                renderGenealogyChart(genealogyData);
+                            } else {
+                                console.error("User data node does not exist for phone key:", userNormalizedPhoneKey);
+                                // alert("Your account data could not be found. Please contact support.");
+                            }
+                        });
+                    } else { throw new Error("User's phone key association not found."); }
+                } else { throw new Error("User profile not found. Please sign up or sign in again."); }
+            } catch (error) {
+                console.error("Error fetching user data: ", error);
+                // alert("An error occurred while loading your account data. Please try refreshing.");
+            }
+            displayCurrentDate();
+        });
+
+        function renderGenealogyChart(affiliatesData) {
+            const ctx = document.getElementById('genealogyChart')?.getContext('2d');
+            if (!ctx) return;
+
+            if (window.myGenealogyChart instanceof Chart) {
+                window.myGenealogyChart.destroy();
+            }
+
+            window.myGenealogyChart = new Chart(ctx, {
+                type: 'line', 
+                data: {
+                    labels: ['Level 1', 'Level 2', 'Level 3', 'Level 4', 'Level 5'],
+                    datasets: [{
+                        label: 'Affiliates per Level',
+                        data: [
+                            affiliatesData.level1 || 0, affiliatesData.level2 || 0,
+                            affiliatesData.level3 || 0, affiliatesData.level4 || 0,
+                            affiliatesData.level5 || 0
+                        ],
+                        backgroundColor: 'rgba(0, 255, 255, 0.2)', 
+                        borderColor: 'var(--aiConnect-cyan)',
+                        borderWidth: 2, fill: true, tension: 0.3, 
+                        pointBackgroundColor: 'var(--aiConnect-cyan)',
+                        pointBorderColor: 'var(--aiConnect-panel-dark)',
+                        pointHoverRadius: 7,
+                        pointHoverBackgroundColor: 'var(--aiConnect-cyan-dark)'
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0, color: 'var(--aiConnect-text-secondary)'}, grid: { color: 'var(--aiConnect-border)'}},
+                        x: { ticks: { color: 'var(--aiConnect-text-secondary)'}, grid: { color: 'var(--aiConnect-border)'}}
+                    },
+                    plugins: { legend: { labels: { color: 'var(--aiConnect-text-primary)'}}}
+                }
+            });
+        }
+        // Initial call moved inside onAuthStateChanged
+        // displayCurrentDate(); 
+    </script>
+</body>
+</html>

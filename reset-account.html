@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>ai-Connect – Account Recovery / Sign Up</title> <!-- Title updated -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Mono&display=swap" rel="stylesheet" />
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> 
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- libphonenumber-js for phone number parsing/formatting -->
+  <script src="https://unpkg.com/libphonenumber-js@1.10.57/bundle/libphonenumber-min.js"></script>
+  <style>
+    :root {
+      --bg:#0d0d1a; --panel:#121225; --cyan:#00ffff; --cyan-faded:rgba(0,255,255,0.2);
+      --glow:rgba(0,255,255,.3); --txt:#e0e0f0; --err:#ff4444; --succ:#00ff88;
+      --font-d:'Orbitron',sans-serif; --font-b:'Roboto Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      height:100vh;background:var(--bg);font-family:var(--font-b);color:var(--cyan);
+    }
+    .card{
+      width:100%;max-width:380px; 
+      background:var(--panel);
+      padding:40px 30px;border:1px solid var(--glow);
+      border-radius:16px;text-align:center;box-shadow:0 0 30px var(--glow);
+    }
+    .logo{width:70px;margin-bottom:20px;filter:drop-shadow(0 0 8px var(--glow))}
+    h2{font-family:var(--font-d);margin-bottom:20px;text-shadow:0 0 8px var(--glow);}
+
+    .input-field {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 20px;
+      background: transparent;
+      border: 2px solid var(--cyan-faded);
+      border-radius: 8px;
+      color: var(--txt);
+      font-family: var(--font-b);
+      font-size: 1em;
+      box-sizing: border-box;
+      transition: opacity 0.3s ease-out, max-height 0.3s ease-out, margin 0.3s ease-out, padding 0.3s ease-out;
+    }
+    .input-field.hidden-field {
+        opacity: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: 0;
+        border-width: 0;
+        overflow: hidden;
+    }
+    .input-field::placeholder { color: rgba(224, 224, 240, 0.7); }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px var(--glow);
+    }
+    .input-field.error { border-color: var(--err); }
+
+    .btn{
+      position:relative;width:100%;padding:14px; margin-top: 5px;
+      font-family:var(--font-d);font-weight:700;font-size:1.1em;
+      color:var(--cyan);border:2px solid var(--cyan);
+      border-radius:8px;background:transparent;cursor:pointer;
+      transition:all .35s ease-out; 
+    }
+    .btn.hidden-field { 
+        opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0;
+        margin-top: 0; margin-bottom: 0; border-width: 0; overflow: hidden;
+    }
+    .btn::before{
+      content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(135deg,var(--cyan),#00cccc);
+      transform:translateY(101%);transition:transform .35s ease-out;z-index:-1;
+    }
+    .btn:hover:not(:disabled){
+      color:var(--bg);transform:translateY(-3px);box-shadow:0 5px 20px var(--glow);
+    }
+    .btn:hover:not(:disabled)::before{transform:translateY(0)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    
+    .msg{margin-top:20px;font-size:.9em;min-height:1.4em;color:var(--txt)}
+    .msg.error {color:var(--err)}
+    .msg.success {color:var(--succ)}
+    .back-link {
+        display: block;
+        margin-top: 20px;
+        color: var(--cyan-faded);
+        font-size: 0.85em;
+        text-decoration: none;
+    }
+    .back-link:hover {
+        color: var(--cyan);
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="assets/logo/logo.png" alt="Logo" class="logo">
+    <h2 id="pageTitle">Account Recovery / Sign Up</h2>
+
+    <div id="resetForm">
+        <input type="tel" id="phoneNumberInput" class="input-field" placeholder="Your Phone Number" required>
+        <input type="email" id="emailInput" class="input-field" placeholder="Your Email Address" required>
+        <button class="btn" id="actionButton">Verify / Create Account</button> <!-- Button text updated -->
+    </div>
+    
+    <div class="msg" id="messageDiv">Enter phone & email to recover PIN or create an account.</div>
+    <a href="signin.html" class="back-link" id="backToSignInLink">Back to Sign In</a>
+  </div>
+
+  <script>
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth(); // Auth is needed for creating new anonymous user
+    const database = firebase.database();
+
+    const resetFormDiv = document.getElementById('resetForm');
+    const phoneNumberField = document.getElementById('phoneNumberInput');
+    const emailField = document.getElementById('emailInput');
+    const actionButton = document.getElementById('actionButton');
+    const messageDiv = document.getElementById('messageDiv');
+    const pageTitleElement = document.getElementById('pageTitle');
+    const backToSignInLinkElement = document.getElementById('backToSignInLink');
+
+    // Set persistence for any new anonymous session created
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .catch((error) => { console.error("Error setting Firebase auth persistence:", error); });
+
+
+    function showMessage(text, type = 'info') {
+        messageDiv.textContent = text;
+        messageDiv.className = 'msg'; 
+        if (type === 'error') messageDiv.classList.add('error');
+        else if (type === 'success') messageDiv.classList.add('success');
+        
+        phoneNumberField.classList.toggle('error', type === 'error' && text.toLowerCase().includes("phone"));
+        emailField.classList.toggle('error', type === 'error' && text.toLowerCase().includes("email"));
+    }
+    
+    phoneNumberField.addEventListener('input', () => {
+        if (messageDiv.classList.contains('error')) {
+             showMessage("Enter phone & email to recover PIN or create an account.", 'info');
+        }
+    });
+    emailField.addEventListener('input', () => {
+        if (messageDiv.classList.contains('error')) {
+             showMessage("Enter phone & email to recover PIN or create an account.", 'info');
+        }
+    });
+
+    actionButton.addEventListener("click", async () => {
+      const rawPhoneNumber = phoneNumberField.value.trim();
+      const emailAddress = emailField.value.trim();
+      const deviceAgent = navigator.userAgent;
+
+
+      showMessage("Processing...", 'info');
+      actionButton.disabled = true;
+      
+      if (!rawPhoneNumber) {
+        showMessage("Phone number is required.", 'error');
+        actionButton.disabled = false; return;
+      }
+      if (!emailAddress) { 
+        showMessage("Email address is required.", 'error');
+        actionButton.disabled = false; return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailAddress)) {
+        showMessage("Please enter a valid email address.", 'error');
+        actionButton.disabled = false; return;
+      }
+
+      let parsedPhoneNumber;
+      try {
+        parsedPhoneNumber = libphonenumber.parsePhoneNumberFromString(rawPhoneNumber);
+      } catch (e) {
+        showMessage("Invalid phone number format. Use international format (e.g. +1).", 'error');
+        actionButton.disabled = false; return;
+      }
+
+      if (!parsedPhoneNumber || !parsedPhoneNumber.isValid()) {
+        let errMsg = "Invalid phone number. Please check and include country code (e.g. +1, +63).";
+        if (!rawPhoneNumber.startsWith('+')) errMsg = "Phone number must start with '+' and country code.";
+        showMessage(errMsg, 'error');
+        actionButton.disabled = false; return;
+      }
+
+      const e164Number = parsedPhoneNumber.format('E.164'); 
+      const normalizedPhoneKey = e164Number.substring(1);
+      const internationalFormat = parsedPhoneNumber.formatInternational(); 
+      const country = parsedPhoneNumber.country; 
+
+
+      try {
+        const userRecordRef = database.ref(`users_info/${normalizedPhoneKey}`);
+        const snapshot = await userRecordRef.once("value");
+
+        if (snapshot.exists()) {
+            // ----- PHONE NUMBER EXISTS - PROCEED WITH "RESET" (INSTRUCTIONAL) -----
+            const userData = snapshot.val();
+            console.log(`SIMULATION: Phone ${normalizedPhoneKey} found for PIN reset.`);
+            
+            if (!userData.recoveryEmail || userData.recoveryEmail !== emailAddress) {
+                 await userRecordRef.update({ recoveryEmail: emailAddress });
+                 console.log(`Recovery email for ${normalizedPhoneKey} updated/set to ${emailAddress}.`);
+            } else {
+                 console.log(`Recovery email for ${normalizedPhoneKey} is already ${emailAddress}.`);
+            }
+
+            pageTitleElement.textContent = "Check Your Email";
+            phoneNumberField.classList.add('hidden-field');
+            emailField.classList.add('hidden-field');
+            actionButton.classList.add('hidden-field');
+            setTimeout(() => { if(resetFormDiv) resetFormDiv.style.display = 'none'; }, 350);
+
+            showMessage(`If an account exists for ${internationalFormat}, a PIN reset link has been sent to ${emailAddress}. Check your inbox (and spam folder).`, 'success');
+            // Button remains disabled. User needs to check email.
+
+        } else { 
+            // ----- PHONE NUMBER DOES NOT EXIST - PROCEED TO CREATE ACCOUNT -----
+            showMessage(`Phone ${internationalFormat} not found. Creating new account...`, 'info');
+            
+            // Ensure no other user is signed in from a previous bad state
+            if (auth.currentUser) {
+                console.log("Signing out existing user before new account creation:", auth.currentUser.uid);
+                await auth.signOut();
+            }
+
+            const { user: newAnonUser } = await auth.signInAnonymously();
+            const firebaseUid = newAnonUser.uid;
+
+            const newUserData = {
+              firebaseUid: firebaseUid,
+              deviceAgent: deviceAgent,
+              phoneNumberRaw: rawPhoneNumber,
+              phoneNumberE164: e164Number,
+              phoneNumberFormatted: internationalFormat,
+              country: country,
+              email: emailAddress, // Storing the provided email
+              createdAt: firebase.database.ServerValue.TIMESTAMP,
+              lastLoginAttempt: firebase.database.ServerValue.TIMESTAMP // Or just createdAt
+            };
+            
+            await userRecordRef.set(newUserData);
+            console.log("New user account created for:", normalizedPhoneKey, "with UID:", firebaseUid);
+            
+            showMessage("New account created! Redirecting to set PIN…", 'success');
+            setTimeout(() => {
+              window.location.href = "create-pin.html"; 
+            }, 1500);
+        }
+      } catch (error) {
+        console.error("Error during account recovery/creation:", error);
+        showMessage("Process failed due to a system error. Please try again.", 'error');
+        actionButton.disabled = false; // Re-enable button on error
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => { phoneNumberField.focus(); });
+  </script>
+</body>
+</html>

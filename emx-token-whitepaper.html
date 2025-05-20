@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EMX Token - Whitepaper</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script>
+
+<style>
+    :root {
+        --electric-blue: #00ffff; 
+        --command-black: #0d0d1a; 
+        --panel-black: #121225;   
+        --glass-bg: rgba(18, 18, 37, 0.85); /* Adjusted alpha for whitepaper */
+        --glass-border: rgba(0, 255, 255, 0.25); 
+        --glow-strong: rgba(0, 255, 255, 0.7);
+        --glow-medium: rgba(0, 255, 255, 0.4);
+        --glow-soft: rgba(0, 255, 255, 0.2);
+
+        --gold: #ffc107; 
+        --gold-glow: rgba(255, 193, 7, 0.6);
+        
+        --text-primary: #e0e0f0; 
+        --text-secondary: #a0a0c0; 
+        --text-blue: var(--electric-blue);
+
+        --font-display: 'Orbitron', sans-serif;
+        --font-data: 'Roboto Mono', monospace; /* For code blocks or specific data points */
+        --font-body: 'Roboto Mono', monospace; /* Using Roboto Mono for a more "technical whitepaper" feel */
+
+        --header-height: 60px;
+        --transition-speed: 0.3s;
+        --line-height-body: 1.7; /* For readability */
+    }
+
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    html {
+        height: 100%;
+    }
+
+    body {
+        background-color: var(--command-black);
+        color: var(--text-primary);
+        font-family: var(--font-body);
+        font-size: 16px; /* Base font size for readability */
+        line-height: var(--line-height-body);
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding-top: var(--header-height);
+    }
+
+    #app-header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: var(--header-height);
+        background-color: rgba(13, 13, 26, 0.9); /* Slightly darker header */
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom: 1px solid var(--glass-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px; /* Increased padding slightly */
+        z-index: 1000;
+        box-shadow: 0 3px 10px rgba(0, 255, 255, 0.1);
+    }
+
+    #header-logo-wp { display: flex; align-items: center; gap: 10px; }
+    #header-logo-wp img { height: 35px; width: auto; display: block; }
+    #header-title-wp { font-family: var(--font-display); font-size: 1.2em; color: var(--electric-blue); text-shadow: 0 0 5px var(--glow-soft); }
+
+    #header-actions-wp { display: flex; align-items: center; gap: 15px; }
+    .header-button-wp {
+        background: none; border: 1px solid var(--glass-border); color: var(--electric-blue);
+        font-size: 0.8em; cursor: pointer; padding: 8px 15px; border-radius: 5px;
+        transition: all var(--transition-speed) ease; font-family: var(--font-display);
+        box-shadow: 0 0 5px var(--glow-soft);
+    }
+    .header-button-wp:hover { background-color: rgba(0,255,255,0.1); box-shadow: 0 0 10px var(--glow-medium); }
+    .header-button-wp i { margin-right: 8px; }
+
+
+    #whitepaper-container {
+        width: 100%;
+        max-width: 800px; /* Optimal reading width */
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+
+    .wp-section {
+        background-color: var(--panel-black);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        margin-bottom: 30px;
+        padding: 25px 30px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.2), 0 0 10px var(--glow-soft);
+    }
+
+    .wp-section h1, .wp-section h2, .wp-section h3, .wp-section h4 {
+        font-family: var(--font-display);
+        color: var(--electric-blue);
+        text-shadow: 0 0 7px var(--glow-medium);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    .wp-section h1 { font-size: 2em; text-align: center; }
+    .wp-section h2 { font-size: 1.6em; }
+    .wp-section h3 { font-size: 1.3em; color: var(--text-primary); margin-top: 25px; margin-bottom: 15px; border-bottom-style: dashed; }
+    .wp-section h4 { font-size: 1.1em; color: var(--text-secondary); margin-top: 20px; margin-bottom: 10px; border-bottom: none; }
+
+    .wp-section p, .wp-section li {
+        margin-bottom: 15px;
+        color: var(--text-primary);
+        font-size: 1em; /* Relative to body's 16px */
+        text-align: justify;
+    }
+    .wp-section strong { color: var(--gold); font-weight: 700; }
+    .wp-section em { color: var(--text-secondary); font-style: italic; }
+    .wp-section a { color: var(--electric-blue); text-decoration: underline; text-underline-offset: 3px; }
+    .wp-section a:hover { text-shadow: 0 0 5px var(--glow-soft); }
+
+    .wp-section ul, .wp-section ol {
+        margin-left: 20px; padding-left: 15px;
+    }
+    .wp-section ul li::marker { color: var(--electric-blue); }
+    .wp-section ol li::marker { color: var(--electric-blue); font-weight: bold; }
+
+    .wp-section table {
+        width: 100%;
+        margin: 20px 0;
+        border-collapse: collapse;
+        font-family: var(--font-data);
+        font-size: 0.9em;
+    }
+    .wp-section th, .wp-section td {
+        border: 1px solid var(--glass-border);
+        padding: 10px 12px;
+        text-align: left;
+    }
+    .wp-section th {
+        background-color: rgba(0, 255, 255, 0.1);
+        color: var(--electric-blue);
+        font-family: var(--font-display);
+    }
+    .wp-section td { color: var(--text-secondary); }
+    .wp-section td strong { color: var(--text-primary); }
+
+    .wp-section code {
+        font-family: var(--font-data);
+        background-color: var(--command-black);
+        padding: 2px 5px;
+        border-radius: 4px;
+        border: 1px solid var(--glass-border);
+        color: var(--electric-blue);
+        font-size: 0.9em;
+    }
+    .wp-section pre {
+        background-color: var(--command-black);
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid var(--glass-border);
+        overflow-x: auto;
+        margin: 15px 0;
+        font-size: 0.85em;
+        box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+    }
+    .wp-section pre code { background: none; border: none; padding: 0; }
+
+    .toc { /* Table of Contents */
+        border: 1px solid var(--glass-border);
+        background-color: rgba(18, 18, 37, 0.5);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+    .toc h3 { margin-top: 0; color: var(--gold); border-bottom-color: rgba(255,193,7,0.3);}
+    .toc ul { list-style-type: none; padding-left: 0; }
+    .toc ul li { margin-bottom: 8px; }
+    .toc ul li a { font-family: var(--font-display); font-size: 0.95em; }
+
+    .highlight-box {
+        background-color: rgba(0, 255, 255, 0.05);
+        border-left: 3px solid var(--electric-blue);
+        padding: 15px;
+        margin: 20px 0;
+        border-radius: 0 5px 5px 0;
+    }
+    .highlight-box p { margin-bottom: 0; }
+
+    .page-footer-wp {
+        text-align: center;
+        padding: 20px;
+        margin-top: 30px;
+        font-size: 0.8em;
+        color: var(--text-secondary);
+        border-top: 1px solid var(--glass-border);
+    }
+
+    /* Responsive adjustments for smaller screens if needed, though max-width is already set */
+    @media (max-width: 600px) {
+        body { font-size: 15px; }
+        .wp-section { padding: 20px; }
+        .wp-section h1 { font-size: 1.8em; }
+        .wp-section h2 { font-size: 1.4em; }
+        .wp-section h3 { font-size: 1.2em; }
+        #header-logo-wp img { height: 30px; }
+        #header-title-wp { font-size: 1em; }
+        .header-button-wp { font-size: 0.7em; padding: 6px 10px;}
+    }
+
+</style>
+</head>
+<body>
+
+<header id="app-header">
+    <div id="header-logo-wp">
+        <img src="assets/logo/logo.png" alt="EMX Token Logo"> <!-- Replace with actual EMO logo path -->
+        <span id="header-title-wp">Whitepaper</span>
+    </div>
+    <div id="header-actions-wp">
+        <button class="header-button-wp" onclick="window.location.href='emo_console_dashboard.html'"><i class="fas fa-tachometer-alt"></i> Console</button>
+        <button class="header-button-wp" id="downloadPdfButton"><i class="fas fa-file-pdf"></i>PDF</button>
+    </div>
+</header>
+
+<div id="whitepaper-container">
+    <section class="wp-section" id="title-abstract">
+        <h1>The EMX Token: Powering the Future of AI-Driven Engagement</h1>
+        <p style="text-align:center; font-style:italic; color: var(--text-secondary);">Version 1.0 - May 01, 2025</p>
+        
+        <div class="toc">
+            <h3>Table of Contents</h3>
+            <ul>
+                <li><a href="#introduction">1. Introduction</a></li>
+                <li><a href="#problem">2. The Problem: Digital Disconnection & Monolithic AI</a></li>
+                <li><a href="#solution">3. The Solution: EMO - The Empathetic AI & Connective Token</a>
+                    <ul>
+                        <li><a href="#solution-emo-ai">3.1. EMO AI Core</a></li>
+                        <li><a href="#solution-emo-token">3.2. EMX Token Utility</a></li>
+                    </ul>
+                </li>
+                <li><a href="#tokenomics">4. EMX Tokenomics</a>
+                     <ul>
+                        <li><a href="#tokenomics-supply">4.1. Total Supply & Distribution</a></li>
+                        <li><a href="#tokenomics-utility">4.2. Core Utilities & Value Accrual</a></li>
+                        <li><a href="#tokenomics-burn">4.3. Burn Mechanism</a></li>
+                    </ul>
+                </li>
+                <li><a href="#technology">5. Technology Stack</a>
+                    <ul>
+                        <li><a href="#tech-blockchain">5.1. Blockchain Infrastructure</a></li>
+                        <li><a href="#tech-ai-models">5.2. AI Models & Architecture</a></li>
+                        <li><a href="#tech-security">5.3. Security Audits & Measures</a></li>
+                    </ul>
+                </li>
+                <li><a href="#ecosystem">6. The EMO Ecosystem</a>
+                     <ul>
+                        <li><a href="#eco-console">6.1. EMO Console (Dashboard)</a></li>
+                        <li><a href="#eco-t2e">6.2. Train-to-Earn (T2E)</a></li>
+                        <li><a href="#eco-aiconnect">6.3. ai-Connect Integration</a></li>
+                        <li><a href="#eco-cinemo">6.4. CineMo Platform</a></li>
+                        <li><a href="#eco-panyero">6.5. Panyero Marketplace</a></li>
+                    </ul>
+                </li>
+                <li><a href="#roadmap">7. Roadmap & Future Developments</a></li>
+                <li><a href="#team">8. Team & Advisors</a></li>
+                <li><a href="#community">9. Community & Governance</a></li>
+                <li><a href="#risks">10. Risk Factors</a></li>
+                <li><a href="#legal">11. Legal Disclaimer</a></li>
+                <li><a href="#contact">12. Contact Information</a></li>
+            </ul>
+        </div>
+
+        <h3>Abstract</h3>
+        <p>The EMX Token is a revolutionary digital asset designed to fuel a new era of human-AI interaction within the ai-Connect ecosystem and its associated platforms. It serves as the primary utility and governance token, facilitating access to premium AI features, rewarding user engagement through innovative "Train-to-Earn" mechanics, and empowering decentralized community governance. This whitepaper details the vision, technology, tokenomics, and roadmap of the EMX Token, outlining its potential to redefine digital engagement and create a symbiotic relationship between users and artificial intelligence.</p>
+    </section>
+
+    <section class="wp-section" id="introduction">
+        <h2>1. Introduction</h2>
+        <p>In an increasingly digital world, the quality of interaction between humans and artificial intelligence (AI) is paramount. Current AI solutions, while powerful, often lack genuine empathy, nuanced understanding, and meaningful user incentivization. The EMO project, spearheaded by the ai-Connect platform, aims to address these shortcomings by introducing an AI companion, "Emilio" (EMO), and its native utility token, the EMX Token.</p>
+        <p>This document serves as the official whitepaper for the EMX Token, providing a comprehensive overview of its purpose, underlying technology, economic model, and strategic vision. We believe that by fostering a more engaging, rewarding, and user-centric AI experience, the EMX Token will become an integral part of the next generation of digital ecosystems.</p>
+    </section>
+
+    <section class="wp-section" id="problem">
+        <h2>2. The Problem: Digital Disconnection & Monolithic AI</h2>
+        <p>Despite advancements in AI, several key challenges persist:</p>
+        <ul>
+            <li><strong>Lack of Personalized Engagement:</strong> Many AI interactions feel transactional and impersonal, failing to adapt to individual user needs and emotional states.</li>
+            <li><strong>Limited User Incentivization:</strong> Users often contribute significant data and interaction to train AI models without direct or tangible rewards for their efforts.</li>
+            <li><strong>Centralized AI Development:</strong> The development and control of powerful AI often reside within a few large entities, potentially limiting innovation and user agency.</li>
+            <li><strong>Fragmented Digital Experiences:</strong> Users navigate multiple platforms with disparate AI functionalities, leading to a disjointed experience and data silos.</li>
+        </ul>
+        <p>These issues contribute to a sense of digital disconnection and prevent AI from reaching its full potential as a truly assistive and integrated technology.</p>
+    </section>
+
+    <section class="wp-section" id="solution">
+        <h2>3. The Solution: EMO - The Empathetic AI & Connective Token</h2>
+        <p>The EMO project proposes a multifaceted solution centered around the EMO AI and the EMX Token, designed to work in synergy within the ai-Connect ecosystem.</p>
+        <h3 id="solution-emo-ai">3.1. EMO AI Core ("Emilio")</h3>
+        <p>Emilio is envisioned as more than just a virtual assistant; it is an evolving AI companion designed with an emphasis on empathetic interaction and personalized support. Key features include:</p>
+        <ul>
+            <li><strong>Contextual Understanding:</strong> Advanced Natural Language Processing (NLP) and understanding capabilities to grasp user intent and context.</li>
+            <li><strong>Mood Adaptation (Conceptual):</strong> Future development aims for Emilio to perceive and adapt its responses based on user sentiment, offering more appropriate and supportive interactions.</li>
+            <li><strong>Personalized Learning:</strong> Emilio learns from individual user interactions (with explicit consent and privacy controls) to provide increasingly tailored assistance and suggestions.</li>
+            <li><strong>Cross-Platform Integration:</strong> Seamless integration across ai-Connect platforms (Console, CineMo, Panyero) to provide a unified user experience.</li>
+        </ul>
+        <h3 id="solution-emo-token">3.2. EMX Token Utility</h3>
+        <p>The EMX Token is the lifeblood of this ecosystem, providing tangible value and utility:</p>
+        <ul>
+            <li><strong>Access & Upgrades:</strong> Unlock premium AI features, advanced functionalities within Emilio, and exclusive content on connected platforms.</li>
+            <li><strong>Train-to-Earn (T2E):</strong> Users earn EMX Tokens by actively engaging with and training Emilio, contributing to its development and improvement. This includes tasks like providing feedback, completing interactive training modules, and achieving engagement milestones.</li>
+            <li><strong>Staking & Rewards:</strong> Stake EMX Tokens to earn passive rewards, increase T2E earning potential, and gain higher user ranks within the ecosystem, unlocking further benefits.</li>
+            <li><strong>Marketplace Transactions:</strong> Utilize EMX Tokens for purchases and services within the Panyero marketplace and other integrated services.</li>
+            <li><strong>Governance:</strong> Future implementation will allow EMX Token holders to participate in decentralized governance decisions regarding platform development, feature prioritization, and treasury management.</li>
+            <li><strong>NFT Minting & Trading:</strong> EMX Tokens can be used to mint and trade unique AI-generated NFTs, trainer certificates, and digital collectibles.</li>
+        </ul>
+    </section>
+
+    <section class="wp-section" id="tokenomics">
+        <h2>4. EMX Tokenomics</h2>
+        <p>The economic model of the EMX Token is designed for sustainable growth, utility, and value accrual for its holders and the ecosystem.</p>
+        <h3 id="tokenomics-supply">4.1. Total Supply & Distribution</h3>
+        <ul>
+            <li><strong>Token Name:</strong> Emilio Token</li>
+            <li><strong>Symbol:</strong> EMO</li>
+            <li><strong>Total Supply:</strong> 1,000,000,000 EMO (One Billion) - <em>Subject to final confirmation on contract deployment.</em></li>
+            <li><strong>Blockchain:</strong> (Specify Blockchain, e.g., Binance Smart Chain (BEP-20), Ethereum (ERC-20), Polygon, etc.)</li>
+            <li><strong>Distribution (Illustrative - to be finalized):</strong>
+                <ul>
+                    <li>Train-to-Earn Rewards & Ecosystem Fund: 40%</li>
+                    <li>Staking Rewards: 20%</li>
+                    <li>Team & Advisors (Vested): 15%</li>
+                    <li>Marketing & Partnerships: 10%</li>
+                    <li>Liquidity & Exchange Listings: 10%</li>
+                    <li>Initial Community Airdrops/Sale (Optional): 5%</li>
+                </ul>
+            </li>
+        </ul>
+        <div class="highlight-box">
+            <p><strong>Note:</strong> The exact distribution percentages and vesting schedules will be finalized and published prior to any public token generation event. Transparency is paramount.</p>
+        </div>
+
+        <h3 id="tokenomics-utility">4.2. Core Utilities & Value Accrual</h3>
+        <p>As detailed in Section 3.2, the EMX Token's value is intrinsically linked to its utility within the expanding ai-Connect ecosystem. Demand is driven by:</p>
+        <ul>
+            <li>Desire for premium AI features and enhanced user experience.</li>
+            <li>Participation in Train-to-Earn and Staking for rewards.</li>
+            <li>Transactions within the Panyero marketplace and CineMo platform.</li>
+            <li>Acquisition of unique NFTs and digital assets.</li>
+            <li>Future governance rights.</li>
+        </ul>
+
+        <h3 id="tokenomics-burn">4.3. Burn Mechanism (Conceptual)</h3>
+        <p>To create deflationary pressure and enhance token value over time, a portion of EMX Tokens collected from certain platform fees (e.g., marketplace transaction fees, premium feature subscriptions, NFT minting fees) may be programmatically burned. The specifics of the burn mechanism will be determined by community governance once established.</p>
+        <p><em>Example: X% of platform revenue generated in EMO could be sent to a burn address, permanently removing it from circulation.</em></p>
+    </section>
+
+    <section class="wp-section" id="technology">
+        <h2>5. Technology Stack</h2>
+        <h3 id="tech-blockchain">5.1. Blockchain Infrastructure</h3>
+        <p>The EMX Token will be deployed on a robust and scalable blockchain network known for its efficiency, low transaction fees, and strong developer community. The chosen blockchain will be [**Specify Chosen Blockchain Here, e.g., Binance Smart Chain for BEP-20 standard**]. This choice ensures compatibility with a wide range of wallets, exchanges, and DeFi protocols.</p>
+        <p>Smart contracts governing token issuance, staking, T2E reward distribution, and future governance will be developed following industry best practices and will undergo rigorous security audits.</p>
+
+        <h3 id="tech-ai-models">5.2. AI Models & Architecture (Emilio)</h3>
+        <p>The EMO AI ("Emilio") will leverage a hybrid architecture incorporating several state-of-the-art Large Language Models (LLMs) and specialized AI modules:</p>
+        <ul>
+            <li><strong>Core Conversational Engine:</strong> Powered by models such as Together AI's Llama-3.3 70B Instruct-Turbo (Free Tier for initial development and broad access) and Google's Gemini Flash for specific tasks requiring speed or multimodal capabilities.</li>
+            <li><strong>Vision Capabilities:</strong> Integration with Llama-Vision-Free for image understanding and analysis tasks.</li>
+            <li><strong>Image Generation:</strong> Utilization of FLUX.1-schnell-Free via Together AI for generating visuals for content, avatars, or NFT assets.</li>
+            <li><strong>Speech Technologies:</strong> Deepgram's Listen API (Speech-to-Text) and Speak API (Text-to-Speech) for voice interaction and content generation.</li>
+            <li><strong>Text Analytics:</strong> Deepgram's Read API for sentiment analysis, topic extraction, and summarization to enhance Emilio's understanding and user feedback processing.</li>
+            <li><strong>Data APIs:</strong> Google's YouTube Data API for content research and integration relevant to user queries or training modules.</li>
+        </ul>
+        <p>The architecture is designed to be modular, allowing for the integration of new models and technologies as they emerge, ensuring Emilio remains at the forefront of AI capabilities.</p>
+
+        <h3 id="tech-security">5.3. Security Audits & Measures</h3>
+        <p>Security is a top priority. All smart contracts related to the EMX Token and its core functionalities will undergo independent third-party security audits before mainnet deployment. Continuous security monitoring and best practices will be implemented to protect user assets and data within the ecosystem.</p>
+        <p>User data privacy will be handled with utmost care, adhering to relevant data protection regulations and providing users with control over their information and its use in AI training (where applicable and with explicit consent).</p>
+    </section>
+
+    <section class="wp-section" id="ecosystem">
+        <h2>6. The EMO Ecosystem</h2>
+        <p>The EMX Token is not a standalone asset but the connective tissue of a larger, integrated ecosystem designed to enhance digital interaction and provide value to its users.</p>
+        <h3 id="eco-console">6.1. EMO Console (Dashboard)</h3>
+        <p>The EMO Console, as experienced by the user, serves as the central hub for managing EMX Tokens, participating in Staking and Train-to-Earn programs, tracking progress, and accessing token utilities. It provides a user-friendly interface to the core functionalities of the EMO ecosystem.</p>
+        <h3 id="eco-t2e">6.2. Train-to-Earn (T2E)</h3>
+        <p>A cornerstone of the EMO ecosystem, T2E rewards users with EMX Tokens for actively participating in the training and improvement of the EMO AI. This can include:</p>
+        <ul>
+            <li>Providing feedback on AI responses.</li>
+            <li>Completing interactive AI training scenarios.</li>
+            <li>Curating and validating data sets (under guidance).</li>
+            <li>Achieving engagement milestones with Emilio.</li>
+        </ul>
+        <p>T2E democratizes AI development and aligns user incentives with platform growth.</p>
+        <h3 id="eco-aiconnect">6.3. ai-Connect Integration</h3>
+        <p>ai-Connect serves as the foundational social and utility platform. EMX Tokens will unlock premium features within ai-Connect, such as advanced AI-powered content creation tools, enhanced social analytics, and priority access to new platform functionalities.</p>
+        <h3 id="eco-cinemo">6.4. CineMo Platform</h3>
+        <p>CineMo, the multimedia content platform, will integrate EMX Tokens for accessing exclusive video content, tipping creators, purchasing digital merchandise, and potentially participating in content-related DAOs or funding initiatives.</p>
+        <h3 id="eco-panyero">6.5. Panyero Marketplace</h3>
+        <p>The Panyero marketplace will utilize EMX Tokens as a primary currency for buying and selling digital goods, services, and AI-generated assets (e.g., custom AI avatars, unique prompts, digital art).</p>
+    </section>
+    
+    <section class="wp-section" id="roadmap">
+        <h2>7. Roadmap & Future Developments</h2>
+        <p>The development of the EMX Token and its ecosystem is planned in distinct phases:</p>
+        <h4>Phase 1: Foundation & Core Utility (Q4 2023 - Q1 2024)</h4>
+        <ul>
+            <li>EMX Token Smart Contract Development & Audit.</li>
+            <li>Initial deployment on [Chosen Blockchain].</li>
+            <li>Launch of EMO Console with basic Wallet Overview and Staking (Version 1.0).</li>
+            <li>Integration of EMX Token for basic T2E mechanics within a pilot AI interaction module.</li>
+            <li>Initial community building and awareness campaigns.</li>
+        </ul>
+        <h4>Phase 2: Ecosystem Expansion & T2E Enhancement (Q2 - Q3 2024)</h4>
+        <ul>
+            <li>Full rollout of advanced T2E programs with diverse training tasks.</li>
+            <li>Integration of EMX Token utility into ai-Connect platform (e.g., unlocking AI tools).</li>
+            <li>Development and launch of the Panyero Marketplace (Version 1.0) with EMO as primary currency.</li>
+            <li>Partnerships for liquidity provision and initial exchange listings (CEX/DEX).</li>
+        </ul>
+        <h4>Phase 3: Advanced AI & Multimedia Integration (Q4 2024 - Q1 2025)</h4>
+        <ul>
+            <li>Integration with CineMo platform: EMO for premium content and creator tipping.</li>
+            <li>Introduction of AI-generated NFT minting capabilities using EMO.</li>
+            <li>Enhancement of Emilio AI with more sophisticated mood adaptation and personalization features.</li>
+            <li>Development of initial governance modules for EMX Token holders.</li>
+        </ul>
+        <h4>Phase 4: Decentralization & DAO Formation (2025 Onwards)</h4>
+        <ul>
+            <li>Progressive decentralization of platform governance to the EMO DAO.</li>
+            <li>Exploration of cross-chain interoperability for the EMX Token.</li>
+            <li>Continuous research and development into novel AI applications and token utilities based on community feedback and technological advancements.</li>
+        </ul>
+    </section>
+
+    <section class="wp-section" id="team">
+        <h2>8. Team & Advisors</h2>
+        <p>(Placeholder: This section will detail the core team members, their expertise, and any notable advisors involved in the EMX Token and ai-Connect project. Transparency regarding the team is crucial for building trust.)</p>
+        <ul>
+            <li><strong>[Name 1]</strong> - Role (e.g., Lead Developer, Project Lead) - Brief background & expertise.</li>
+            <li><strong>[Name 2]</strong> - Role (e.g., AI Specialist, Blockchain Architect) - Brief background & expertise.</li>
+            <li><strong>[Name 3]</strong> - Role (e.g., Marketing & Community Lead) - Brief background & expertise.</li>
+            <li><strong>Advisors:</strong> [List any key advisors and their affiliations if applicable.]</li>
+        </ul>
+    </section>
+
+    <section class="wp-section" id="community">
+        <h2>9. Community & Governance</h2>
+        <p>A strong and engaged community is vital for the success of the EMX Token. We are committed to fostering an active, inclusive, and informed community through various channels:</p>
+        <ul>
+            <li>**Social Media Presence:** (List official channels: Twitter, Telegram, Discord, etc.)</li>
+            <li>**Community Forums:** Dedicated spaces for discussion, feedback, and support.</li>
+            <li>**Regular Updates:** Transparent communication regarding project progress, milestones, and challenges.</li>
+        </ul>
+        <p>In later phases, governance of the EMO ecosystem will transition towards a Decentralized Autonomous Organization (DAO) model. EMX Token holders will have the ability to propose and vote on key decisions, including but not limited to:</p>
+        <ul>
+            <li>Platform upgrades and new feature development.</li>
+            <li>Allocation of ecosystem funds and treasury management.</li>
+            <li>Parameters for T2E rewards and staking.</li>
+            <li>Changes to tokenomic mechanisms (e.g., burn rates).</li>
+        </ul>
+    </section>
+
+     <section class="wp-section" id="risks">
+        <h2>10. Risk Factors</h2>
+        <p>Investing in and participating with cryptocurrencies and blockchain-based projects involves inherent risks. Prospective users and token holders should carefully consider the following non-exhaustive list of risk factors:</p>
+        <ul>
+            <li><strong>Market Volatility:</strong> The value of EMX Tokens can be highly volatile and subject to significant price fluctuations due to market sentiment, regulatory changes, and broader economic factors.</li>
+            <li><strong>Technological Risks:</strong> Smart contracts, while audited, may still contain unforeseen vulnerabilities. The underlying blockchain technology may also face challenges. AI models are constantly evolving, and their performance can vary.</li>
+            <li><strong>Regulatory Uncertainty:</strong> The regulatory landscape for digital assets and AI is still developing and may change in ways that adversely affect the EMX Token or the ai-Connect ecosystem.</li>
+            <li><strong>Competition:</strong> The AI and blockchain spaces are highly competitive. There is no guarantee that the EMO project will achieve its objectives or outperform competitors.</li>
+            <li><strong>Adoption Risk:</strong> The success of the EMX Token depends on widespread adoption and active participation within its ecosystem.</li>
+            <li><strong>Security Risks:</strong> Despite security measures, the ecosystem could be subject to hacking attempts, phishing scams, or other malicious activities.</li>
+            <li><strong>Team & Execution Risk:</strong> The ability of the team to execute the roadmap and adapt to changing market conditions is crucial.</li>
+        </ul>
+        <p>This whitepaper does not constitute investment advice. Participants should conduct their own thorough research and consult with financial advisors before making any decisions.</p>
+    </section>
+
+    <section class="wp-section" id="legal">
+        <h2>11. Legal Disclaimer</h2>
+        <p>This whitepaper is for informational purposes only and does not constitute an offer or solicitation to sell shares or securities in EMO, ai-Connect, or any related or associated company. Any information or EMX Token features described in this whitepaper are subject to change or시아developments and should not be relied upon as a guarantee or promise of future availability or performance.</p>
+        <p>The EMX Token is a utility token designed to be used within the ai-Connect ecosystem. It is not intended to constitute securities in any jurisdiction. This whitepaper does not constitute a prospectus or offer document of any sort and is not intended to constitute an offer of securities or a solicitation for investment in securities in any jurisdiction.</p>
+        <p>No regulatory authority has examined or approved any of the information set out in this whitepaper. No_PERsuch action has been or will be taken under the laws, regulatory requirements, or rules of any jurisdiction. The publication, distribution, or dissemination of this whitepaper does not imply that the applicable laws, regulatory requirements, or rules have been complied with.</p>
+        <p>The EMO project is under development and is subject to change. Features and functionalities mentioned are planned and may be modified or not implemented based on technical feasibility, market conditions, or strategic decisions by the development team.</p>
+    </section>
+
+    <footer class="page-footer-wp">
+        <p>© 2024-2025 EMX Token & ai-Connect. All rights reserved.</p>
+        <p>This document is a living whitepaper and is subject to updates.</p>
+    </footer>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const firebaseConfig = {
+          apiKey: "AIzaSyDcS1Kg0vpggkLzMSc_T7WzxqBhTQSdVn0",
+          authDomain: "ai-connect-2nbpnn.firebaseapp.com",
+          databaseURL: "https://ai-connect-2nbpnn-default-rtdb.asia-southeast1.firebasedatabase.app",
+          projectId: "ai-connect-2nbpnn",
+          storageBucket: "ai-connect-2nbpnn.appspot.com",
+          messagingSenderId: "704482029158",
+          appId: "1:704482029158:web:081040cf8498a703e447a7"
+        };
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            console.log("Firebase Initialized for Whitepaper (minimal usage expected).");
+        } catch (error) {
+            console.error("Firebase initialization failed:", error);
+        }
+
+        const downloadPdfButton = document.getElementById('downloadPdfButton');
+        if (downloadPdfButton) {
+            downloadPdfButton.addEventListener('click', () => {
+                alert("PDF download functionality would be implemented here. For now, you can print this page to PDF (Ctrl/Cmd + P).");
+                // In a real scenario, you might use a library like jsPDF or have a server-side PDF generation.
+                // window.print(); // Simple browser print
+            });
+        }
+
+        // Smooth scroll for Table of Contents links
+        document.querySelectorAll('.toc a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start' 
+                    });
+                     // Optional: Update URL hash without page jump after scrolling
+                    if(history.pushState) {
+                        history.pushState(null, null, targetId);
+                    } else {
+                        location.hash = targetId;
+                    }
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

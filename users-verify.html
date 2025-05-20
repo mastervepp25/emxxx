@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Knowledge Base — Users JSON</title>
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --panel: #121225;
+      --accent: #00ffff;
+      --text: #e0e0f0;
+      --font: 'Roboto Mono', monospace;
+      --glow: rgba(0,255,255,0.3);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--accent);
+      font-family: var(--font);
+      padding: 12px;
+    }
+    .card {
+      background: var(--panel);
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 0 12px var(--glow);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: var(--text);
+      font-size: 1.2em;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    pre {
+      background: rgba(0,0,0,0.2);
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      color: var(--text);
+      font-size: 0.85em;
+      line-height: 1.4;
+      max-height: 60vh;
+    }
+    .status {
+      text-align: center;
+      margin-top: 6px;
+      font-size: 0.9em;
+      color: var(--accent);
+    }
+  </style>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+  <div class="card">
+    <h1>Users — Mobile, Balance, Latest Tx</h1>
+    <pre id="output">Loading data…</pre>
+    <div class="status" id="status">Initializing…</div>
+  </div>
+
+  <script>
+    // Firebase configuration (from sign-up page)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:62c590ed61ff4499c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const outEl = document.getElementById('output');
+    const statusEl = document.getElementById('status');
+
+    // 1. Fetch all users_info entries
+    db.ref('users_info').once('value')
+      .then(usersSnap => {
+        const usersObj = usersSnap.val() || {};
+        const keys = Object.keys(usersObj);
+        if (!keys.length) {
+          statusEl.textContent = 'No users found.';
+          outEl.textContent = '[]';
+          return [];
+        }
+        statusEl.textContent = `Found ${keys.length} users. Fetching latest transactions…`;
+        
+        // 2. For each user, fetch latest transaction
+        const fetchTasks = keys.map(key => {
+          const u = usersObj[key];
+          const phone = u.phoneNumberFormatted || u.phoneNumberE164 || key;
+          const balance = u.tokenBalance != null ? u.tokenBalance : 0;
+
+          return db.ref(`user_transactions/${key}`)
+            .orderByChild('timestamp')
+            .limitToLast(1)
+            .once('value')
+            .then(txSnap => {
+              let latest = null;
+              txSnap.forEach(child => { latest = child.val(); });
+              return { phone, balance, latestTransaction: latest };
+            });
+        });
+
+        return Promise.all(fetchTasks);
+      })
+      .then(results => {
+        outEl.textContent = JSON.stringify(results, null, 2);
+        statusEl.textContent = 'Data loaded.';
+      })
+      .catch(err => {
+        statusEl.textContent = 'Error loading data.';
+        outEl.textContent = `{"error":"${err.message}"}`;
+      });
+  </script>
+</body>
+</html>

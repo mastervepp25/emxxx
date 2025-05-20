@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ai-Connect - Agent Chat</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+
+  <style>
+    :root {
+      /* Updated background to match agent-list.html */
+      --aiConnect-bg-dark: #0d0d1a; 
+      --aiConnect-panel-dark: #1A1A1E; /* Keep panels darker for contrast */
+      --aiConnect-glass-bg: rgba(18, 18, 23, 0.85); /* Adjusted glass to complement new bg */
+      --aiConnect-border: rgba(70, 70, 70, 0.5);  
+      --aiConnect-cyan: #00ffff;            
+      --aiConnect-cyan-dark: #00cccc;       
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-text-primary: #EAEAEB;    
+      --aiConnect-text-secondary: #90909A;  
+      --aiConnect-text-placeholder: #60606A; 
+      --aiConnect-error: #ff4444;
+      --aiConnect-success: #00ff88;  
+      --aiConnect-gold: #ffc107;        
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Roboto Mono', monospace; 
+
+      --header-height: 56px;
+      --border-radius: 12px; 
+      --border-radius-lg: 18px;
+      --transition-speed: 0.2s;
+      --input-area-height: 60px; 
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+
+    body { 
+      font-family: var(--font-body); 
+      display: flex; flex-direction: column; 
+      background-color: var(--aiConnect-bg-dark);
+      color: var(--aiConnect-text-primary);
+      touch-action: manipulation;
+      overflow: hidden; 
+    }
+
+    .agent-header {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: var(--header-height);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 10px;
+        background-color: var(--aiConnect-glass-bg);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-bottom: 1px solid var(--aiConnect-border);
+        z-index: 1000;
+    }
+    .header-icon-btn {
+        background: none;
+        border: none;
+        color: var(--aiConnect-text-secondary);
+        font-size: 24px; 
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: background-color var(--transition-speed), color var(--transition-speed), text-shadow var(--transition-speed);
+    }
+    .header-icon-btn:hover {
+        background-color: rgba(255, 255, 255, 0.05); 
+        color: var(--aiConnect-cyan);
+        text-shadow: 0 0 8px var(--aiConnect-glow-soft);
+    }
+    .header-icon-btn.copied .material-icons {
+        color: var(--aiConnect-success) !important; /* Success color for icon */
+    }
+    .agent-header-title-wrapper { 
+        position: absolute;
+        left: 50px; 
+        right: 80px; 
+        text-align: center;
+        pointer-events: none; 
+    }
+    .agent-header-title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: var(--aiConnect-text-primary);
+        display: inline-block; 
+    }
+    .header-right-icons {
+        display: flex;
+        align-items: center;
+    }
+
+
+    #chat-container { 
+      flex-grow: 1; overflow-y: auto; 
+      padding: calc(var(--header-height) + 15px) 15px calc(var(--input-area-height) + 15px) 15px;
+      background-color: var(--aiConnect-bg-dark); 
+      -webkit-overflow-scrolling: touch; 
+      display: flex; flex-direction: column; 
+    }
+    
+    .page-loading-state, .page-error-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+        font-size: 1rem;
+        color: var(--aiConnect-text-secondary);
+    }
+    .page-error-state a {
+        color: var(--aiConnect-cyan);
+        text-decoration: underline;
+        margin-top: 10px;
+    }
+
+
+    .agent-profile-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px 0;
+        margin-bottom: 20px;
+        text-align: center;
+        flex-shrink: 0; 
+    }
+    .agent-profile-avatar {
+        width: 80px; 
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 15px;
+    }
+    .agent-profile-name {
+        font-family: var(--font-body); 
+        font-weight: 500; 
+        font-size: 1.6rem;
+        color: var(--aiConnect-text-primary);
+        margin-bottom: 4px;
+    }
+    .agent-profile-handle {
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        color: var(--aiConnect-text-secondary);
+        margin-bottom: 8px;
+    }
+    .agent-profile-status { 
+        display: none; 
+    }
+
+    #chat { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 15px; }
+
+    .message { 
+      display: flex; 
+      gap: 10px; 
+      max-width: 85%; 
+      word-wrap: break-word; 
+      font-size: 0.9rem; line-height: 1.5; 
+      flex-shrink: 0; 
+    }
+    .message-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+        margin-top: auto; 
+    }
+
+    .message-bubble {
+      padding: 10px 14px;
+      border-radius: var(--border-radius-lg); 
+      overflow: hidden; 
+      border: 1px solid transparent; 
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3); 
+    }
+
+
+    @media (max-width: 480px) { 
+      .message { max-width: 90%; font-size: 0.85rem; } 
+      .message-bubble { padding: 8px 12px; } 
+      .agent-profile-name { font-size: 1.4rem; }
+      .agent-profile-avatar { width: 70px; height: 70px; }
+    }
+
+    .user-message { 
+      align-self: flex-end; 
+      flex-direction: row-reverse; 
+    }
+    .user-message .message-bubble {
+      background-color: var(--aiConnect-panel-dark); 
+      color: var(--aiConnect-text-primary); 
+      border-bottom-right-radius: 5px; 
+    }
+
+    .bot-message { 
+      align-self: flex-start; 
+    }
+    .bot-message .message-bubble {
+      background-color: var(--aiConnect-panel-dark); 
+      color: var(--aiConnect-text-primary); 
+      border-bottom-left-radius: 5px; 
+    }
+    .bot-message .message-bubble a { color: var(--aiConnect-gold); }
+    .bot-message .message-bubble a:hover { color: #ffd700; }
+
+    .initial-bot-message-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start; 
+        width: 100%; 
+    }
+    .initial-bot-message-wrapper .message-avatar { 
+        display: none;
+    }
+     .initial-bot-message-wrapper .message-bubble {
+        max-width: 100%; 
+    }
+
+    .agent-initial-intro {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px; 
+        padding-left: 5px; 
+    }
+    .agent-initial-intro .agent-name-tag {
+        font-weight: 500;
+        color: var(--aiConnect-text-primary);
+        font-size: 0.9rem;
+        margin-right: 8px;
+    }
+    .agent-initial-intro .play-icon {
+        color: var(--aiConnect-cyan);
+        font-size: 22px; 
+        cursor: pointer;
+    }
+    .agent-initial-intro .play-icon:hover {
+        color: var(--aiConnect-cyan-dark);
+    }
+    .initial-message-actions {
+        display: flex;
+        align-items: center;
+        padding-top: 10px;
+        margin-top: 10px; 
+        padding-left: 5px; 
+    }
+    .initial-message-actions .action-icon {
+        color: var(--aiConnect-text-secondary);
+        font-size: 22px; 
+        margin-right: 18px;
+        cursor: pointer;
+        transition: color var(--transition-speed);
+    }
+     .initial-message-actions .action-icon:hover {
+        color: var(--aiConnect-cyan);
+    }
+     .initial-message-actions .action-icon:last-child {
+        margin-right: 0;
+    }
+
+
+    #form { 
+      display: flex; padding: 10px 15px; 
+      background-color: var(--aiConnect-bg-dark); 
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 1001;
+      height: var(--input-area-height);
+      align-items: center;
+    }
+    #message { 
+      flex: 1; padding: 12px 18px; 
+      padding-right: 50px; 
+      border: none; 
+      border-radius: 22px; 
+      font-size: 0.9rem; outline: none; 
+      background-color: var(--aiConnect-panel-dark); 
+      color: var(--aiConnect-text-primary);
+      font-family: var(--font-body);
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+    }
+    #message::placeholder { color: var(--aiConnect-text-placeholder); }
+    #message:focus { box-shadow: inset 0 1px 3px rgba(0,0,0,0.4), 0 0 10px var(--aiConnect-glow-soft); }
+
+    #mic-button { display: none; }
+
+    #submit { 
+      position: absolute; 
+      top: 50%; transform: translateY(-50%); 
+      right: 20px; 
+      width: 38px; height: 38px; 
+      background-color: var(--aiConnect-text-primary); 
+      color: var(--aiConnect-bg-dark); 
+      border: none; border-radius: 50%; 
+      cursor: pointer; display: flex; align-items: center; justify-content: center; 
+      padding: 0; touch-action: manipulation; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      transition: background-color var(--transition-speed), transform var(--transition-speed);
+    }
+    #submit:hover { background-color: var(--aiConnect-cyan); color: var(--aiConnect-bg-dark); }
+    #submit:active { transform: translateY(-50%) scale(0.92); } 
+    #submit .material-icons { font-size: 20px; } 
+
+    .loading { justify-content: center; font-style: italic; color: var(--aiConnect-text-secondary); } 
+    .loading-dots { display: flex; } 
+    .loading-dots span { 
+      width: 7px; height: 7px; margin: 0 2px; 
+      background-color: var(--aiConnect-text-secondary); 
+      border-radius: 50%; display: inline-block; 
+      animation: bounce 1.4s infinite ease-in-out both; 
+    } 
+    .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+    .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+
+    #recording-status { display: none !important; }
+
+    /* Toast Notification for Copy URL */
+    .toast-notification {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: var(--aiConnect-panel-dark);
+        color: var(--aiConnect-text-primary);
+        padding: 10px 20px;
+        border-radius: var(--border-radius);
+        border: 1px solid var(--aiConnect-border);
+        box-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+        z-index: 2000;
+        opacity: 0;
+        transition: opacity 0.3s ease, bottom 0.3s ease;
+        pointer-events: none;
+    }
+    .toast-notification.show {
+        opacity: 1;
+        bottom: 30px;
+    }
+
+
+    @supports (-webkit-touch-callout: none) { 
+      #chat-container { -webkit-overflow-scrolling: touch; } 
+    }
+  </style>
+</head>
+<body>
+  <header class="agent-header">
+    <button class="header-icon-btn" id="menuButton"><span class="material-icons">menu</span></button>
+    <div class="agent-header-title-wrapper">
+      <h1 class="agent-header-title" id="agentNameHeader">Loading Agent...</h1>
+    </div>
+    <div class="header-right-icons">
+      <button class="header-icon-btn" id="callButton"><span class="material-icons">call</span></button>
+      <button class="header-icon-btn" id="copyLinkButton"><span class="material-icons">link</span></button>
+    </div>
+  </header>
+
+  <div id="chat-container">
+    <!-- Agent Profile and Chat will be populated or show loading/error state -->
+  </div>
+  
+  <form id="form">
+    <input id="message" autocomplete="off" placeholder="Loading..." disabled />
+    <button id="mic-button" type="button" title="Voice Input">
+      <span class="material-icons">mic</span>
+    </button>
+    <button id="submit" type="submit" title="Send Message" disabled>
+      <span class="material-icons">send</span>
+    </button>
+  </form>  
+
+  <div id="toast-container"></div> <!-- For toast notifications -->
+
+  <script>
+    const firebaseConfig = {
+            apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+            authDomain: "daisy-n7g20a.firebaseapp.com",
+            databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+            projectId: "daisy-n7g20a",
+            storageBucket: "daisy-n7g20a.appspot.com",
+            messagingSenderId: "225362605902",
+            appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    if (!firebase.apps.length) { 
+        firebase.initializeApp(firebaseConfig);
+    }
+    const dbFirestore = firebase.firestore();
+    const auth = firebase.auth(); 
+    const dbRTDB = firebase.database();
+
+    const GEMINI_API_KEY = "AIzaSyAqC_QJW00rSXV4Coy5nWVuMjl5ot05lNI"; 
+
+    let currentAgent = null; 
+
+    const messageInput = document.getElementById("message");
+    const chatContainer = document.getElementById("chat-container");
+    const submitButton = document.getElementById("submit");
+    const agentNameHeader = document.getElementById('agentNameHeader');
+    const copyLinkButton = document.getElementById('copyLinkButton');
+    const toastContainer = document.getElementById('toast-container');
+    
+    function initializePageWithAgentData(agentData) {
+        currentAgent = agentData; 
+
+        agentNameHeader.textContent = currentAgent.name;
+        messageInput.placeholder = currentAgent.placeholder || `Message ${currentAgent.name}...`;
+        messageInput.disabled = false;
+        submitButton.disabled = false;
+
+        chatContainer.innerHTML = `
+            <div class="agent-profile-section">
+                <img src="${currentAgent.logoUrl || 'https://raw.githubusercontent.com/meta-coderz/utils/main/logo.png'}" alt="Agent Avatar" class="agent-profile-avatar" id="agentProfileAvatarDyn">
+                <div class="agent-profile-name" id="agentProfileNameDyn">${currentAgent.name}</div>
+                <div class="agent-profile-handle" id="agentProfileHandleDyn">By ${currentAgent.handle || '@agent'}</div>
+            </div>
+            <ul id="chat"></ul>
+        `;
+        window.chatUL = document.getElementById('chat'); 
+        displayInitialAgentMessage();
+    }
+
+    function showLoadingState() {
+        chatContainer.innerHTML = `
+            <div class="page-loading-state">
+                <div class="loading-dots" style="margin-bottom: 10px;"><span></span><span></span><span></span></div>
+                Loading Agent Details...
+            </div>`;
+        messageInput.placeholder = "Loading...";
+        messageInput.disabled = true;
+        submitButton.disabled = true;
+    }
+
+    function showErrorState(message, showLink = true) {
+        let linkHtml = showLink ? `<a href="agent-list.html">Go to Agent List</a>` : '';
+        chatContainer.innerHTML = `
+            <div class="page-error-state">
+                <span class="material-icons" style="font-size: 48px; color: var(--aiConnect-error); margin-bottom:10px;">error_outline</span>
+                ${message}
+                ${linkHtml}
+            </div>`;
+        agentNameHeader.textContent = "Error";
+        messageInput.placeholder = "Unavailable";
+        messageInput.disabled = true;
+        submitButton.disabled = true;
+    }
+
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.classList.add('toast-notification');
+        toast.textContent = message;
+        toastContainer.appendChild(toast);
+        
+        // Trigger reflow to enable animation
+        toast.offsetHeight; 
+
+        toast.classList.add('show');
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 300); // Corresponds to transition duration
+        }, 2000); // Toast visible for 2 seconds
+    }
+
+
+    function addMessage(textPart, isUser = true, isInitialBotMessage = false) {
+        if (!window.chatUL || !currentAgent) return; 
+
+        const messageListItem = document.createElement("li");
+        messageListItem.classList.add("message", isUser ? "user-message" : "bot-message");
+        
+        let messageContentHtml = '';
+
+        if (isInitialBotMessage) {
+            messageListItem.classList.add("initial-bot-message-wrapper"); 
+            messageContentHtml = `
+                <div class="agent-initial-intro">
+                    <span class="agent-name-tag">${currentAgent.name}</span>
+                    <span class="material-icons play-icon">play_circle_outline</span>
+                </div>
+                <div class="message-bubble">
+                    ${marked.parse(textPart.trim())}
+                </div>
+                <div class="initial-message-actions">
+                    <span class="material-icons action-icon refresh-icon">refresh</span>
+                    <span class="material-icons action-icon">star_border</span>
+                    <span class="material-icons action-icon">star_border</span>
+                    <span class="material-icons action-icon">star_border</span>
+                    <span class="material-icons action-icon">star_border</span>
+                    <span class="material-icons action-icon">star_border</span>
+                </div>
+            `;
+        } else {
+            if (!isUser) { 
+                messageContentHtml += `<img src="${currentAgent.logoUrl || 'https://raw.githubusercontent.com/meta-coderz/utils/main/logo.png'}" alt="Agent" class="message-avatar">`;
+            }
+            messageContentHtml += `<div class="message-bubble">${isUser ? textPart : marked.parse(textPart.trim())}</div>`;
+            if(isUser && !textPart.trim()){ 
+                 messageContentHtml = `<div class="message-bubble"><i style='color: var(--aiConnect-text-secondary);'>Empty message</i></div>`;
+            } else if (!isUser && (!textPart || !textPart.trim())) {
+                 messageContentHtml = `<img src="${currentAgent.logoUrl || 'https://raw.githubusercontent.com/meta-coderz/utils/main/logo.png'}" alt="Agent" class="message-avatar">
+                                       <div class="message-bubble"><i style='color: var(--aiConnect-text-secondary);'>No specific response.</i></div>`;
+            }
+        }
+        
+        messageListItem.innerHTML = messageContentHtml;
+        window.chatUL.appendChild(messageListItem);
+        requestAnimationFrame(() => { chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' }); });
+        return messageListItem;
+    }
+
+
+    function displayInitialAgentMessage() {
+        if (currentAgent && currentAgent.initialMessage && window.chatUL && window.chatUL.children.length === 0) { 
+            addMessage(currentAgent.initialMessage, false, true); 
+        }
+    }
+
+    async function saveChatToFirestore(userMessage, botResponseText) {
+         if (!currentAgent) return;
+         try {
+            const collectionRef = dbFirestore.collection('aiConnect_agent_chats_single'); 
+            const currentUser = auth.currentUser; 
+            await collectionRef.add({
+              agent_id: currentAgent.id,
+              agent_name: currentAgent.name, 
+              uid: currentUser ? currentUser.uid : 'ANONYMOUS_USER', 
+              created_at: firebase.firestore.Timestamp.now(),
+              user_chat: userMessage,
+              bot_response: botResponseText
+            });
+          } catch (error) { console.error('Error saving chat to Firestore:', error); }
+    }
+
+    function showLoadingIndicator() { 
+        if (!window.chatUL || !currentAgent) return null;
+        const messageEl = document.createElement("li");
+        messageEl.classList.add("message", "bot-message", "loading");
+        messageEl.innerHTML = `
+            <img src="${currentAgent.logoUrl || 'https://raw.githubusercontent.com/meta-coderz/utils/main/logo.png'}" alt="Agent" class="message-avatar">
+            <div class="message-bubble">
+                Thinking <div class="loading-dots"><span></span><span></span><span></span></div>
+            </div>
+        `;
+        window.chatUL.appendChild(messageEl);
+        requestAnimationFrame(() => { chatContainer.scrollTop = chatContainer.scrollHeight; });
+        return messageEl;
+     }
+
+    async function generateTextWithGemini(userMessage) { 
+        if (!currentAgent) throw new Error("Agent data not loaded.");
+        if (!GEMINI_API_KEY || GEMINI_API_KEY.startsWith("AIzaSy") && GEMINI_API_KEY.length < 30) { 
+             throw new Error("AI interaction unavailable: Gemini API Key not configured or invalid.");
+        }
+        try {
+            const systemP = currentAgent.systemPrompt;
+            if (!systemP) throw new Error("System prompt not set for the current agent.");
+
+            const generationUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`; 
+            const body = {
+            contents: [ { role: "user", parts: [{ text: systemP + "\n\n---\n\nUser Question:\n" + userMessage }] } ],
+            generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 8000, responseMimeType: "text/plain" },
+            safetySettings: [ 
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+             ]
+            };
+            const response = await fetch(generationUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+            if (!response.ok) { 
+                const errorBody = await response.text(); console.error("API Error Response:", errorBody);
+                throw new Error(`Text generation failed: ${response.status} ${response.statusText}`);
+            }
+            const result = await response.json();
+            const candidate = result?.candidates?.[0];
+            const textContent = candidate?.content?.parts?.[0]?.text;
+            const finishReason = candidate?.finishReason;
+            const safetyRatings = candidate?.safetyRatings;
+
+            if (finishReason === "STOP" && textContent) { return textContent; } 
+            else if (finishReason === "SAFETY") {
+                 console.warn("API Result blocked due to safety:", result);
+                 const blockedCategories = safetyRatings?.filter(r => r.blocked).map(r => r.category.replace('HARM_CATEGORY_', '')).join(', ') || 'Unknown';
+                 throw new Error(`Content blocked by safety filters: ${blockedCategories}. Please rephrase.`);
+            } else if (finishReason === "MAX_TOKENS") {
+                console.warn("API Result truncated (max_tokens):", result); return textContent; 
+            } else {
+                 console.warn("API Result issue:", result);
+                 throw new Error(`Invalid/empty response from AI. Reason: ${finishReason || 'Unknown'}`);
+            }
+        } catch (error) { console.error("API Call Error:", error); throw error; } 
+     }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        showLoadingState();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const agentId = urlParams.get('agent');
+
+        if (!agentId) {
+            showErrorState("No agent specified in the URL.");
+            return;
+        }
+
+        try {
+            const agentSnapshot = await dbRTDB.ref(`aiConnect_agents/${agentId}`).once('value');
+            const agentDataFromDB = agentSnapshot.val();
+
+            if (agentDataFromDB && agentDataFromDB.active) {
+                initializePageWithAgentData({ 
+                    id: agentId, 
+                    name: agentDataFromDB.name || "Unknown Agent",
+                    handle: agentDataFromDB.handle || (agentDataFromDB.creator ? `@${agentDataFromDB.creator.split('@')[0]}` : "@agent"), // Use creator for handle if available
+                    logoUrl: agentDataFromDB.logoUrl || 'https://raw.githubusercontent.com/meta-coderz/utils/main/logo.png',
+                    systemPrompt: agentDataFromDB.systemPrompt || "You are a helpful assistant.",
+                    initialMessage: agentDataFromDB.initialMessage || "Hello! How can I help you today?",
+                    placeholder: agentDataFromDB.placeholder || "Message...",
+                });
+            } else if (agentDataFromDB && !agentDataFromDB.active) {
+                 showErrorState("This agent is currently inactive.");
+            }
+            else {
+                showErrorState(`Agent with ID "${agentId}" not found.`);
+            }
+        } catch (error) {
+            console.error("Error fetching agent data:", error);
+            showErrorState("Could not load agent data. Please try again.");
+        }
+
+
+        auth.onAuthStateChanged(async (user) => {
+            if (currentAgent) { 
+                if (user) {
+                    messageInput.disabled = false;
+                    submitButton.disabled = false;
+                } else {
+                    messageInput.placeholder = "Please sign in to chat.";
+                    messageInput.disabled = true;
+                    submitButton.disabled = true;
+                    if (window.chatUL && window.chatUL.children.length === 0) { 
+                         const signInMessage = document.createElement('li');
+                         signInMessage.style.textAlign = 'center';
+                         signInMessage.style.color = 'var(--aiConnect-text-secondary)';
+                         signInMessage.style.padding = '20px';
+                         signInMessage.textContent = "Please sign in to interact with the agent.";
+                         window.chatUL.appendChild(signInMessage);
+                     }
+                }
+            } else if (!agentId) { 
+                 messageInput.placeholder = "No agent selected.";
+                 messageInput.disabled = true;
+                 submitButton.disabled = true;
+            }
+        });
+
+        document.getElementById('menuButton').addEventListener('click', () => {
+            window.location.href = 'agent-list.html'; 
+        });
+        document.getElementById('callButton').addEventListener('click', () => {
+            if (currentAgent && currentAgent.id) {
+                window.location.href = `caller.html?agent=${currentAgent.id}`; 
+            } else {
+                showToast("Agent information not loaded.");
+            }
+        });
+        
+        copyLinkButton.addEventListener('click', async () => {
+            if (!currentAgent || !currentAgent.id) {
+                showToast('Agent data not loaded.');
+                return;
+            }
+            const urlToCopy = `https://memo.aitekchat.com/agent-details.html?agent=${currentAgent.id}`;
+            try {
+                await navigator.clipboard.writeText(urlToCopy);
+                showToast('Link copied to clipboard!');
+                copyLinkButton.classList.add('copied');
+                copyLinkButton.querySelector('.material-icons').textContent = 'check_circle'; // Change to checkmark
+                setTimeout(() => {
+                    copyLinkButton.classList.remove('copied');
+                    copyLinkButton.querySelector('.material-icons').textContent = 'link'; // Revert to link icon
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy URL: ', err);
+                showToast('Failed to copy link.');
+            }
+        });
+
+
+        const form = document.getElementById("form");
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if (!currentAgent) {
+                showToast("Agent is not loaded. Cannot send message.");
+                return;
+            }
+            if (!auth.currentUser) {
+                const noAuthMsg = window.chatUL ? window.chatUL.querySelector('.no-auth-message') : null;
+                if(noAuthMsg) noAuthMsg.remove(); 
+
+                const tempMsg = document.createElement('li');
+                tempMsg.classList.add('no-auth-message'); 
+                tempMsg.style.textAlign = 'center';
+                tempMsg.style.color = 'var(--aiConnect-error)';
+                tempMsg.style.padding = '10px';
+                tempMsg.textContent = "Please sign in to send messages.";
+                if (window.chatUL) window.chatUL.appendChild(tempMsg);
+                setTimeout(() => { if(tempMsg.parentNode) tempMsg.remove(); }, 3000);
+                return;
+            }
+            const userText = messageInput.value.trim();
+            if (!userText) return;
+
+            addMessage(userText, true);
+            messageInput.value = "";
+
+            messageInput.disabled = true; submitButton.disabled = true;
+            const loadingIndicator = showLoadingIndicator();
+            let botResponseTextForLogging = "Error occurred during generation."; 
+
+            try {
+                const botResponse = await generateTextWithGemini(userText);
+                botResponseTextForLogging = botResponse;
+                if(loadingIndicator) loadingIndicator.remove(); 
+                addMessage(botResponse, false); 
+                await saveChatToFirestore(userText, botResponseTextForLogging);
+
+            } catch (error) {
+                console.error("Error during generation/processing:", error);
+                if (loadingIndicator) loadingIndicator.remove(); 
+                const userFriendlyErrorMessage = error.message.includes("API Key not configured")
+                    ? "Apologies, the AI Agent system isn't fully set up."
+                    : error.message.includes("safety filters")
+                    ? "I'm unable to respond to that due to content safety guidelines. Could you please try rephrasing?"
+                    : "Apologies, there was a system hiccup. Please try your request again shortly.";
+                addMessage(userFriendlyErrorMessage, false); 
+                botResponseTextForLogging = `[ERROR: ${error.message}]`;
+                await saveChatToFirestore(userText, botResponseTextForLogging);
+            } finally {
+                messageInput.disabled = false; submitButton.disabled = false;
+                messageInput.focus();
+            }
+        });
+    });
+  </script>
+</body>
+</html>

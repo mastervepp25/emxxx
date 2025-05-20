@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a"> 
+  <title>ai-Connect - Academy Course Management</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> 
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+  <style>
+    :root {
+      /* ai-Connect EMX Theme Variables */
+      --aiConnect-bg-dark: #0d0d1a;         
+      --aiConnect-panel-dark: #121225;      
+      --aiConnect-glass-bg: rgba(18, 18, 37, 0.88); 
+      --aiConnect-border: rgba(0, 255, 255, 0.25);  
+      --aiConnect-cyan: #00ffff;            
+      --aiConnect-cyan-dark: #00cccc;       
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-glow-strong: rgba(0, 255, 255, 0.7);
+      --aiConnect-gold: #ffc107;            
+      --aiConnect-text-primary: #e0e0f0;    
+      --aiConnect-text-secondary: #a0a0c0;  
+      --aiConnect-success: #00ff88;         
+      --aiConnect-error: #ff4444;           
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace; 
+
+      --header-height: 56px;
+      --sidebar-width: 260px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --transition-speed: 0.3s;
+      --box-shadow-panel: 0 2px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+      --spacing-unit: 16px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; } 
+    body {
+      font-family: var(--font-body);
+      background-color: var(--aiConnect-bg-dark);
+      color: var(--aiConnect-text-primary);
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+      padding-top: var(--header-height);
+      display: flex; /* For sidebar layout */
+    }
+    h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); color: var(--aiConnect-cyan); text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    a { color: var(--aiConnect-cyan); text-decoration: none; }
+    a:hover { color: var(--aiConnect-cyan-dark); text-shadow: 0 0 5px var(--aiConnect-glow-medium); }
+
+    .sticky-header {
+      background-color: var(--aiConnect-glass-bg); 
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      padding: 0 var(--spacing-unit); 
+      display: flex; align-items: center; justify-content: space-between;
+      position: fixed; top: 0; left: 0; right: 0; 
+      z-index: 1030; height: var(--header-height);
+      border-bottom: 1px solid var(--aiConnect-border);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+    }
+    .header-icon-btn {
+       background: none; border: none; color: var(--aiConnect-text-secondary);
+       font-size: 22px; cursor: pointer; padding: 8px; border-radius: 50%;
+       transition: color var(--transition-speed), background-color var(--transition-speed), text-shadow var(--transition-speed);
+    }
+    .header-icon-btn:hover { color: var(--aiConnect-cyan); background-color: rgba(0,255,255,0.1); text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    .header-title {
+        font-size: 1.1rem; font-weight: 700; color: var(--aiConnect-cyan);
+        font-family: var(--font-display); text-shadow: 0 0 7px var(--aiConnect-glow-medium);
+        position: absolute; left: 50%; transform: translateX(-50%);
+    }
+    
+    .sidebar {
+      position: fixed; top: 0; left: -100%; /* Initially hidden */
+      width: var(--sidebar-width); height: 100vh;
+      background-color: var(--aiConnect-panel-dark);
+      border-right: 1px solid var(--aiConnect-border);
+      padding-top: calc(var(--header-height) + 15px);
+      transition: left var(--transition-speed) ease-in-out;
+      z-index: 1020; box-shadow: 5px 0 15px rgba(0,0,0,0.3);
+    }
+    .sidebar.open { left: 0; }
+    .sidebar-brand {
+      display: flex; align-items: center; padding: 10px 20px; margin-bottom: 20px;
+      color: var(--aiConnect-cyan); text-decoration: none;
+    }
+    .sidebar-brand img { height: 30px; margin-right: 10px;}
+    .sidebar-brand span { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+    .sidebar-nav { list-style: none; padding: 0; margin: 0; }
+    .sidebar-nav-item { margin-bottom: 5px; }
+    .sidebar-nav-link {
+      display: flex; align-items: center; padding: 12px 20px;
+      color: var(--aiConnect-text-secondary); text-decoration: none;
+      border-radius: var(--border-radius); margin: 0 10px; 
+      transition: all var(--transition-speed) ease; font-family: var(--font-display); font-size: 0.9rem;
+    }
+    .sidebar-nav-link:hover { background-color: rgba(0,255,255,0.08); color: var(--aiConnect-cyan); text-shadow: 0 0 3px var(--aiConnect-glow-soft); }
+    .sidebar-nav-link.active {
+      background-color: rgba(0,255,255,0.15); color: var(--aiConnect-cyan);
+      font-weight: 700; box-shadow: inset 0 0 8px var(--aiConnect-glow-soft);
+    }
+    .sidebar-nav-link .fas { margin-right: 12px; width: 20px; text-align: center; font-size: 1em; }
+
+    .main-content-wrapper { /* New wrapper for main content area */
+      flex-grow: 1;
+      padding: var(--spacing-unit);
+      margin-left: 0; /* Default for mobile */
+      transition: margin-left var(--transition-speed) ease-in-out;
+      width: 100%;
+       max-width: 100%; /* Ensure it takes available space */
+    }
+    body.sidebar-active .main-content-wrapper {
+        margin-left: var(--sidebar-width);
+        width: calc(100% - var(--sidebar-width));
+    }
+    @media (max-width: 767px) { /* Mobile specific */
+        .sidebar { box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        body.sidebar-active .main-content-wrapper { margin-left: 0; width: 100%; } /* Content doesn't shift on mobile */
+    }
+
+
+    .panel-emo {
+      background-color: var(--aiConnect-panel-dark);
+      border: 1px solid var(--aiConnect-border);
+      border-radius: var(--border-radius-large);
+      padding: var(--spacing-unit);
+      margin-bottom: calc(var(--spacing-unit) * 1.5);
+      box-shadow: var(--box-shadow-panel);
+    }
+    .panel-emo h2, .panel-emo h3 {
+      color: var(--aiConnect-cyan); margin-bottom: var(--spacing-unit);
+      padding-bottom: calc(var(--spacing-unit) * 0.5);
+      border-bottom: 1px solid var(--aiConnect-border);
+    }
+    .form-label-emo {
+      font-family: var(--font-display); color: var(--aiConnect-text-secondary);
+      font-size: 0.9rem; margin-bottom: 8px; display: block;
+    }
+    .form-control-emo, .form-select-emo {
+      background-color: rgba(13,13,26,0.8); border: 1px solid var(--aiConnect-border);
+      color: var(--aiConnect-text-primary); font-family: var(--font-body);
+      border-radius: var(--border-radius); padding: 10px 12px; width: 100%;
+      margin-bottom: var(--spacing-unit);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+      transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    .form-control-emo:focus, .form-select-emo:focus {
+      border-color: var(--aiConnect-cyan); outline: none;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 0 10px var(--aiConnect-glow-medium);
+    }
+    .form-control-emo.is-invalid { border-color: var(--aiConnect-error); }
+    .invalid-feedback-emo { font-size: 0.8rem; color: var(--aiConnect-error); margin-top: -10px; margin-bottom: 10px; display: none; }
+    .form-control-emo.is-invalid + .invalid-feedback-emo, .form-control-emo.is-invalid ~ .invalid-feedback-emo { display: block; }
+
+
+    .btn-emo {
+        font-family: var(--font-display); font-size: 0.9rem;
+        padding: 10px 18px; border-radius: var(--border-radius);
+        border: 1px solid var(--aiConnect-border);
+        background: linear-gradient(145deg, rgba(0, 255, 255, 0.15), rgba(0, 255, 255, 0.08));
+        color: var(--aiConnect-cyan); cursor: pointer;
+        transition: all var(--transition-speed) ease;
+        box-shadow: 0 0 8px var(--aiConnect-glow-soft);
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-emo:hover {
+        background: linear-gradient(145deg, rgba(0, 255, 255, 0.25), rgba(0, 255, 255, 0.15));
+        color: #fff; box-shadow: 0 0 15px var(--aiConnect-glow-medium);
+        transform: translateY(-1px); border-color: var(--aiConnect-cyan);
+    }
+    .btn-emo.btn-danger-emo { border-color: rgba(255,68,68,0.3); color: var(--aiConnect-error); background: linear-gradient(145deg, rgba(220,53,69,0.15), rgba(220,53,69,0.08)); box-shadow: 0 0 8px rgba(220,53,69,0.2); }
+    .btn-emo.btn-danger-emo:hover { color: #fff; border-color: var(--aiConnect-error); box-shadow: 0 0 15px rgba(220,53,69,0.5); background: linear-gradient(145deg, rgba(220,53,69,0.25), rgba(220,53,69,0.15)); }
+    .btn-emo.btn-warning-emo { border-color: rgba(255,193,7,0.3); color: var(--aiConnect-gold); background: linear-gradient(145deg, rgba(255,193,7,0.15), rgba(255,193,7,0.08)); box-shadow: 0 0 8px rgba(255,193,7,0.2); }
+    .btn-emo.btn-warning-emo:hover { color: var(--aiConnect-bg-dark); border-color: var(--aiConnect-gold); box-shadow: 0 0 15px var(--aiConnect-gold-glow); background: linear-gradient(145deg, var(--aiConnect-gold), #cc9a05); }
+     .btn-emo:disabled { opacity: 0.4; cursor: not-allowed; background: #2a2a3f !important; box-shadow: none !important; border-color: #40405f !important; color: #707090 !important; }
+
+    .progress-emo { height: 6px; border-radius: var(--border-radius); background-color: rgba(0,0,0,0.3); margin-top: 8px; overflow: hidden; border: 1px solid var(--aiConnect-border); }
+    .progress-bar-emo { background-color: var(--aiConnect-cyan); height: 100%; transition: width 0.3s ease; box-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+
+    .file-preview-emo { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .file-preview-emo img, .file-preview-emo video {
+      max-width: 120px; max-height: 120px; border-radius: var(--border-radius);
+      object-fit: cover; border: 1px solid var(--aiConnect-border);
+      box-shadow: 0 0 8px rgba(0,0,0,0.2);
+    }
+
+    .course-grid-emo { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--spacing-unit); }
+    .course-item-emo {
+      background-color: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+      border-radius: var(--border-radius-large); overflow: hidden;
+      box-shadow: var(--box-shadow-panel);
+      transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+      display: flex; flex-direction: column;
+    }
+    .course-item-emo:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.5), 0 0 20px var(--aiConnect-glow-medium); }
+    .course-thumbnail-emo { height: 180px; overflow: hidden; background-color: var(--aiConnect-bg-dark); }
+    .course-thumbnail-emo img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+    .course-item-emo:hover .course-thumbnail-emo img { transform: scale(1.05); }
+    .course-details-emo { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+    .course-title-emo { font-size: 1.1rem; font-weight: 700; margin-bottom: 5px; color: var(--aiConnect-text-primary); }
+    .course-author-emo { font-size: 0.8rem; color: var(--aiConnect-cyan); margin-bottom: 10px; font-family: var(--font-display); }
+    .course-description-emo { font-size: 0.8rem; color: var(--aiConnect-text-secondary); margin-bottom: 15px; line-height: 1.5; flex-grow: 1; }
+    .course-status-emo { display: inline-block; padding: 3px 8px; font-size: 0.7rem; font-weight: 700; border-radius: 20px; margin-bottom: 10px; font-family: var(--font-display); letter-spacing: 0.5px; }
+    .course-status-emo.active { background-color: rgba(0, 255, 136, 0.15); color: var(--aiConnect-success); border: 1px solid var(--aiConnect-success); box-shadow: 0 0 5px rgba(0, 255, 136, 0.3);}
+    .course-status-emo.inactive { background-color: rgba(160, 160, 192, 0.15); color: var(--aiConnect-text-secondary); border: 1px solid var(--aiConnect-text-secondary);}
+    .course-actions-emo { display: flex; gap: 8px; margin-top: auto; flex-wrap: wrap; }
+    .course-actions-emo .btn-emo { font-size: 0.8rem; padding: 6px 12px; }
+
+    /* Modal Styles EMO */
+    .modal-emo {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(13, 13, 26, 0.85); 
+      display: none; justify-content: center; align-items: center;
+      z-index: 1050; opacity: 0; transition: opacity var(--transition-speed) ease-in-out;
+    }
+    .modal-emo.show { display: flex; opacity: 1; }
+    .modal-content-emo {
+      background-color: var(--aiConnect-panel-dark);
+      border-radius: var(--border-radius-large);
+      width: 90%; max-width: 450px;
+      box-shadow: 0 5px 25px rgba(0,0,0,0.7), 0 0 30px var(--aiConnect-glow-medium);
+      border: 1px solid var(--aiConnect-border);
+      animation: modalFadeIn 0.3s ease-out forwards;
+    }
+    @keyframes modalFadeIn { from { opacity:0; transform: translateY(-20px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
+    .modal-header-emo {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px 20px; border-bottom: 1px solid var(--aiConnect-border);
+    }
+    .modal-header-emo .modal-title-emo { font-size: 1.2rem; color: var(--aiConnect-cyan); font-family: var(--font-display); }
+    .modal-btn-close-emo { background:none; border:none; color: var(--aiConnect-text-secondary); font-size:1.5rem; cursor:pointer; opacity:0.7; transition: opacity 0.2s, color 0.2s; }
+    .modal-btn-close-emo:hover { opacity:1; color:var(--aiConnect-cyan); }
+    .modal-body-emo { padding: 20px; }
+    .modal-footer-emo {
+      padding: 15px 20px; border-top: 1px solid var(--aiConnect-border);
+      display: flex; justify-content: flex-end; gap: 10px;
+    }
+
+    .loading-overlay-emo {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(13, 13, 26, 0.9); 
+      display: flex; flex-direction:column; justify-content: center; align-items: center; z-index: 2000;
+    }
+    .spinner-emo-overlay {
+      width: 40px; height: 40px; border: 4px solid var(--aiConnect-glow-soft);
+      border-radius: 50%; border-top-color: var(--aiConnect-cyan); animation: spin 1s ease-in-out infinite;
+      box-shadow: 0 0 10px var(--aiConnect-glow-medium);
+    }
+    .loading-overlay-emo p { margin-top: 15px; font-family: var(--font-display); color: var(--aiConnect-text-primary); }
+
+
+    .notification-toast-emo {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      background-color: var(--aiConnect-panel-dark); color: var(--aiConnect-text-primary);
+      padding: 12px 20px; border-radius: var(--border-radius);
+      border: 1px solid var(--aiConnect-border);
+      box-shadow: 0 0 15px var(--aiConnect-glow-soft);
+      z-index: 1060; opacity: 0; transition: opacity 0.3s, transform 0.3s;
+      font-size: 0.9rem;
+      min-width: 250px; text-align: center;
+      transform: translateX(-50%) translateY(20px);
+    }
+    .notification-toast-emo.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .notification-toast-emo.success { border-left: 4px solid var(--aiConnect-success); color: var(--aiConnect-success); }
+    .notification-toast-emo.error { border-left: 4px solid var(--aiConnect-error); color: var(--aiConnect-error); }
+    .notification-toast-emo.warning { border-left: 4px solid var(--aiConnect-gold); color: var(--aiConnect-gold); }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header class="sticky-header">
+    <button class="header-icon-btn" id="menuButton">
+      <i class="fas fa-bars"></i>
+    </button>
+    <span class="header-title">Academy Admin</span>
+    <button class="header-icon-btn" id="userProfileButton" title="User Profile">
+      <i class="fas fa-user-circle"></i>
+    </button>
+  </header>
+
+  <div class="loading-overlay-emo hidden" id="loadingOverlay">
+    <div class="spinner-emo-overlay"></div>
+    <p>Processing...</p>
+  </div>
+
+  <div id="toastContainerEmo"></div>
+
+  <aside class="sidebar" id="sidebar">
+    <a href="#" class="sidebar-brand">
+      <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="ai-Connect Logo">
+      <span>ai-Connect Academy</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li class="sidebar-nav-item"><a href="aiconnect-academy-dashboard.html" class="sidebar-nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
+      <li class="sidebar-nav-item"><a href="aiconnect-academy-courses.html" class="sidebar-nav-link"><i class="fas fa-book"></i><span>Courses</span></a></li>
+      <li class="sidebar-nav-item"><a href="#" class="sidebar-nav-link active"><i class="fas fa-upload"></i><span>Upload Course</span></a></li>
+      <li class="sidebar-nav-item"><a href="aiconnect-userprofile.html" class="sidebar-nav-link"><i class="fas fa-user"></i><span>My Profile</span></a></li>
+    </ul>
+  </aside>
+
+  <main class="main-content-wrapper">
+    <div class="grid-container" style="display: block;"> {/* Simplified layout for now */}
+      <div>
+        <div class="panel-emo">
+          <h2><i class="fas fa-cloud-upload-alt"></i> Upload New Course</h2>
+          <form id="courseForm">
+            <div class="mb-3">
+              <label for="title" class="form-label-emo">Course Title</label>
+              <input type="text" class="form-control-emo" id="title" placeholder="Enter course title" required>
+            </div>
+            <div class="mb-3">
+              <label for="description" class="form-label-emo">Description</label>
+              <textarea class="form-control-emo" id="description" rows="4" placeholder="Enter course description" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="author" class="form-label-emo">Author</label>
+              <input type="text" class="form-control-emo" id="author" placeholder="Enter author name" required>
+            </div>
+            <div class="mb-3">
+              <label for="thumbnail" class="form-label-emo">Thumbnail Image</label>
+              <input type="file" class="form-control-emo" id="thumbnail" accept="image/*" required>
+              <div class="progress-emo hidden mt-2" id="thumbnailProgressContainer"><div class="progress-bar-emo" id="thumbnailProgressBar" style="width: 0%"></div></div>
+              <div class="file-preview-emo" id="thumbnailPreview"></div>
+            </div>
+            <div class="mb-3">
+              <label for="video" class="form-label-emo">Course Video</label>
+              <input type="file" class="form-control-emo" id="video" accept="video/*" required>
+              <div class="progress-emo hidden mt-2" id="videoProgressContainer"><div class="progress-bar-emo" id="videoProgressBar" style="width: 0%"></div></div>
+              <div class="file-preview-emo" id="videoPreview"></div>
+            </div>
+            <button type="submit" class="btn-emo w-100" id="uploadButton"><i class="fas fa-upload"></i> Upload Course</button>
+          </form>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="mb-3"><i class="fas fa-list-alt"></i> Uploaded Courses</h2>
+        <div id="courseListContainer" class="course-grid-emo"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-emo" id="editCourseModal">
+    <div class="modal-content-emo">
+      <div class="modal-header-emo">
+        <h5 class="modal-title-emo">Edit Course</h5>
+        <button type="button" class="modal-btn-close-emo" id="editModalCloseBtn">×</button>
+      </div>
+      <div class="modal-body-emo">
+        <form id="editCourseForm">
+          <input type="hidden" id="editCourseId">
+          <div class="mb-3"><label for="editTitle" class="form-label-emo">Title</label><input type="text" class="form-control-emo" id="editTitle" required></div>
+          <div class="mb-3"><label for="editDescription" class="form-label-emo">Description</label><textarea class="form-control-emo" id="editDescription" rows="4" required></textarea></div>
+          <div class="mb-3"><label for="editAuthor" class="form-label-emo">Author</label><input type="text" class="form-control-emo" id="editAuthor" required></div>
+        </form>
+      </div>
+      <div class="modal-footer-emo">
+        <button type="button" class="btn-emo btn-danger-emo" id="editModalCancelBtn">Cancel</button>
+        <button type="button" class="btn-emo" id="saveEditButton">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-emo" id="authorCodeModal">
+    <div class="modal-content-emo">
+      <div class="modal-header-emo"><h5 class="modal-title-emo">Author Verification</h5></div>
+      <div class="modal-body-emo">
+        <form id="authorCodeForm">
+          <div class="mb-3">
+            <label for="authorCodeInput" class="form-label-emo">Authors Code</label>
+            <input type="password" class="form-control-emo" id="authorCodeInput" placeholder="Enter author's code" required>
+            <div id="authorCodeErrorFeedback" class="invalid-feedback-emo">Invalid code. Please try again.</div>
+          </div>
+          <button type="submit" class="btn-emo w-100">Verify Code</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8", // ai-Connect Config
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+    const storage = firebase.storage();
+    const auth = firebase.auth(); // Auth instance
+
+    const sidebar = document.getElementById('sidebar');
+    const menuButton = document.getElementById('menuButton');
+    const backButton = document.getElementById('backButton'); // This ID isn't in HTML, header has menuButton
+    const userProfileButton = document.getElementById('userProfileButton');
+
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const toastContainerEmo = document.getElementById('toastContainerEmo'); // EMO themed toast container
+    const courseForm = document.getElementById('courseForm');
+    const uploadButton = document.getElementById('uploadButton');
+    const courseListContainer = document.getElementById('courseListContainer');
+    const thumbnailInput = document.getElementById('thumbnail');
+    const videoInput = document.getElementById('video');
+    const thumbnailPreview = document.getElementById('thumbnailPreview');
+    const videoPreview = document.getElementById('videoPreview');
+    const thumbnailProgressContainer = document.getElementById('thumbnailProgressContainer');
+    const thumbnailProgressBar = document.getElementById('thumbnailProgressBar');
+    const videoProgressContainer = document.getElementById('videoProgressContainer');
+    const videoProgressBar = document.getElementById('videoProgressBar');
+
+    const editCourseModalElement = document.getElementById('editCourseModal');
+    const editModalCloseBtn = document.getElementById('editModalCloseBtn');
+    const editModalCancelBtn = document.getElementById('editModalCancelBtn');
+    const editCourseIdInput = document.getElementById('editCourseId'); // Renamed for clarity
+    const editTitleInput = document.getElementById('editTitle'); // Renamed
+    const editDescriptionInput = document.getElementById('editDescription'); // Renamed
+    const editAuthorInput = document.getElementById('editAuthor'); // Renamed
+    const saveEditButton = document.getElementById('saveEditButton');
+
+    const authorCodeModalElement = document.getElementById('authorCodeModal');
+    const authorCodeForm = document.getElementById('authorCodeForm');
+    const authorCodeInput = document.getElementById('authorCodeInput');
+    const authorCodeErrorFeedback = document.getElementById('authorCodeErrorFeedback');
+    const CORRECT_AUTHOR_CODE = "AIC0N"; // Updated for ai-Connect
+
+    menuButton.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      document.body.classList.toggle('sidebar-active'); // To adjust main content margin
+    });
+    
+    if(userProfileButton) {
+        userProfileButton.addEventListener('click', () => {
+            // Check if user is logged in before redirecting
+            if (auth.currentUser) {
+                window.location.href = 'aiconnect-userprofile.html'; // Assuming this is the profile page
+            } else {
+                showToastEmo('Please log in to view your profile.', 'warning');
+                // Optionally, redirect to login: window.location.href = 'aiconnect-signin.html';
+            }
+        });
+    }
+
+
+    function showLoading() { loadingOverlay.classList.remove('hidden'); }
+    function hideLoading() { loadingOverlay.classList.add('hidden'); }
+
+    function showToastEmo(message, type = 'info') {
+      const toastId = 'toast-emo-' + Date.now();
+      const toast = document.createElement('div');
+      toast.id = toastId;
+      toast.className = `notification-toast-emo ${type}`;
+      toast.textContent = message;
+      
+      const mainContent = document.querySelector('.main-content-wrapper') || document.body;
+      mainContent.appendChild(toast); // Append to main content to be above sidebar if open
+
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300); // Remove after fade out
+      }, 4700); // Show for 4.7s, remove after 5s
+    }
+
+    thumbnailInput.addEventListener('change', () => { previewFile(thumbnailInput, thumbnailPreview, 'img'); });
+    videoInput.addEventListener('change', () => { previewFile(videoInput, videoPreview, 'video'); });
+
+    function previewFile(input, previewContainer, type) {
+      previewContainer.innerHTML = '';
+      const file = input.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const element = document.createElement(type);
+          element.src = e.target.result;
+          if (type === 'video') element.controls = true;
+          previewContainer.appendChild(element);
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function updateProgress(progressBar, progressContainer, percentage) {
+      progressContainer.classList.remove('hidden');
+      progressBar.style.width = percentage + '%';
+    }
+
+    courseForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (localStorage.getItem('aiConnectAuthorCodeVerified') !== 'true') {
+        showToastEmo('Please verify Authors Code first.', 'warning');
+        authorCodeModalElement.classList.add('show');
+        return;
+      }
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const authorName = document.getElementById('author').value; // Renamed variable
+      const thumbnailFile = thumbnailInput.files[0];
+      const videoFile = videoInput.files[0];
+      if (!title || !description || !authorName || !thumbnailFile || !videoFile) {
+        showToastEmo('All fields and files are required.', 'error'); return;
+      }
+      uploadButton.disabled = true;
+      uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+      showLoading();
+      try {
+        const timestamp = Date.now();
+        const thumbnailRef = storage.ref(`academy_thumbnails/${timestamp}_${thumbnailFile.name}`);
+        const thumbnailUploadTask = thumbnailRef.put(thumbnailFile);
+        thumbnailUploadTask.on('state_changed', (snapshot) => updateProgress(thumbnailProgressBar, thumbnailProgressContainer, (snapshot.bytesTransferred / snapshot.totalBytes) * 100));
+        await thumbnailUploadTask;
+        const thumbnailURL = await thumbnailRef.getDownloadURL();
+
+        const videoRef = storage.ref(`academy_videos/${timestamp}_${videoFile.name}`);
+        const videoUploadTask = videoRef.put(videoFile);
+        videoUploadTask.on('state_changed', (snapshot) => updateProgress(videoProgressBar, videoProgressContainer, (snapshot.bytesTransferred / snapshot.totalBytes) * 100));
+        await videoUploadTask;
+        const videoURL = await videoRef.getDownloadURL();
+
+        const newCourseRef = database.ref('academy_courses').push(); // Changed path
+        const courseData = { title, description, author: authorName, image_thumbnail: thumbnailURL, video_url: videoURL, active: true, created_at: new Date().toISOString() };
+        await newCourseRef.set(courseData);
+
+        courseForm.reset();
+        thumbnailPreview.innerHTML = ''; videoPreview.innerHTML = '';
+        thumbnailProgressContainer.classList.add('hidden'); videoProgressContainer.classList.add('hidden');
+        updateProgress(thumbnailProgressBar, thumbnailProgressContainer, 0); updateProgress(videoProgressBar, videoProgressContainer, 0);
+        showToastEmo('Course uploaded successfully!', 'success');
+      } catch (error) { console.error('Upload error:', error); showToastEmo('Upload Error: ' + error.message, 'error');
+      } finally { uploadButton.disabled = false; uploadButton.innerHTML = '<i class="fas fa-upload"></i> Upload Course'; hideLoading(); }
+    });
+
+    function setupCourseListListener() {
+      showLoading();
+      database.ref('academy_courses').on('value', (snapshot) => { // Changed path
+        hideLoading(); renderCourseList(snapshot.val());
+      }, (error) => { hideLoading(); console.error('Error fetching courses:', error); showToastEmo('Load Error: ' + error.message, 'error'); });
+    }
+
+    function renderCourseList(courses) {
+      courseListContainer.innerHTML = '';
+      if (!courses) {
+        courseListContainer.innerHTML = `<div class="panel-emo" style="text-align:center;"><i class="fas fa-info-circle fa-3x" style="color:var(--aiConnect-text-secondary); margin-bottom:10px;"></i><h5 style="color:var(--aiConnect-text-primary);">No courses found</h5><p style="color:var(--aiConnect-text-secondary);">Upload your first course to the ai-Connect Academy.</p></div>`; return;
+      }
+      for (const courseId in courses) {
+        const course = courses[courseId];
+        if (course) {
+            const courseItem = document.createElement('div'); courseItem.className = 'course-item-emo';
+            courseItem.innerHTML = `
+            <div class="course-thumbnail-emo"><img src="${course.image_thumbnail || 'placeholder.jpg'}" alt="${course.title || 'Course'}"></div>
+            <div class="course-details-emo">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h3 class="course-title-emo">${course.title || 'Untitled'}</h3>
+                    <span class="course-status-emo ${course.active ? 'active' : 'inactive'}">${course.active ? 'Active' : 'Inactive'}</span>
+                </div>
+                <p class="course-author-emo">By: ${course.author || 'Unknown'}</p>
+                <p class="course-description-emo">${(course.description || 'No description').substring(0,100)}...</p>
+                <div class="course-actions-emo">
+                <button class="btn-emo edit-btn" data-course-id="${courseId}"><i class="fas fa-edit"></i> Edit</button>
+                <button class="btn-emo btn-danger-emo delete-btn" data-course-id="${courseId}"><i class="fas fa-trash"></i> Delete</button>
+                <button class="btn-emo btn-warning-emo toggle-btn" data-course-id="${courseId}" data-active="${course.active}"><i class="fas fa-${course.active ? 'eye-slash' : 'eye'}"></i> ${course.active ? 'Deactivate' : 'Activate'}</button>
+                </div>
+            </div>`;
+            courseListContainer.appendChild(courseItem);
+        }
+      }
+      document.querySelectorAll('.edit-btn').forEach(button => button.addEventListener('click', handleEditCourse));
+      document.querySelectorAll('.delete-btn').forEach(button => button.addEventListener('click', handleDeleteCourse));
+      document.querySelectorAll('.toggle-btn').forEach(button => button.addEventListener('click', handleToggleCourseActive));
+    }
+
+    function handleEditCourse(e) {
+      const courseId = e.currentTarget.dataset.courseId;
+      database.ref(`academy_courses/${courseId}`).once('value', (snapshot) => { // Changed path
+        const course = snapshot.val();
+        if (!course) { showToastEmo('Error: Course not found.', 'error'); return; }
+        editCourseIdInput.value = courseId; editTitleInput.value = course.title || '';
+        editDescriptionInput.value = course.description || ''; editAuthorInput.value = course.author || '';
+        editCourseModalElement.classList.add('show');
+      });
+    }
+    
+    editModalCloseBtn?.addEventListener('click', () => editCourseModalElement.classList.remove('show'));
+    editModalCancelBtn?.addEventListener('click', () => editCourseModalElement.classList.remove('show'));
+
+    saveEditButton?.addEventListener('click', () => {
+      const courseId = editCourseIdInput.value; if (!courseId) return;
+      const updatedData = { title: editTitleInput.value, description: editDescriptionInput.value, author: editAuthorInput.value };
+      showLoading();
+      database.ref(`academy_courses/${courseId}`).update(updatedData) // Changed path
+        .then(() => { editCourseModalElement.classList.remove('show'); showToastEmo('Course updated!', 'success'); })
+        .catch(error => { console.error('Error updating:', error); showToastEmo('Update Error: ' + error.message, 'error'); })
+        .finally(() => hideLoading());
+    });
+
+    function handleDeleteCourse(e) {
+      const courseId = e.currentTarget.dataset.courseId;
+      if (confirm('Delete this ai-Connect Academy course permanently?')) {
+        showLoading();
+        database.ref(`academy_courses/${courseId}`).remove() // Changed path
+          .then(() => showToastEmo('Course deleted!', 'success'))
+          .catch(error => { console.error('Error deleting:', error); showToastEmo('Delete Error: ' + error.message, 'error'); })
+          .finally(() => hideLoading());
+      }
+    }
+
+    function handleToggleCourseActive(e) {
+      const courseId = e.currentTarget.dataset.courseId;
+      const isActive = e.currentTarget.dataset.active === 'true';
+      showLoading();
+      database.ref(`academy_courses/${courseId}`).update({ active: !isActive }) // Changed path
+        .then(() => showToastEmo(`Course ${isActive ? 'deactivated' : 'activated'}!`, 'success'))
+        .catch(error => { console.error('Error toggling:', error); showToastEmo('Toggle Error: ' + error.message, 'error'); })
+        .finally(() => hideLoading());
+    }
+
+    function checkAndShowAuthorCodeModal() {
+        if (localStorage.getItem('aiConnectAuthorCodeVerified') !== 'true') {
+            authorCodeModalElement.classList.add('show');
+        }
+    }
+
+    authorCodeForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const enteredCode = authorCodeInput.value;
+        if (enteredCode === CORRECT_AUTHOR_CODE) {
+            localStorage.setItem('aiConnectAuthorCodeVerified', 'true');
+            authorCodeModalElement.classList.remove('show');
+            authorCodeInput.classList.remove('is-invalid'); // EMO style form validation
+            showToastEmo('Author code verified!', 'success');
+        } else {
+            authorCodeInput.classList.add('is-invalid'); // EMO style form validation
+            authorCodeErrorFeedback.style.display = 'block'; // Show error message
+            authorCodeInput.value = ''; 
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Ensure user is logged in before allowing access to course management
+      auth.onAuthStateChanged(user => {
+        if (user) {
+            console.log("ai-Connect Admin Authenticated:", user.uid);
+            checkAndShowAuthorCodeModal(); 
+            setupCourseListListener();
+        } else {
+            console.log("User not authenticated for Academy Admin. Redirecting...");
+            // Redirect to a login page specific to ai-Connect if desired
+            // window.location.href = 'aiconnect-admin-login.html'; 
+            // For now, just disable functionality or show message if no separate login
+            showToastEmo("Admin access required. Please log in.", "error");
+            courseForm.style.display = 'none';
+            courseListContainer.innerHTML = '<p style="color:var(--aiConnect-error); text-align:center;">Admin authentication required to manage courses.</p>';
+        }
+      });
+    });
+
+     if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/aiconnect-sw.js') // Custom SW name
+              .then(registration => console.log('ai-Connect ServiceWorker registered:', registration.scope))
+              .catch(error => console.log('ai-Connect ServiceWorker registration failed:', error));
+        });
+     }
+     document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+     let lastTouchEnd = 0;
+     document.addEventListener('touchend', function(event) {
+       const now = Date.now();
+       if (now - lastTouchEnd <= 300) event.preventDefault();
+       lastTouchEnd = now;
+     }, { passive: false });
+  </script>
+</body>
+</html>

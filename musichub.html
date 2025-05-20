@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ai-Connect • Music Hub</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d0d1a"> <!-- ai-Connect Theme Color -->
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+<style>
+:root {
+  --aiConnect-bg-dark: #0d0d1a;
+  --aiConnect-panel-dark: #121225;      
+  --aiConnect-glass-bg: rgba(18, 18, 37, 0.88); 
+  --aiConnect-border: rgba(0, 255, 255, 0.25);  
+  --aiConnect-cyan: #00ffff;            
+  --aiConnect-cyan-dark: #00cccc;       
+  --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+  --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+  --aiConnect-text-primary: #e0e0f0;    
+  --aiConnect-text-secondary: #a0a0c0;  
+  --aiConnect-error: #ff4444;
+  --aiConnect-success: #00ff88;  
+  --aiConnect-lime-green: #32cd32; /* For play buttons or active states */
+
+  --font-display: 'Orbitron', sans-serif;
+  --font-body: 'Roboto Mono', monospace; 
+
+  --header-h: 56px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --transition: .2s;
+  --shadow: 0 2px 10px rgba(0,0,0,.45), 0 0 15px var(--aiConnect-glow-soft);
+  --space: 15px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--aiConnect-bg-dark);
+  color: var(--aiConnect-text-primary);
+  max-width: 420px;
+  margin: 0 auto;
+  overflow-x: hidden;
+  min-height: 100vh;
+  padding-top: var(--header-h); /* Account for fixed header */
+}
+
+button, input, select {
+  font-family: inherit;
+  font-size: 0.9rem;
+  border-radius: var(--radius);
+  color: var(--aiConnect-text-primary);
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid var(--aiConnect-border);
+  padding: 10px var(--space);
+  background: linear-gradient(145deg, rgba(0, 255, 255, 0.15), rgba(0, 255, 255, 0.05));
+  color: var(--aiConnect-cyan);
+  font-weight: 500;
+  font-family: var(--font-display);
+  width: 100%;
+  transition: background-color var(--transition), transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 0 8px var(--aiConnect-glow-soft);
+}
+button:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 5px var(--aiConnect-glow-soft);
+}
+button:hover:not(:disabled) {
+  background: linear-gradient(145deg, rgba(0, 255, 255, 0.25), rgba(0, 255, 255, 0.15));
+  box-shadow: 0 0 12px var(--aiConnect-glow-medium);
+  color: #fff;
+}
+button:disabled {
+  background: var(--aiConnect-panel-dark);
+  border-color: rgba(255,255,255,0.1);
+  color: var(--aiConnect-text-secondary);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--aiConnect-border);
+  margin-bottom: var(--space);
+  background-color: var(--aiConnect-panel-dark);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+}
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--aiConnect-cyan);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.3), 0 0 8px var(--aiConnect-glow-medium);
+}
+select {
+    appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%2300ffff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>');
+    background-repeat: no-repeat;
+    background-position-x: calc(100% - 10px);
+    background-position-y: center;
+    padding-right: 30px; /* Make space for arrow */
+}
+
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--aiConnect-text-secondary);
+  font-family: var(--font-display);
+}
+
+/* --- Header --- */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: var(--header-h);
+  padding: 0 var(--space);
+  background-color: var(--aiConnect-glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: fixed; /* Changed to fixed */
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 420px;
+  border-bottom: 1px solid var(--aiConnect-border);
+  box-shadow: var(--shadow);
+  z-index: 1000;
+}
+
+.header-left { 
+  display: flex;
+  align-items: center;
+}
+.header-icon-btn { 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--aiConnect-text-secondary);
+  cursor: pointer;
+  background: none; border: none;
+  border-radius: 50%;
+  transition: background-color var(--transition), color var(--transition);
+}
+.header-icon-btn .material-symbols-outlined { font-size: 24px; }
+.header-icon-btn:hover {
+    color: var(--aiConnect-cyan);
+    background-color: rgba(0,255,255,0.1);
+}
+.header-title { 
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--aiConnect-cyan);
+  font-family: var(--font-display);
+  margin-left: 8px;
+  text-shadow: 0 0 8px var(--aiConnect-glow-soft);
+}
+
+/* --- Main Content --- */
+main {
+  padding: var(--space);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space);
+}
+
+.content-card { 
+  background-color: var(--aiConnect-panel-dark);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--aiConnect-border);
+  box-shadow: var(--shadow);
+  padding: var(--space);
+}
+
+.status-placeholder { 
+  color: var(--aiConnect-text-secondary);
+  font-style: italic;
+  text-align: center;
+  min-height: 40px;
+  padding: var(--space) 0;
+}
+
+.music-list { 
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: var(--space);
+}
+
+.music-item { 
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--radius);
+  background-color: rgba(255,255,255,0.03); /* Subtle background for items */
+  transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+  cursor: default; /* Default, change to pointer if playable */
+  position: relative; /* For play icon positioning */
+}
+.music-item.playable:hover {
+  background-color: rgba(0,255,255,0.08);
+  transform: scale(1.02);
+}
+.music-item.playing {
+    background-color: rgba(0,255,255,0.12);
+    border-left: 3px solid var(--aiConnect-lime-green);
+}
+
+.music-item-artwork {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: var(--radius);
+  margin-right: var(--space);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.music-item-details { 
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden; /* For text ellipsis */
+}
+.music-item-details strong { /* Track Name */
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--aiConnect-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.music-item.playing strong {
+    color: var(--aiConnect-lime-green);
+}
+.music-item-details span { /* Artist & Album */
+  font-size: 0.8rem;
+  color: var(--aiConnect-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.play-action-icon {
+    color: var(--aiConnect-text-secondary);
+    font-size: 28px;
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 10px; /* Space from details */
+    transition: color var(--transition), transform var(--transition);
+}
+.play-action-icon:hover {
+    color: var(--aiConnect-lime-green);
+    transform: scale(1.1);
+}
+.music-item.playing .play-action-icon {
+    color: var(--aiConnect-lime-green);
+}
+
+
+/* --- Load More Button --- */
+#loadMoreBtn { 
+  display: none; 
+  margin-top: var(--space);
+}
+#loadMoreBtn.visible { 
+  display: block; 
+}
+
+
+/* --- Loading Indicator --- */
+#loaderOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: rgba(13, 13, 26, 0.85); /* Darker overlay */
+  z-index: 1001; /* Higher than header */
+   opacity: 0;
+   visibility: hidden;
+   transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+#loaderOverlay.visible { 
+   opacity: 1;
+   visibility: visible;
+   transition: opacity 0.3s ease, visibility 0s linear 0s;
+}
+#loaderOverlay .spinner {
+  width: 30px;
+  height: 30px;
+  border: 4px solid var(--aiConnect-glow-soft);
+  border-top: 4px solid var(--aiConnect-cyan);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+#loaderOverlay .loader-message { /* Class for message inside loader */
+    color: var(--aiConnect-text-primary);
+    font-family: var(--font-display);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Audio Player --- */
+#audioPlayer {
+  width: calc(100% - calc(var(--space)*2)); /* Full width minus padding */
+  margin: var(--space) auto 0 auto; /* Centered with margin */
+  display: none; 
+  background-color: var(--aiConnect-panel-dark);
+  border-radius: var(--radius);
+  padding: 5px;
+  box-shadow: var(--shadow);
+}
+#audioPlayer::-webkit-media-controls-panel {
+  background-color: var(--aiConnect-panel-dark);
+  border-radius: var(--radius);
+}
+#audioPlayer::-webkit-media-controls-play-button,
+#audioPlayer::-webkit-media-controls-pause-button,
+#audioPlayer::-webkit-media-controls-mute-button,
+#audioPlayer::-webkit-media-controls-timeline,
+#audioPlayer::-webkit-media-controls-current-time-display,
+#audioPlayer::-webkit-media-controls-time-remaining-display,
+#audioPlayer::-webkit-media-controls-volume-slider {
+  filter: invert(1) sepia(1) saturate(5) hue-rotate(130deg); /* Attempt to theme controls */
+}
+
+</style>
+</head>
+<body>
+
+<div id="loaderOverlay"><div class="spinner"></div><p class="loader-message">Loading…</p></div>
+
+<header>
+  <div class="header-left"> 
+    <button class="header-icon-btn" id="backBtn"><span class="material-symbols-outlined">arrow_back_ios_new</span></button> 
+    <span class="header-title">Music Hub</span> 
+  </div>
+  <button class="header-icon-btn" id="logoutBtn"><span class="material-symbols-outlined">logout</span></button> 
+</header>
+
+<main>
+  <div class="content-card"> 
+    <label for="searchInput">Search Music Tracks:</label>
+    <input id="searchInput" type="search" placeholder="e.g., artist, title, album">
+
+    <label for="genreFilter">Filter by Genre:</label>
+    <select id="genreFilter">
+      <option value="">Any Genre</option><option value="14">Pop</option><option value="21">Rock</option>
+      <option value="18">Hip-Hop/Rap</option><option value="11">Jazz</option><option value="2">Blues</option>
+      <!-- Add more genres as needed, matching iTunes genre IDs -->
+    </select>
+    <button id="searchBtn">Search</button>
+  </div>
+
+  <div class="content-card"> 
+    <p class="status-placeholder" id="statusMsg">Enter a term to start.</p> 
+    <div class="music-list" id="resultsList"></div> 
+    <button id="loadMoreBtn">Load More</button>
+    <audio id="audioPlayer" controls></audio>
+  </div>
+</main>
+
+<script>
+const firebaseConfig={
+    apiKey:"AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+    authDomain:"daisy-n7g20a.firebaseapp.com", 
+    databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com", 
+    projectId:"daisy-n7g20a", 
+    storageBucket: "daisy-n7g20a.appspot.com", 
+    messagingSenderId: "225362605902", 
+    appId: "1:225362605902:web:d2551cc389e78c92c3d01f" 
+};
+if(!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+const auth=firebase.auth();
+
+const loaderOverlay=document.getElementById('loaderOverlay');
+const loaderMessage=loaderOverlay.querySelector('.loader-message');
+const searchInput=document.getElementById('searchInput');
+const genreFilter=document.getElementById('genreFilter');
+const searchBtn=document.getElementById('searchBtn');
+const statusMsgEl=document.getElementById('statusMsg');
+const resultsListEl=document.getElementById('resultsList');
+const loadMoreBtnEl=document.getElementById('loadMoreBtn');
+const audioPlayerEl=document.getElementById('audioPlayer');
+const backBtnEl = document.getElementById('backBtn');
+const logoutBtnEl = document.getElementById('logoutBtn');
+
+
+let currentPage=1, currentTerm='', currentGenre='', isBusy=false, totalTracksFound=0;
+const resultsPerPage=20; // iTunes limit, Jamendo can be higher but 20 is reasonable
+
+const useJamendoApi = false; // Set to true to use Jamendo, false for iTunes
+const jamendoClientId = '036dd60c'; // Replace with your Jamendo Client ID if useJamendoApi is true
+
+const buildApiURL=(pageToFetch)=>{
+    const offset = (pageToFetch - 1) * resultsPerPage;
+    const encodedTerm = encodeURIComponent(currentTerm);
+
+    if(useJamendoApi) {
+        let url = `https://api.jamendo.com/v3.0/tracks/?client_id=${jamendoClientId}&format=json&limit=${resultsPerPage}&offset=${offset}&fuzzytags=${encodedTerm}&include=musicinfo`;
+        if(currentGenre) url += `&tags=${encodeURIComponent(currentGenre)}`; // Jamendo uses tags for genre-like filtering
+        return url;
+    } else { // iTunes Search API
+        let url = `https://itunes.apple.com/search?term=${encodedTerm}&media=music&entity=song&limit=${resultsPerPage}&offset=${offset}`;
+        if(currentGenre) url += `&genreId=${encodeURIComponent(currentGenre)}`;
+        return url;
+    }
+};
+
+const showLoader=(messageText)=>{
+    loaderMessage.textContent = messageText;
+    loaderOverlay.classList.add('visible');
+    [searchBtn, searchInput, genreFilter, loadMoreBtnEl].forEach(el=>el.disabled=true);
+    isBusy=true;
+};
+
+const hideLoader=()=>{
+    loaderOverlay.classList.remove('visible');
+    [searchBtn, searchInput, genreFilter].forEach(el=>el.disabled=false);
+    updateLoadMoreButtonState(); 
+    isBusy=false;
+};
+
+const updateLoadMoreButtonState = () => {
+    const itemsDisplayed = resultsListEl.children.length;
+    if (itemsDisplayed > 0 && itemsDisplayed < totalTracksFound) {
+        loadMoreBtnEl.classList.add('visible');
+        loadMoreBtnEl.disabled = isBusy; 
+    } else {
+        loadMoreBtnEl.classList.remove('visible'); 
+    }
+};
+
+auth.onAuthStateChanged(user=>{
+    if(user) {
+        // User is signed in, page can remain visible.
+        // Initial loader might have been shown before auth check, hide it if so.
+        if(loaderOverlay.classList.contains('visible') && loaderMessage.textContent.includes('Checking session')) {
+            hideLoader();
+        }
+    } else {
+        // No user signed in, redirect.
+        window.location.href='signin.html'; // Or your preferred sign-in page
+    }
+});
+
+if(logoutBtnEl) logoutBtnEl.onclick=()=>auth.signOut();
+if(backBtnEl) backBtnEl.onclick=()=> {
+    if (window.history.length > 1 && document.referrer) {
+        window.history.back();
+    } else {
+        window.location.href = 'tools.html'; // Fallback if no history or coming from external
+    }
+};
+
+async function fetchMusicData(){
+  showLoader(currentPage===1 ? `Searching for “${currentTerm}”…` : `Loading page ${currentPage}…`);
+  audioPlayerEl.pause(); 
+  audioPlayerEl.style.display = 'none'; 
+  audioPlayerEl.removeAttribute('src'); 
+
+  try{
+    const response = await fetch(buildApiURL(currentPage));
+    if(!response.ok) {
+         let errorDetail = `HTTP error: ${response.status} ${response.statusText}`;
+         try { const errorBody = await response.json(); /* ... (error parsing as before) ... */ } catch(e) {}
+         throw new Error(errorDetail);
+    }
+    const data = await response.json();
+
+    let tracks = [];
+    let currentResponseTrackCount = 0;
+
+    if (useJamendoApi) {
+        tracks = data.results || [];
+        currentResponseTrackCount = tracks.length;
+        if (currentPage === 1) { // Get total from header only on first page for Jamendo
+            totalTracksFound = parseInt(response.headers.get('X-Total-Count') || currentResponseTrackCount, 10);
+        }
+    } else { // iTunes
+        tracks = data.results || [];
+        currentResponseTrackCount = tracks.length;
+        if (currentPage === 1) { // iTunes resultCount is for the whole query
+            totalTracksFound = data.resultCount || 0;
+        }
+    }
+
+    if(currentPage === 1) resultsListEl.innerHTML = ''; 
+
+    if (tracks.length > 0) {
+         tracks.forEach(trackInfo =>{
+           const itemDiv = document.createElement('div');
+           itemDiv.className = 'music-item';
+           
+           const artworkUrl = useJamendoApi ? (trackInfo.album_image || trackInfo.image || '') : trackInfo.artworkUrl100;
+           const trackName = useJamendoApi ? trackInfo.name : trackInfo.trackName;
+           const artistName = useJamendoApi ? trackInfo.artist_name : trackInfo.artistName;
+           const albumName = useJamendoApi ? trackInfo.album_name : trackInfo.collectionName;
+           const previewUrl = useJamendoApi ? trackInfo.audio : trackInfo.previewUrl;
+
+           itemDiv.innerHTML=`
+             <img src="${artworkUrl || 'placeholder_art.png'}" alt="Artwork" class="music-item-artwork">
+             <div class="music-item-details">
+               <strong>${trackName || 'Untitled Track'}</strong>
+               <span>${artistName || 'Unknown Artist'} – ${albumName || 'Unknown Album'}</span>
+             </div>
+             ${previewUrl ? '<span class="material-symbols-outlined play-action-icon">play_circle</span>' : ''}
+           `;
+
+           if(previewUrl){
+             itemDiv.classList.add('playable');
+             itemDiv.onclick = () => {
+                const allItems = resultsListEl.querySelectorAll('.music-item.playing');
+                allItems.forEach(item => item.classList.remove('playing'));
+
+                if(audioPlayerEl.src === previewUrl && !audioPlayerEl.paused){
+                    audioPlayerEl.pause();
+                    itemDiv.querySelector('.play-action-icon').textContent = 'play_circle';
+                } else {
+                     audioPlayerEl.src=previewUrl;
+                     audioPlayerEl.style.display='block'; 
+                     audioPlayerEl.play().catch(e => console.error("Play error:", e));
+                     itemDiv.classList.add('playing');
+                     itemDiv.querySelector('.play-action-icon').textContent = 'pause_circle';
+                }
+             };
+           }
+           resultsListEl.appendChild(itemDiv);
+         });
+
+         if (currentResponseTrackCount > 0) currentPage++;
+         
+         const itemsDisplayed = resultsListEl.children.length;
+         statusMsgEl.textContent = `Showing ${itemsDisplayed}${totalTracksFound > 0 ? ` of ${totalTracksFound}` : ''} tracks for "${currentTerm}".`;
+         statusMsgEl.style.color = 'var(--aiConnect-text-secondary)';
+
+    } else {
+        if (currentPage === 1) {
+            statusMsgEl.textContent = `No tracks found for "${currentTerm}".`;
+            totalTracksFound = 0; 
+        } else {
+             statusMsgEl.textContent = `No more tracks found for "${currentTerm}".`;
+        }
+        statusMsgEl.style.color = 'var(--aiConnect-text-secondary)';
+    }
+
+  }catch(error){
+      console.error("Fetch process failed:", error);
+      statusMsgEl.textContent = `Failed to fetch music: ${error.message}`;
+      statusMsgEl.style.color = 'var(--aiConnect-error)';
+      totalTracksFound = resultsListEl.children.length; 
+  } finally {
+      hideLoader(); 
+  }
+}
+
+const initiateSearch=()=>{
+    if(isBusy) return;
+    const newTerm = searchInput.value.trim();
+    const newGenre = genreFilter.value;
+
+    if (!newTerm) {
+        statusMsgEl.textContent = 'Please enter a search term.';
+        statusMsgEl.style.color = 'var(--aiConnect-text-secondary)';
+        resultsListEl.innerHTML = ''; 
+        totalTracksFound = 0; 
+        currentPage = 1; 
+        audioPlayerEl.pause(); audioPlayerEl.removeAttribute('src'); audioPlayerEl.style.display = 'none'; 
+        updateLoadMoreButtonState(); 
+        return; 
+    }
+    
+    // Only reset and fetch if term or genre actually changed for a new search
+    if (newTerm !== currentTerm || newGenre !== currentGenre || currentPage === 1) {
+        currentTerm = newTerm;
+        currentGenre = newGenre;
+        currentPage = 1;
+        totalTracksFound = 0; 
+        resultsListEl.innerHTML = '';
+        audioPlayerEl.pause(); audioPlayerEl.removeAttribute('src'); audioPlayerEl.style.display = 'none';
+        fetchMusicData();
+    } else {
+        // If same search and already loaded some, do nothing unless "Load More" is clicked
+        console.log("Search parameters unchanged, results already partially loaded or fully loaded.");
+        updateLoadMoreButtonState(); // Ensure button state is correct
+    }
+};
+
+searchBtn.onclick = initiateSearch;
+searchInput.onkeypress = e => e.key === 'Enter' && initiateSearch();
+genreFilter.onchange = initiateSearch; 
+
+loadMoreBtnEl.onclick=()=> { if(!isBusy) fetchMusicData(); }; 
+
+audioPlayerEl.onplay = () => {
+    const playingItem = resultsListEl.querySelector(`.music-item.playing .play-action-icon`);
+    if(playingItem) playingItem.textContent = 'pause_circle';
+};
+audioPlayerEl.onpause = () => { // Also on ended
+    const playingItem = resultsListEl.querySelector(`.music-item.playing .play-action-icon`);
+    if(playingItem) playingItem.textContent = 'play_circle';
+    // Optionally remove 'playing' class from all items when master player pauses/ends
+    // resultsListEl.querySelectorAll('.music-item.playing').forEach(item => item.classList.remove('playing'));
+};
+audioPlayerEl.onended = () => {
+    const playingItem = resultsListEl.querySelector(`.music-item.playing .play-action-icon`);
+    if(playingItem) playingItem.textContent = 'play_circle';
+    resultsListEl.querySelectorAll('.music-item.playing').forEach(item => item.classList.remove('playing'));
+    // audioPlayerEl.style.display = 'none'; // Optionally hide player on end
+};
+
+audioPlayerEl.onerror = (e) => {
+    console.error("Audio player error:", e);
+    statusMsgEl.textContent = 'Error playing audio preview.';
+    statusMsgEl.style.color = 'var(--aiConnect-error)';
+    audioPlayerEl.style.display = 'none'; 
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    showLoader('Checking session…'); 
+    // Auth listener will hide it.
+});
+
+['touchstart','touchmove'].forEach(evt=>document.addEventListener(evt,e=>e.touches.length>1&&e.preventDefault(),{passive:false}));
+let lastTouchTime=0;document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouchTime<=300)e.preventDefault();lastTouchTime=now},{passive:false});
+
+</script>
+</body>
+</html>

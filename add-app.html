@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EMX App Hub</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#0d0d1a" />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+  />
+
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --panel: #121225;
+      --glass: rgba(18, 18, 37, 0.9);
+      --border: rgba(0, 255, 255, 0.25);
+      --cyan: #00ffff;
+      --cyan-dark: #00cccc;
+      --lime-green: #32cd32;
+      --text: #e0e0f0;
+      --text-med: #a0a0c0;
+      --radius: 6px;
+      --radius-lg: 10px;
+      --space: 14px;
+      --header-h: 50px;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 255, 255, 0.15);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Roboto Mono", monospace;
+      font-size: 0.875rem;
+      background: var(--bg);
+      color: var(--text);
+      padding-top: var(--header-h);
+      max-width: 420px;
+      margin: 0 auto;
+      overflow-x: hidden;
+    }
+    a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+    a:hover {
+      color: var(--cyan-dark);
+    }
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      max-width: 420px;
+      margin: 0 auto;
+      height: var(--header-h);
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+    }
+    .header-btn {
+      background: none;
+      border: none;
+      color: var(--text-med);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 7px;
+      border-radius: 50%;
+      transition: background 0.2s, color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-btn:hover {
+      background: rgba(0, 255, 255, 0.1);
+      color: var(--cyan);
+    }
+    .title {
+      font-family: "Orbitron", sans-serif;
+      color: var(--cyan);
+      font-size: 1rem;
+      font-weight: 500;
+      text-shadow: 0 0 8px rgba(0, 255, 255, 0.35);
+    }
+    #emxBalance {
+      font-family: "Roboto Mono", monospace;
+      color: var(--lime-green);
+      font-size: 0.9rem;
+    }
+    .main {
+      padding: var(--space);
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space);
+      margin-bottom: var(--space);
+      box-shadow: var(--shadow);
+    }
+    .panel h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: "Orbitron", sans-serif;
+      color: var(--cyan);
+      font-size: 0.95rem;
+      margin-bottom: calc(var(--space) * 0.75);
+      padding-bottom: calc(var(--space) * 0.4);
+      border-bottom: 1px solid var(--border);
+    }
+    .panel h2 .fas,
+    .panel h2 .material-symbols-outlined {
+      font-size: 0.9em;
+      color: var(--cyan);
+    }
+    .form-group { margin-bottom: var(--space); }
+    .label {
+      display: block;
+      font-family: "Orbitron", sans-serif;
+      color: var(--text-med);
+      font-size: 0.8rem;
+      margin-bottom: 5px;
+    }
+    .control {
+      width: 100%;
+      padding: 9px 11px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(13, 13, 26, 0.85);
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: 'Roboto Mono', monospace;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .control:focus {
+      border-color: var(--cyan);
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 255, 255, 0.3);
+      outline: none;
+    }
+    textarea.control {
+      resize: vertical;
+      min-height: 80px;
+    }
+    input[type="file"].control {
+      padding: 7px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: linear-gradient(145deg, rgba(0, 255, 255, 0.18), rgba(0, 255, 255, 0.08));
+      color: var(--cyan);
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.25s, color 0.25s, box-shadow 0.25s, transform 0.25s;
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.15);
+    }
+    .btn:hover {
+      background: linear-gradient(145deg, rgba(0, 255, 255, 0.28), rgba(0, 255, 255, 0.15));
+      color: #fff;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    #logoPreview img {
+      max-width: 100px;
+      max-height: 100px;
+      object-fit: contain;
+      margin-top: 10px;
+      display: block;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background-color: var(--bg);
+    }
+    .message {
+      margin-top: var(--space);
+      font-size: 0.85rem;
+      color: var(--lime-green);
+      text-align: center;
+    }
+    .message.error {
+      color: #ff5555;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <button class="header-btn" id="backBtn"><i class="fas fa-arrow-left"></i></button>
+    <span class="title">EMX App Hub</span>
+    <span id="emxBalance">EMX: 0.00</span>
+  </header>
+
+  <main class="main">
+    <div class="panel">
+      <h2><i class="fas fa-plus-circle"></i> Add New EMX App</h2>
+      <form id="addAppForm">
+        <div class="form-group">
+          <label class="label" for="appName">App Name</label>
+          <input class="control" id="appName" name="appName" type="text" placeholder="Unique App Name" required />
+        </div>
+        <div class="form-group">
+          <label class="label" for="appLogo">Logo Icon Image</label>
+          <input class="control" id="appLogo" name="appLogo" type="file" accept="image/png, image/jpeg, image/webp" />
+          <div id="logoPreview"></div>
+        </div>
+        <div class="form-group">
+          <label class="label" for="appDetails">Details / Subtitle</label>
+          <textarea class="control" id="appDetails" name="appDetails" rows="3" placeholder="Short description or tagline" required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="label" for="appDirectory">App Directory (internal link)</label>
+          <input class="control" id="appDirectory" name="appDirectory" type="text" placeholder="apps/my-app/index.html" required />
+        </div>
+        <div class="form-group">
+          <label class="label" for="appLink">External URL (optional)</label>
+          <input class="control" id="appLink" name="appLink" type="url" placeholder="https://example.com" />
+        </div>
+        <div class="form-group">
+          <label class="label" for="appPrice">Premium Price (EMX credits)</label>
+          <input class="control" id="appPrice" name="appPrice" type="number" min="0" step="0.01" value="0.00" required />
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn" id="generateLogoBtn"><i class="fas fa-magic"></i> Generate Logo</button>
+          <button type="submit" class="btn" id="saveAppBtn"><i class="fas fa-save"></i> Save App</button>
+        </div>
+        <p id="addAppMessage" class="message"></p>
+      </form>
+    </div>
+  </main>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const rtDb = firebase.database();
+    const storage = firebase.storage();
+
+    let currentUserKey = null, generatedLogoB64 = null;
+    const backBtn = document.getElementById("backBtn");
+    const addAppForm = document.getElementById("addAppForm");
+    const saveAppBtn = document.getElementById("saveAppBtn");
+    const generateLogoBtn = document.getElementById("generateLogoBtn");
+    const appLogoInput = document.getElementById("appLogo");
+    const logoPreview = document.getElementById("logoPreview");
+    const addAppMessage = document.getElementById("addAppMessage");
+    const emxBalanceEl = document.getElementById("emxBalance");
+    const appNameInput = document.getElementById("appName");
+    const appDetailsInput = document.getElementById("appDetails");
+    const appDirectoryInput = document.getElementById("appDirectory");
+    const appLinkInput = document.getElementById("appLink");
+    const appPriceInput = document.getElementById("appPrice");
+
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        saveAppBtn.disabled = true;
+        addAppMessage.textContent = 'Sign in to continue.';
+        addAppMessage.className = 'message error';
+        return;
+      }
+      rtDb.ref('users_info')
+        .orderByChild('firebaseUid')
+        .equalTo(user.uid)
+        .once('value', snap => {
+          snap.forEach(ch => currentUserKey = ch.key);
+          if (!currentUserKey) {
+            saveAppBtn.disabled = true;
+            addAppMessage.textContent = 'Complete profile first.';
+            addAppMessage.className = 'message error';
+            return;
+          }
+          rtDb.ref(`users_info/${currentUserKey}/emxBalance`)
+            .once('value', bSnap => {
+              const bal = parseFloat(bSnap.val()||0).toFixed(2);
+              emxBalanceEl.textContent = `EMX: ${bal}`;
+            });
+          saveAppBtn.disabled = false;
+          addAppMessage.textContent = '';
+        });
+    });
+
+    backBtn.onclick = () => history.back();
+
+    appLogoInput.addEventListener('change', ev => {
+      const f = ev.target.files[0];
+      if (!f) return logoPreview.innerHTML = '';
+      generatedLogoB64 = null;
+      const r = new FileReader();
+      r.onload = e => logoPreview.innerHTML = `<img src="${e.target.result}" alt="Logo">`;
+      r.readAsDataURL(f);
+    });
+
+    generateLogoBtn.addEventListener('click', async () => {
+      const name = appNameInput.value.trim();
+      const details = appDetailsInput.value.trim();
+      if (!name || !details) return alert('Enter name & details first');
+      generateLogoBtn.disabled = true;
+      generateLogoBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+      addAppMessage.textContent = 'Generating logo…';
+      try {
+        const res = await fetch('https://api.together.xyz/v1/images/generations', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer 023aa4d8437739df083d0f10537a8ff7aa0ddcda84fa89ab775c2cfd44c1681a',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'stabilityai/stable-diffusion-xl-base-1.0',
+            prompt: `3D minimalist transparent logo for "${name}": ${details}`,
+            n: 1, width: 512, height: 512, steps: 25, response_format: 'b64_json'
+          })
+        });
+        if (!res.ok) throw new Error(`${res.status}`);
+        const j = await res.json();
+        generatedLogoB64 = j.data[0].b64_json;
+        logoPreview.innerHTML = `<img src="data:image/png;base64,${generatedLogoB64}" alt="Logo">`;
+        addAppMessage.textContent = 'Logo ready!';
+      } catch (e) {
+        addAppMessage.textContent = `Error: ${e.message}`;
+        addAppMessage.className = 'message error';
+      } finally {
+        generateLogoBtn.disabled = false;
+        generateLogoBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Logo';
+      }
+    });
+
+    function b64toBlob(b64, type='image/png', slice=512) {
+      const bytes = atob(b64), parts = [];
+      for (let i=0; i<bytes.length; i+=slice) {
+        const sliceStr = bytes.slice(i, i+slice);
+        const ba = new Uint8Array(sliceStr.length);
+        for (let j=0; j<sliceStr.length; j++) ba[j] = sliceStr.charCodeAt(j);
+        parts.push(ba);
+      }
+      return new Blob(parts, { type });
+    }
+
+    addAppForm.addEventListener('submit', async ev => {
+      ev.preventDefault();
+      if (!currentUserKey) {
+        addAppMessage.textContent = 'Cannot save: profile missing.';
+        addAppMessage.className = 'message error';
+        return;
+      }
+      // lock UI
+      document.querySelectorAll('input, textarea, button').forEach(el => el.disabled = true);
+      saveAppBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+      addAppMessage.textContent = '';
+
+      let logoBlob;
+      const file = appLogoInput.files[0];
+      if (generatedLogoB64) {
+        logoBlob = b64toBlob(generatedLogoB64);
+      } else if (file) {
+        logoBlob = file;
+      } else {
+        addAppMessage.textContent = 'Upload or generate logo first.';
+        addAppMessage.className = 'message error';
+        document.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+        saveAppBtn.innerHTML = '<i class="fas fa-save"></i> Save App';
+        return;
+      }
+
+      const name    = appNameInput.value.trim();
+      const details = appDetailsInput.value.trim();
+      const dir     = appDirectoryInput.value.trim();
+      const link    = appLinkInput.value.trim() || null;
+      const price   = parseFloat(appPriceInput.value);
+
+      if (!name || !details || !dir) {
+        addAppMessage.textContent = 'Name, details & directory required.';
+        addAppMessage.className = 'message error';
+        document.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+        saveAppBtn.innerHTML = '<i class="fas fa-save"></i> Save App';
+        return;
+      }
+
+      try {
+        const fname = file ? file.name : `gen_${Date.now()}.png`;
+        const ref   = storage.ref(`mobile_app_assets/logos/${Date.now()}_${fname}`);
+        await ref.put(logoBlob);
+        const logoURL = await ref.getDownloadURL();
+
+        const appRef = rtDb.ref('mobile_apps').push();
+        await appRef.set({
+          name, details, appDirectory: dir,
+          link, price, logoURL,
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          creatorUid: auth.currentUser.uid
+        });
+
+        // redirect on success
+        window.location.href = 'aiconnect-media.html';
+      } catch (e) {
+        addAppMessage.textContent = `Save error: ${e.message}`;
+        addAppMessage.className = 'message error';
+        document.querySelectorAll('input, textarea, button').forEach(el => el.disabled = false);
+        saveAppBtn.innerHTML = '<i class="fas fa-save"></i> Save App';
+      }
+    });
+  </script>
+</body>
+</html>

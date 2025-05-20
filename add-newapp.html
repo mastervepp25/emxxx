@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ai-Connect • Add Mobile App</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#0d0d1a" />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+  />
+
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --panel: #121225;
+      --glass: rgba(18, 18, 37, 0.9);
+      --border: rgba(0, 255, 255, 0.25); /* Cyan border for contrast */
+      --cyan: #00ffff;
+      --cyan-dark: #00cccc;
+      --lime-green: #32cd32; /* Main accent color */
+      --text: #e0e0f0;
+      --text-med: #a0a0c0;
+      --radius: 6px;
+      --radius-lg: 10px;
+      --space: 14px;
+      --header-h: 50px;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(50, 205, 50, 0.15); /* Adjusted shadow for lime green */
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Roboto Mono", monospace;
+      font-size: 0.875rem;
+      background: var(--bg);
+      color: var(--text);
+      padding-top: var(--header-h);
+      max-width: 420px;
+      margin: 0 auto;
+      overflow-x: hidden;
+    }
+    a {
+      color: var(--lime-green); /* Link color */
+      text-decoration: none;
+    }
+    a:hover {
+      color: #28a428; /* Darker lime */
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-h);
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space);
+      border-bottom: 1px solid var(--border); /* Cyan border */
+      z-index: 1000;
+    }
+    .header-btn {
+      background: none;
+      border: none;
+      color: var(--text-med);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 7px;
+      border-radius: 50%;
+      transition: background 0.2s, color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-btn:hover {
+      background: rgba(50, 205, 50, 0.1); /* Lime green hover */
+      color: var(--lime-green);
+    }
+    .title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: "Orbitron", sans-serif;
+      color: var(--lime-green);
+      font-size: 1rem;
+      font-weight: 500;
+      text-shadow: 0 0 8px rgba(50, 205, 50, 0.35);
+    }
+
+    /* Main & Panel */
+    .main {
+      padding: var(--space);
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border); /* Cyan border */
+      border-radius: var(--radius-lg);
+      padding: var(--space);
+      margin-bottom: var(--space);
+      box-shadow: var(--shadow);
+    }
+    .panel h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: "Orbitron", sans-serif;
+      color: var(--lime-green); /* Title color for panel */
+      font-size: 0.95rem;
+      margin-bottom: calc(var(--space) * 0.75);
+      padding-bottom: calc(var(--space) * 0.4);
+      border-bottom: 1px solid var(--border); /* Cyan border */
+    }
+    .panel h2 .fas,
+    .panel h2 .material-symbols-outlined {
+      font-size: 0.9em;
+      color: var(--lime-green); /* Icon color */
+    }
+
+    /* Form */
+    .label {
+      display: block;
+      font-family: "Orbitron", sans-serif;
+      color: var(--text-med);
+      font-size: 0.8rem;
+      margin-bottom: 5px;
+    }
+    .control {
+      width: 100%;
+      padding: 9px 11px;
+      margin-bottom: var(--space);
+      border-radius: var(--radius);
+      border: 1px solid var(--border); /* Cyan border */
+      background: rgba(13, 13, 26, 0.85);
+      color: var(--text);
+      font-size: 0.85rem;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .control:focus {
+      border-color: var(--lime-green); /* Lime green focus */
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(50, 205, 50, 0.3);
+      outline: none;
+    }
+    textarea.control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--lime-green); /* Button border */
+      background: linear-gradient(145deg, rgba(50, 205, 50, 0.25), rgba(50, 205, 50, 0.15)); /* Button bg */
+      color: var(--lime-green); /* Button text */
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.25s, color 0.25s, box-shadow 0.25s, transform 0.25s;
+      box-shadow: 0 0 8px rgba(50, 205, 50, 0.2);
+    }
+    .btn:hover {
+      background: linear-gradient(145deg, rgba(50, 205, 50, 0.35), rgba(50, 205, 50, 0.25));
+      color: #fff; /* Text color on hover */
+      box-shadow: 0 0 15px rgba(50, 205, 50, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* App List (row style) */
+    #appList {
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--space) * 0.75);
+    }
+    .app-row {
+      display: flex;
+      align-items: center;
+      gap: calc(var(--space) * 0.75);
+      background: var(--panel);
+      border: 1px solid var(--border); /* Cyan border */
+      border-radius: var(--radius);
+      padding: calc(var(--space) * 0.85);
+      text-decoration: none;
+      color: inherit;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .app-row:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(50, 205, 50, 0.2), 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+    .app-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius); /* Square with rounded corners for app logos */
+      object-fit: cover;
+      border: 1px solid var(--lime-green);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    .app-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .app-name {
+      font-family: "Orbitron", sans-serif;
+      color: var(--lime-green);
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .app-desc { /* Using for subtitle in the list */
+      font-size: 0.75rem;
+      color: var(--text-med);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .app-arrow-icon {
+      font-size: 1.1rem;
+      color: var(--text-med);
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+    .app-row:hover .app-arrow-icon {
+      color: var(--lime-green);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header class="header">
+    <button class="header-btn" id="backBtn"><i class="fas fa-arrow-left"></i></button>
+    <span class="title">Add Mobile App</span>
+    <button class="header-btn" id="profileBtn"><i class="fas fa-user-circle"></i></button>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- CREATE APP PANEL -->
+    <div class="panel">
+      <h2><i class="fas fa-mobile-alt"></i> Add New Mobile App</h2>
+      <form id="mobileAppForm">
+        <label class="label" for="appIdInput">App ID (Unique)</label>
+        <input
+          class="control"
+          id="appIdInput"
+          name="appId"
+          type="text"
+          placeholder="e.g., com_example_myapp (lowercase, numbers, _, -)"
+          required
+          pattern="^[a-z0-9_-]+$"
+          title="Lowercase letters, numbers, underscores, hyphens only."
+        />
+
+        <label class="label" for="appNameInput">App Name</label>
+        <input
+          class="control"
+          id="appNameInput"
+          name="appName"
+          type="text"
+          placeholder="e.g., My Awesome App"
+          required
+        />
+
+        <label class="label" for="appSubtitleInput">Subtitle / Tagline</label>
+        <input
+          class="control"
+          id="appSubtitleInput"
+          name="appSubtitle"
+          type="text"
+          placeholder="e.g., The best app for..."
+          required
+        />
+        
+        <label class="label" for="appDescriptionInput">Description</label>
+        <textarea
+          class="control"
+          id="appDescriptionInput"
+          name="appDescription"
+          rows="4"
+          placeholder="Detailed description of the app"
+          required
+        ></textarea>
+
+        <label class="label" for="appDeveloperInput">Developer Name</label>
+        <input
+          class="control"
+          id="appDeveloperInput"
+          name="appDeveloper"
+          type="text"
+          placeholder="e.g., ACME Corp"
+          required
+        />
+
+        <label class="label" for="appCategoryInput">Category</label>
+        <input
+          class="control"
+          id="appCategoryInput"
+          name="appCategory"
+          type="text"
+          placeholder="e.g., Productivity, Social, Games"
+          required
+        />
+
+        <label class="label" for="appLogoInput">App Logo (e.g., 512x512)</label>
+        <input
+          class="control"
+          id="appLogoInput"
+          name="appLogo"
+          type="file"
+          accept="image/png, image/jpeg, image/webp"
+          required
+        />
+
+        <label class="label" for="appBannerInput">Feature Graphic / Banner (e.g., 1024x500)</label>
+        <input
+          class="control"
+          id="appBannerInput"
+          name="appBanner"
+          type="file"
+          accept="image/png, image/jpeg, image/webp"
+          required
+        />
+
+        <label class="label" for="playStoreUrlInput">Play Store URL (Optional)</label>
+        <input
+          class="control"
+          id="playStoreUrlInput"
+          name="playStoreUrl"
+          type="url"
+          placeholder="https://play.google.com/store/apps/details?id=..."
+        />
+
+        <label class="label" for="appStoreUrlInput">App Store URL (Optional)</label>
+        <input
+          class="control"
+          id="appStoreUrlInput"
+          name="appStoreUrl"
+          type="url"
+          placeholder="https://apps.apple.com/app/id..."
+        />
+
+        <label class="label" for="websiteUrlInput">Official Website URL (Optional)</label>
+        <input
+          class="control"
+          id="websiteUrlInput"
+          name="websiteUrl"
+          type="url"
+          placeholder="https://www.example.com"
+        />
+
+        <button type="submit" class="btn" id="createAppBtn">
+          <i class="fas fa-plus-circle"></i> Add App
+        </button>
+      </form>
+    </div>
+
+    <!-- LIST EXISTING APPS PANEL -->
+    <div class="panel">
+      <h2><i class="fas fa-list-alt"></i> Existing Mobile Apps</h2>
+      <div id="appList">
+        <div
+          class="panel"
+          style="
+            text-align: center;
+            color: var(--text-med);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+          "
+        >
+          Loading apps…
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FIREBASE SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+
+
+  <script>
+    // --- Firebase init ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:62c590ed61ff4499c3d01f" // Consistent App ID
+    };
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    const storage = firebase.storage();
+    const auth = firebase.auth(); // Added auth
+
+    // DOM Elements
+    const backBtn = document.getElementById("backBtn");
+    const profileBtn = document.getElementById("profileBtn");
+    const mobileAppForm = document.getElementById("mobileAppForm");
+    const createAppBtn = document.getElementById("createAppBtn");
+    
+    // Form Inputs
+    const appIdInput = document.getElementById("appIdInput");
+    const appNameInput = document.getElementById("appNameInput");
+    const appSubtitleInput = document.getElementById("appSubtitleInput");
+    const appDescriptionInput = document.getElementById("appDescriptionInput");
+    const appDeveloperInput = document.getElementById("appDeveloperInput");
+    const appCategoryInput = document.getElementById("appCategoryInput");
+    const appLogoInput = document.getElementById("appLogoInput");
+    const appBannerInput = document.getElementById("appBannerInput");
+    const playStoreUrlInput = document.getElementById("playStoreUrlInput");
+    const appStoreUrlInput = document.getElementById("appStoreUrlInput");
+    const websiteUrlInput = document.getElementById("websiteUrlInput");
+
+
+    // Auth state listener (optional, but good practice for protected pages)
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            // User is signed in. Enable form.
+            console.log("User authenticated:", user.uid);
+            createAppBtn.disabled = false;
+            // You might want to fetch and display apps only for authenticated users
+            // or based on specific rules.
+        } else {
+            // No user is signed in. Disable form, redirect, or show message.
+            console.log("User not authenticated. Form submission will be restricted.");
+            createAppBtn.disabled = true;
+            createAppBtn.innerHTML = `<i class="fas fa-lock"></i> Sign In to Add`;
+            // Potentially redirect: window.location.href = 'signin.html';
+        }
+    });
+    
+    // Back button functionality
+    if (backBtn) {
+        backBtn.onclick = () => history.back();
+    }
+    if (profileBtn) {
+        profileBtn.onclick = () => {
+            // Placeholder for profile page or sign-in/out logic
+            if (auth.currentUser) {
+                alert("User Profile / Sign Out (Not Implemented)");
+            } else {
+                alert("Sign In (Not Implemented)");
+                // window.location.href = 'signin.html';
+            }
+        };
+    }
+
+
+    // FORM SUBMIT LOGIC
+    mobileAppForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!auth.currentUser) {
+          alert("⚠️ Please sign in to add an app.");
+          return;
+      }
+
+      createAppBtn.disabled = true;
+      createAppBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Adding App…`;
+
+      const appId = appIdInput.value.trim();
+      const appName = appNameInput.value.trim();
+      const appSubtitle = appSubtitleInput.value.trim();
+      const appDescription = appDescriptionInput.value.trim();
+      const appDeveloper = appDeveloperInput.value.trim();
+      const appCategory = appCategoryInput.value.trim();
+      const logoFile = appLogoInput.files[0];
+      const bannerFile = appBannerInput.files[0];
+      const playStoreUrl = playStoreUrlInput.value.trim();
+      const appStoreUrl = appStoreUrlInput.value.trim();
+      const websiteUrl = websiteUrlInput.value.trim();
+
+      // Basic validation
+      if (!appId || !appName || !appSubtitle || !appDescription || !appDeveloper || !appCategory || !logoFile || !bannerFile) {
+          alert("⚠️ Please fill in all required fields and select images.");
+          createAppBtn.disabled = false;
+          createAppBtn.innerHTML = `<i class="fas fa-plus-circle"></i> Add App`;
+          return;
+      }
+
+      try {
+        // Upload Logo
+        const logoRef = storage.ref(`aic_mobile_app_assets/${appId}/logo_${Date.now()}_${logoFile.name}`);
+        await logoRef.put(logoFile);
+        const logoUrl = await logoRef.getDownloadURL();
+
+        // Upload Banner
+        const bannerRef = storage.ref(`aic_mobile_app_assets/${appId}/banner_${Date.now()}_${bannerFile.name}`);
+        await bannerRef.put(bannerFile);
+        const bannerUrl = await bannerRef.getDownloadURL();
+
+        // Prepare data for Realtime Database
+        const appData = {
+          id: appId,
+          name: appName,
+          subtitle: appSubtitle,
+          description: appDescription,
+          developer: appDeveloper,
+          category: appCategory,
+          logoUrl: logoUrl,
+          bannerUrl: bannerUrl,
+          playStoreUrl: playStoreUrl || null,
+          appStoreUrl: appStoreUrl || null,
+          websiteUrl: websiteUrl || null,
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          updatedAt: firebase.database.ServerValue.TIMESTAMP,
+          published: true // Default to published, can be changed later
+        };
+
+        // Write to Realtime Database under 'aic_mobile_apps'
+        await db.ref(`aic_mobile_apps/${appId}`).set(appData);
+
+        alert("✅ Mobile App added successfully!");
+        mobileAppForm.reset();
+      } catch (err) {
+        console.error("Error adding mobile app:", err);
+        alert("⚠️ Error: " + err.message);
+      } finally {
+        createAppBtn.disabled = false;
+        createAppBtn.innerHTML = `<i class="fas fa-plus-circle"></i> Add App`;
+      }
+    });
+
+    // RENDER EXISTING APPS LIST
+    function renderAppList(data) {
+      const listElement = document.getElementById("appList");
+      listElement.innerHTML = ""; // Clear previous list
+
+      if (!data || Object.keys(data).length === 0) {
+        const emptyMessage = document.createElement("div");
+        emptyMessage.className = "panel"; // Use panel style for consistency
+        emptyMessage.style.cssText =
+          "text-align:center; color:var(--text-med); background:transparent; border:none; box-shadow:none;";
+        emptyMessage.textContent = "No mobile apps found.";
+        listElement.appendChild(emptyMessage);
+        return;
+      }
+
+      Object.entries(data).forEach(([key, app]) => {
+        // Assuming 'published' field determines if app should be listed
+        if (!app.published) return; 
+        
+        const appLink = document.createElement("a");
+        // Link to a detail page (if exists) or make it non-clickable for now
+        // appLink.href = `app-details.html?app=${key}`; 
+        appLink.href = "#"; // Placeholder, can be changed to app detail page
+        appLink.className = "app-row";
+        appLink.setAttribute("data-app-id", key); // For potential future interactions
+
+        appLink.innerHTML = `
+          <img src="${app.logoUrl || 'placeholder-logo.png'}" class="app-logo" alt="${app.name} Logo">
+          <div class="app-info">
+            <div class="app-name">${app.name}</div>
+            <div class="app-desc">${app.subtitle || app.category}</div>
+          </div>
+          <i class="fas fa-chevron-right app-arrow-icon"></i>
+        `;
+        listElement.appendChild(appLink);
+      });
+    }
+
+    // Firebase listener for mobile apps
+    db.ref("aic_mobile_apps").on(
+      "value",
+      (snapshot) => renderAppList(snapshot.val()),
+      (error) => {
+        console.error("Error fetching mobile apps:", error);
+        const listElement = document.getElementById("appList");
+        listElement.innerHTML =
+          '<div class="panel" style="text-align:center; color:var(--error);">Error loading apps.</div>';
+      }
+    );
+  </script>
+</body>
+</html>

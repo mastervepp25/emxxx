@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Details</title> <!-- Title will be updated dynamically -->
+    <meta name="theme-color" content="#0d0d1a">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+
+    <!-- Firebase v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> <!-- Included for potential user context -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root{
+          --bg:#0d0d1a;--panel:#121225;--glass:rgba(18,18,37,.9);--border:rgba(0,255,255,.25);
+          --cyan:#00ffff;--cyan-dark:#00cccc;--gold:#ffc107;--text:#e0e0f0;--text-med:#a0a0c0;
+          --success:#00ff88;--error:#ff4444;--font-display:'Orbitron',sans-serif;--font-body:'Roboto Mono',monospace;
+          --header-h:56px;--radius:8px;--radius-lg:12px;--transition:.3s;
+          --shadow:0 2px 10px rgba(0,0,0,.45),0 0 15px rgba(0,255,255,.18);
+          --space:16px;
+          font-size: 14px; 
+        }
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Prevent scrollbars on body, iframe will handle its own */
+        }
+        body{
+            display:flex; flex-direction:column; 
+            background:var(--bg);color:var(--text);
+            font-family:var(--font-body);
+            max-width:420px; margin:0 auto; /* Mobile PWA-like constraint */
+        }
+        
+        .header{
+            position:fixed;top:0;left:50%; transform: translateX(-50%); 
+            width:100%; max-width:420px; height:var(--header-h);
+            display:flex;align-items:center;justify-content:space-between;
+            padding:0 var(--space);background:var(--glass);
+            backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+            border-bottom:1px solid var(--border);
+            box-shadow:0 3px 10px rgba(0,0,0,.4),0 0 15px rgba(0,255,255,.15);z-index:1030;
+            flex-shrink: 0; /* Header should not shrink */
+        }
+        .header-btn{
+            background:none;border:none;color:var(--text-med);font-size:24px; 
+            cursor:pointer;padding:8px;border-radius:50%;transition:.25s;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .header-btn:hover{color:var(--cyan);background:rgba(0,255,255,.1);text-shadow:0 0 5px rgba(0,255,255,.25)}
+        .app-title-header{
+            flex-grow: 1; text-align: center;
+            font-size:1.1rem;font-weight:700;font-family:var(--font-display);
+            color:var(--cyan);text-shadow:0 0 7px rgba(0,255,255,.4);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            margin: 0 5px; /* Give some space if title is long and buttons are present */
+        }
+
+        .iframe-container {
+            flex-grow: 1; /* Take remaining vertical space */
+            width: 100%;
+            padding-top: var(--header-h); /* Account for fixed header */
+            display: flex; /* For centering loading/error messages */
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg); /* Match body background */
+        }
+        .app-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block; /* Remove extra space below iframe */
+        }
+        
+        .status-message {
+            text-align: center;
+            color: var(--text-med);
+            padding: 20px;
+        }
+        .status-message .material-symbols-outlined {
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: var(--cyan);
+        }
+        .status-message.error .material-symbols-outlined {
+            color: var(--error);
+        }
+        .status-message a {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 15px;
+            background-color: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--cyan);
+            text-decoration: none;
+        }
+        .status-message a:hover {
+            background-color: rgba(0,255,255,0.1);
+        }
+
+         /* Basic spinner for loading */
+        .spinner-simple {
+            width: 30px; height: 30px; margin-bottom: 10px;
+            border: 3px solid rgba(0,255,255,.2);
+            border-top: 3px solid var(--cyan);
+            border-radius:50%;
+            animation: spinSimple 1s linear infinite;
+        }
+        @keyframes spinSimple {0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+    </style>
+</head>
+<body>
+  <header class="header">
+    <button class="header-btn" id="backButton">
+        <span class="material-symbols-outlined">arrow_back_ios_new</span>
+    </button>
+    <h1 class="app-title-header" id="appTitleHeader">Loading App...</h1>
+    <button class="header-btn" id="openExternalButton" title="Open in new tab" style="display: none;">
+        <span class="material-symbols-outlined">open_in_new</span>
+    </button>
+  </header>
+
+  <main class="iframe-container" id="iframeContainer">
+    <!-- Iframe or status message will be injected here -->
+  </main>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f" 
+     };
+
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const auth = firebase.auth(); 
+    const db = firebase.database(); 
+
+    const appTitleHeaderEl = document.getElementById('appTitleHeader');
+    const iframeContainerEl = document.getElementById('iframeContainer');
+    const backButtonEl = document.getElementById('backButton');
+    const openExternalButtonEl = document.getElementById('openExternalButton');
+
+    let currentAppEmbedUrl = null;
+
+    function showLoadingState(message = "Loading App Details...") {
+        iframeContainerEl.innerHTML = `
+            <div class="status-message">
+                <div class="spinner-simple"></div>
+                ${message}
+            </div>`;
+        openExternalButtonEl.style.display = 'none';
+    }
+
+    function showErrorState(message, showLinkToHub = true) {
+        let linkHtml = showLinkToHub ? `<a href="emx_app_hub.html">Go to App Hub</a>` : '';
+        iframeContainerEl.innerHTML = `
+            <div class="status-message error">
+                <span class="material-symbols-outlined">error</span>
+                <p>${message}</p>
+                ${linkHtml}
+            </div>`;
+        appTitleHeaderEl.textContent = "Error";
+        openExternalButtonEl.style.display = 'none';
+    }
+
+    function displayAppInIframe(appName, appUrl) {
+        document.title = appName || "App Viewer";
+        appTitleHeaderEl.textContent = appName || "App";
+        currentAppEmbedUrl = appUrl;
+
+        const iframe = document.createElement('iframe');
+        iframe.src = appUrl;
+        iframe.className = 'app-iframe';
+        // Consider iframe sandbox attributes for security if needed
+        // iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups"; 
+        
+        iframeContainerEl.innerHTML = ''; // Clear loading/error message
+        iframeContainerEl.appendChild(iframe);
+        openExternalButtonEl.style.display = 'flex';
+    }
+
+    backButtonEl.addEventListener('click', () => {
+        // Check if it's possible to go back in history, otherwise go to app hub.
+        if (window.history.length > 1 && document.referrer) {
+            window.history.back();
+        } else {
+            window.location.href = 'emx_app_hub.html'; // Fallback to app hub
+        }
+    });
+
+    openExternalButtonEl.addEventListener('click', () => {
+        if (currentAppEmbedUrl) {
+            window.open(currentAppEmbedUrl, '_blank', 'noopener,noreferrer');
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        showLoadingState();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const appUid = urlParams.get('app_uid');
+
+        if (!appUid) {
+            showErrorState("No app identifier provided.");
+            return;
+        }
+
+        // Fetch app data from Firebase RTDB
+        // Using 'aic_mobile_apps' as per add_mobileapp.html and hub page
+        const appRef = db.ref(`aic_mobile_apps/${appUid}`); 
+        appRef.once('value')
+            .then(snapshot => {
+                const appData = snapshot.val();
+                if (appData && (appData.published === true || appData.active === true)) {
+                    // Determine the URL to embed
+                    // Prioritize 'appEmbedUrl', then 'websiteUrl'
+                    const embedUrl = appData.appEmbedUrl || appData.websiteUrl; 
+                    
+                    if (embedUrl) {
+                        displayAppInIframe(appData.name || "Untitled App", embedUrl);
+                    } else {
+                        showErrorState(`"${appData.name || 'App'}" does not have an embeddable URL configured.`);
+                    }
+                } else if (appData && (appData.published === false || appData.active === false)) {
+                    showErrorState(`"${appData.name || 'App'}" is currently not active or unpublished.`);
+                }
+                else {
+                    showErrorState(`App with ID "${appUid}" not found or is not accessible.`);
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching app details:", error);
+                showErrorState("Could not load app information. Please try again.");
+            });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>ai-Connect – Unlock with PIN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Mono&display=swap" rel="stylesheet" />
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- libphonenumber-js for phone number parsing/formatting -->
+  <script src="https://unpkg.com/libphonenumber-js@1.10.57/bundle/libphonenumber-min.js"></script>
+  <style>
+    :root {
+      --bg:#0d0d1a; --panel:#121225; --cyan:#00ffff; --cyan-faded:rgba(0,255,255,0.2);
+      --glow:rgba(0,255,255,.3); --txt:#e0e0f0; --err:#ff4444; --succ:#00ff88;
+      --font-d:'Orbitron',sans-serif; --font-b:'Roboto Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      height:100vh;background:var(--bg);font-family:var(--font-b);color:var(--cyan);
+    }
+    .card{
+      width:100%;max-width:380px; 
+      background:var(--panel);
+      padding:40px 30px;border:1px solid var(--glow);
+      border-radius:16px;text-align:center;box-shadow:0 0 30px var(--glow);
+    }
+    .logo{width:70px;margin-bottom:20px;filter:drop-shadow(0 0 8px var(--glow))}
+    h2{font-family:var(--font-d);margin-bottom:20px;text-shadow:0 0 8px var(--glow);}
+
+    .input-field {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 20px;
+      background: transparent;
+      border: 2px solid var(--cyan-faded);
+      border-radius: 8px;
+      color: var(--txt);
+      font-family: var(--font-b);
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+    .input-field::placeholder { color: rgba(224, 224, 240, 0.7); }
+    .input-field:focus, .pin-digit-input:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px var(--glow);
+    }
+    .input-field.error { border-color: var(--err); }
+    .pin-container.error .pin-digit-input { border-color: var(--err); }
+
+     .pin-label {
+        font-size: 0.9em;
+        color: var(--txt);
+        margin-bottom: 8px;
+        text-align: left;
+    }
+    .pin-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 25px;
+    }
+    .pin-digit-input {
+        width: 22%; 
+        height: 50px;
+        border: 2px solid var(--cyan-faded);
+        border-radius: 8px;
+        background: transparent;
+        color: var(--txt);
+        font-size: 1.5em; 
+        text-align: center;
+        font-family: var(--font-b);
+        caret-color: var(--cyan);
+    }
+    .pin-digit-input[type=number] { -moz-appearance: textfield; }
+    .pin-digit-input::-webkit-outer-spin-button,
+    .pin-digit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+    .btn{
+      position:relative;width:100%;padding:14px; margin-top: 5px;
+      font-family:var(--font-d);font-weight:700;font-size:1.1em;
+      color:var(--cyan);border:2px solid var(--cyan);
+      border-radius:8px;background:transparent;cursor:pointer;
+      transition:all .35s;
+    }
+    .btn::before{
+      content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(135deg,var(--cyan),#00cccc);
+      transform:translateY(101%);transition:transform .35s;z-index:-1;
+    }
+    .btn:hover:not(:disabled){
+      color:var(--bg);transform:translateY(-3px);box-shadow:0 5px 20px var(--glow);
+    }
+    .btn:hover:not(:disabled)::before{transform:translateY(0)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    
+    .status-container { 
+        margin-top:15px; /* Adjusted margin */
+        min-height: 2.8em; /* Adjusted min-height for message + one link */
+    }
+    .msg{
+      font-size:.9em;color:var(--txt);
+      min-height:1.4em; 
+      /* margin-bottom: 0.5em; Removed default bottom margin to allow links to sit closer */
+    }
+    .msg.error {color:var(--err)}
+    .msg.success {color:var(--succ)}
+
+    .action-links { /* Container for multiple links below message */
+        display: flex;
+        flex-direction: column; /* Stack links vertically */
+        align-items: center; /* Center links */
+        gap: 8px; /* Space between links */
+        margin-top: 8px; /* Space above the links container */
+    }
+
+    .reset-link, .signup-prompt-link {
+        font-size: 0.9em;
+        color: var(--cyan-faded); /* Slightly faded for secondary actions */
+        text-decoration: none;
+        padding: 5px;
+        border-radius: 4px;
+        transition: color 0.3s, background-color 0.3s;
+    }
+    .reset-link { display: none; } /* Reset link still conditionally shown */
+    .signup-prompt-link { display: block; } /* Sign up link always shown */
+
+    .reset-link:hover, .signup-prompt-link:hover {
+        color: var(--cyan);
+        background-color: rgba(0, 255, 255, 0.1); /* Subtle hover background */
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="assets/logo/logo.png" alt="Logo" class="logo">
+    <h2>Unlock Account</h2>
+
+    <input type="tel" id="phoneNumberLoginInput" class="input-field" placeholder="Phone e.g. +14155552671" required>
+
+    <div class="pin-label">Enter Your PIN:</div>
+    <div class="pin-container" id="pinLoginContainer">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="0">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="1">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="2">
+      <input type="text" inputmode="numeric" pattern="[0-9]*" class="pin-digit-input" maxlength="1" data-index="3">
+    </div>
+
+    <button class="btn" id="unlockButton">Unlock</button>
+    
+    <div class="status-container">
+        <div class="msg" id="messageDiv">Enter phone and PIN to unlock.</div>
+    </div>
+    <div class="action-links">
+        <a href="reset-account.html" id="resetAccountLink" class="reset-link">Forgot PIN? Reset Account</a>
+        <a href="signup.html" id="goToSignupLink" class="signup-prompt-link">Don't have an account? Sign Up</a>
+    </div>
+  </div>
+
+  <script>
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const database = firebase.database();
+
+    const phoneNumberLoginInput = document.getElementById('phoneNumberLoginInput');
+    const pinLoginContainer = document.getElementById('pinLoginContainer');
+    const unlockButton = document.getElementById('unlockButton');
+    const messageDiv = document.getElementById('messageDiv');
+    const resetAccountLink = document.getElementById('resetAccountLink');
+    const goToSignupLink = document.getElementById('goToSignupLink'); // Reference for the new link
+
+    const MAX_FAILED_ATTEMPTS = 5;
+    const LOCKOUT_DURATION_MINUTES = 45;
+    const LOCKOUT_DURATION_MS = LOCKOUT_DURATION_MINUTES * 60 * 1000;
+
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(() => { console.log("Firebase auth persistence set to LOCAL on signin page."); })
+      .catch((error) => { console.error("Error setting Firebase auth persistence on signin:", error); });
+
+    function setupPinInputs(container) {
+        const inputs = Array.from(container.getElementsByClassName('pin-digit-input'));
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                input.value = input.value.replace(/[^0-9]/g, '');
+                if (input.value && index < inputs.length - 1) inputs[index + 1].focus();
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === "Backspace" && !input.value && index > 0) {
+                    inputs[index - 1].focus(); inputs[index - 1].value = '';
+                } else if (e.key === "ArrowLeft" && index > 0) inputs[index - 1].focus();
+                else if (e.key === "ArrowRight" && index < inputs.length - 1) inputs[index + 1].focus();
+                else if (e.key === "Enter" && getPinFromContainer(pinLoginContainer).length === 4 && phoneNumberLoginInput.value.trim() !== "") {
+                    unlockButton.click();
+                }
+            });
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+                for (let i = 0; i < pasteData.length && (index + i) < inputs.length; i++) {
+                    inputs[index + i].value = pasteData[i];
+                    if ((index + i) < inputs.length - 1) inputs[index + i + 1].focus();
+                    else inputs[index + i].focus();
+                }
+            });
+        });
+    }
+    setupPinInputs(pinLoginContainer);
+
+    function getPinFromContainer(container) {
+        return Array.from(container.getElementsByClassName('pin-digit-input')).map(input => input.value).join('');
+    }
+    
+    function clearPinInputs(container) {
+        Array.from(container.getElementsByClassName('pin-digit-input')).forEach(input => input.value = '');
+        if (container.getElementsByClassName('pin-digit-input').length > 0) {
+            container.getElementsByClassName('pin-digit-input')[0].focus();
+        }
+        container.classList.remove('error');
+    }
+
+    function showMessage(text, type = 'info', showReset = false) {
+        messageDiv.textContent = text;
+        messageDiv.className = 'msg'; 
+        if (type === 'error') messageDiv.classList.add('error');
+        else if (type === 'success') messageDiv.classList.add('success');
+        
+        phoneNumberLoginInput.classList.toggle('error', type === 'error' && text.toLowerCase().includes("phone"));
+        pinLoginContainer.classList.toggle('error', type === 'error' && text.toLowerCase().includes("pin"));
+        
+        resetAccountLink.style.display = showReset ? 'block' : 'none';
+    }
+    
+    phoneNumberLoginInput.addEventListener('input', () => {
+        // When user types, reset message and hide conditional (reset) link
+        if (messageDiv.classList.contains('error') || resetAccountLink.style.display === 'block' ) {
+             showMessage("Enter phone and PIN to unlock.", 'info', false); 
+        }
+    });
+    Array.from(pinLoginContainer.getElementsByClassName('pin-digit-input')).forEach(input => {
+        input.addEventListener('input', () => {
+            if (pinLoginContainer.classList.contains('error') || resetAccountLink.style.display === 'block') {
+                 showMessage("Enter phone and PIN to unlock.", 'info', false);
+            }
+        });
+    });
+
+    unlockButton.addEventListener("click", async () => {
+      const rawPhoneNumber = phoneNumberLoginInput.value.trim();
+      const enteredPin = getPinFromContainer(pinLoginContainer);
+
+      showMessage("Verifying...", 'info', false); // Initially hide reset link
+      unlockButton.disabled = true;
+      
+      if (!rawPhoneNumber) {
+        showMessage("Phone number is required.", 'error', true); // Show reset on error
+        unlockButton.disabled = false; return;
+      }
+      if (!/^\d{4}$/.test(enteredPin)) {
+        showMessage("PIN must be 4 digits.", 'error', true); // Show reset on error
+        unlockButton.disabled = false; return;
+      }
+
+      let parsedPhoneNumber;
+      try {
+        parsedPhoneNumber = libphonenumber.parsePhoneNumberFromString(rawPhoneNumber);
+      } catch (e) {
+        showMessage("Invalid phone number format. Use international format (e.g. +1).", 'error', true); // Show reset
+        unlockButton.disabled = false; return;
+      }
+
+      if (!parsedPhoneNumber || !parsedPhoneNumber.isValid()) {
+        let errMsg = "Invalid phone number. Please check and include country code (e.g. +1, +63).";
+        if (!rawPhoneNumber.startsWith('+')) errMsg = "Phone number must start with '+' and country code.";
+        showMessage(errMsg, 'error', true); // Show reset
+        unlockButton.disabled = false; return;
+      }
+
+      const normalizedPhoneKey = parsedPhoneNumber.format('E.164').substring(1);
+
+      try {
+        const userRecordRef = database.ref(`users_info/${normalizedPhoneKey}`);
+        const snapshot = await userRecordRef.once("value");
+
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            if (!userData.firebaseUid) { 
+                showMessage("Account data incomplete. Please contact support or try resetting.", 'error', true); // Show reset
+                unlockButton.disabled = false;
+                console.error("User data for", normalizedPhoneKey, "is missing firebaseUid.");
+                return;
+            }
+
+            let currentFailedAttempts = userData.failedAttempts || 0;
+            const currentLockoutExpiresAt = userData.lockoutExpiresAt || 0;
+
+            if (currentLockoutExpiresAt > Date.now()) {
+                const remainingLockTimeMs = currentLockoutExpiresAt - Date.now();
+                const remainingLockTimeMinutes = Math.ceil(remainingLockTimeMs / (60 * 1000));
+                showMessage(`Account locked. Try again in ${remainingLockTimeMinutes} min.`, 'error', true); // Show reset
+                unlockButton.disabled = false;
+                return;
+            }
+
+            if (userData.pin === enteredPin) {
+                showMessage("Success! Logging in...", 'success', false); // Don't show reset on success
+                if (currentFailedAttempts > 0 || currentLockoutExpiresAt > 0) {
+                    await userRecordRef.update({ failedAttempts: 0, lockoutExpiresAt: null });
+                }
+
+                const updatesForDb = { 
+                    lastLogin: firebase.database.ServerValue.TIMESTAMP,
+                    deviceAgent: navigator.userAgent
+                };
+
+                let currentAuthUser = auth.currentUser;
+                if (!currentAuthUser || currentAuthUser.uid !== userData.firebaseUid) {
+                    if (currentAuthUser) {
+                        await auth.signOut();
+                    }
+                    const { user: newAnonUser } = await auth.signInAnonymously(); 
+                    updatesForDb.firebaseUid = newAnonUser.uid; 
+                }
+                
+                await userRecordRef.update(updatesForDb);
+                setTimeout(() => { window.location.href = "index.html"; }, 1000);
+
+            } else { // Incorrect PIN
+                currentFailedAttempts++;
+                let updates = { failedAttempts: currentFailedAttempts };
+                let messageText;
+
+                if (currentFailedAttempts >= MAX_FAILED_ATTEMPTS) {
+                    updates.lockoutExpiresAt = Date.now() + LOCKOUT_DURATION_MS;
+                    updates.failedAttempts = 0; 
+                    messageText = `Incorrect PIN. Account locked for ${LOCKOUT_DURATION_MINUTES} min.`;
+                } else {
+                    const attemptsLeft = MAX_FAILED_ATTEMPTS - currentFailedAttempts;
+                    messageText = `Incorrect PIN. ${attemptsLeft} attempts remaining.`;
+                }
+                
+                await userRecordRef.update(updates);
+                showMessage(messageText, 'error', true); // Show reset on incorrect PIN
+                clearPinInputs(pinLoginContainer);
+                unlockButton.disabled = false;
+            }
+        } else { // Phone number not registered
+            showMessage("Phone number not registered.", 'error', true); // Show reset here (though signup link is always visible)
+            unlockButton.disabled = false;
+        }
+      } catch (error) {
+        console.error("Error during login:", error);
+        showMessage("Login failed due to a system error. Please try again.", 'error', true); // Show reset
+        unlockButton.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => { phoneNumberLoginInput.focus(); });
+  </script>
+</body>
+</html>

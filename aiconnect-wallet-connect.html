@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect • Wallet & Tokens</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- Fonts & Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+
+  <!-- Firebase v8 -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    :root{
+      /* ai-Connect Neon-Dark */
+      --bg:#0d0d1a;
+      --panel:#121225;
+      --glass:rgba(18,18,37,.9);
+      --border:rgba(0,255,255,.25);
+      --cyan:#00ffff;
+      --cyan-dark:#00cccc;
+      --gold:#ffc107;
+      --text:#e0e0f0;
+      --text-med:#9aa0c6;
+      --error:#ff4444;
+
+      --spacing:15px;
+      --radius:8px;
+      --radius-lg:12px;
+      --shadow:0 2px 7px rgba(0,0,0,.45),0 0 10px rgba(0,255,255,.15);
+      --header-h:56px;
+      /* --nav-h:60px;  Removed as bottom nav is not on this page */
+
+      --font-display:'Orbitron',sans-serif;
+      --font-body:'Roboto Mono',monospace;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{overscroll-behavior-y:contain;} /* Removed overflow-x:hidden from html,body and put on body only */
+    body{
+      background:var(--bg);color:var(--text);font-family:var(--font-body);
+      min-height:100vh;max-width:420px;margin:0 auto;
+      padding-top:var(--header-h);
+      padding-bottom:var(--spacing); /* Changed from calc(var(--nav-h)+var(--spacing)) */
+      overflow-y: auto; /* Allow vertical scroll */
+      overflow-x: hidden; /* Prevent horizontal scroll */
+      position: relative; /* Keep for absolutely positioned children if any */
+    }
+    a{color:var(--cyan);text-decoration:none}
+    a:hover{text-decoration:underline;color:var(--cyan-dark)}
+    button{font-family:inherit;cursor:pointer;border:none;border-radius:var(--radius);transition:.25s}
+    button:active{transform:scale(.96)}
+
+    /* Header */
+    .header{
+      backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      background:var(--glass);border-bottom:1px solid var(--border);
+      height:var(--header-h);width:100%;max-width:420px;position:fixed;top:0;left:50%;transform:translateX(-50%);
+      display:flex;align-items:center;justify-content:space-between;padding:0 var(--spacing);z-index:100;box-shadow:0 3px 10px rgba(0,0,0,.4),0 0 12px rgba(0,255,255,.15)
+    }
+    .header-back-button { 
+        color: var(--cyan); background: none; border: none; cursor: pointer;
+        padding: 8px; margin-right: 10px; display:flex; align-items:center;
+    }
+    .header-back-button .material-symbols-outlined { font-size: 24px; }
+    .header-title { 
+        font-family:var(--font-display);font-weight:600;font-size:1.05rem;color:var(--text);
+        text-shadow:0 0 6px rgba(0,255,255,.3); flex-grow: 1; text-align: center;
+    }
+    .header-placeholder { width: 40px; } 
+    .logo-img{width:30px;height:30px;object-fit:contain;margin-right:8px}
+    .logo-text{font-family:var(--font-display);font-weight:700;font-size:1.1rem;color:var(--cyan);text-shadow:0 0 6px rgba(0,255,255,.4)}
+    .h-ico{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-med);position:relative;transition:.2s}
+    .h-ico:hover{background:rgba(0,255,255,.08);color:var(--cyan)}
+    .h-ico:active{transform:scale(.9)}
+    .h-ico .material-symbols-outlined{font-size:24px}
+    .badge{position:absolute;top:-1px;right:-1px;background:var(--error);border-radius:50%;font-size:9px;font-weight:700;min-width:15px;color:#fff;padding:1px 4px;display:none;box-shadow:0 0 6px rgba(255,68,68,.6)}
+    .badge.visible{display:block}
+
+    /* Main */
+    .main{padding:var(--spacing);display:flex;flex-direction:column;gap:var(--spacing)}
+
+    /* Wallet card */
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--spacing);box-shadow:var(--shadow)}
+    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .card-title{font-size:1.05rem;font-weight:600;color:var(--gold);font-family:var(--font-display);text-shadow:0 0 6px rgba(255,193,7,.35)}
+    .w-status{display:flex;align-items:center;font-size:.78rem;padding:4px 9px;border-radius:12px;font-weight:600}
+    .w-status.connected{background:#173f2d;color:#00e47a}
+    .w-status.disconnected{background:#4d3511;color:#ffa726}
+    .w-status .material-symbols-outlined{font-size:16px;margin-right:4px}
+    .addr-box{background:rgba(255,255,255,.04);border-radius:var(--radius);padding:10px;display:flex;align-items:center;margin-bottom:var(--spacing)}
+    .addr{flex:1;font-family:monospace;font-size:.9rem;color:var(--text-med);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .copy-btn{background:var(--cyan);color:#000;font-size:.78rem;font-weight:600;padding:6px 12px;display:flex;align-items:center;border-radius:4px}
+    .copy-btn:hover{background:var(--cyan-dark)}
+    .copy-btn .material-symbols-outlined{font-size:16px;margin-right:4px}
+    .connect-btn{width:100%;padding:12px 0;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;background:var(--cyan);color:#000;border-radius:var(--radius)}
+    .connect-btn:hover{background:var(--cyan-dark)}
+    .connect-btn .material-symbols-outlined{font-size:20px;margin-right:8px}
+
+    /* Token balance card */
+    .token-card{background:linear-gradient(135deg,#0d3250,#154c7c);border-radius:var(--radius-lg);padding:var(--spacing);position:relative;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+    .token-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,.12) 0%,rgba(255,255,255,0) 70%);pointer-events:none}
+    .token-head{display:flex;align-items:center;margin-bottom:16px;font-size:1.05rem;font-weight:600}
+    .token-head img{width:24px;height:24px;border-radius:50%;margin-right:8px}
+    .bal{font-size:1.8rem;font-weight:700}
+    .val{opacity:.85;margin-bottom:14px}
+    .t-actions{display:flex;gap:10px}
+    .t-actions button{flex:1;padding:10px 0;border-radius:var(--radius);font-size:.9rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .buy{background:#fff;color:#0d3250}
+    .buy:hover{background:#f1f1f1}
+    .send{background:rgba(255,255,255,.25);color:#fff}
+    .send:hover{background:rgba(255,255,255,.35)}
+    .t-actions .material-symbols-outlined{font-size:18px;margin-right:6px}
+
+    /* Market list */
+    .market{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--spacing);box-shadow:var(--shadow)}
+    .market-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .market-title{font-size:1.05rem;font-weight:600}
+    .refresh{display:flex;align-items:center;font-size:.85rem;color:var(--cyan);cursor:pointer;padding:5px;border-radius:4px}
+    .refresh:hover{background:rgba(0,255,255,.08)}
+    .refresh.refreshing .material-symbols-outlined{animation:spin 1s linear infinite}
+    .refresh .material-symbols-outlined{font-size:18px;margin-right:4px}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .list-message{text-align:center;padding:20px 0;color:var(--text-med);font-size:.9rem}
+    .token-row{display:flex;align-items:center;padding:10px;background:rgba(255,255,255,.04);border-radius:var(--radius);transition:.2s}
+    .token-row:hover{background:rgba(255,255,255,.08)}
+    .t-icon{width:38px;height:38px;border-radius:50%;overflow:hidden;margin-right:10px;background:#1f1f2b}
+    .t-icon img{width:100%;height:100%;object-fit:cover}
+    .t-details{flex:1}
+    .t-name{font-weight:600;font-size:.92rem;display:flex;align-items:center}
+    .sym{font-size:.75rem;text-transform:uppercase;color:var(--text-med);margin-left:6px}
+    .price{font-size:.8rem;color:var(--text-med)}
+    .change{font-weight:600;font-size:.9rem;text-align:right}
+    .positive{color:#00e47a}
+    .negative{color:#ff5e5e}
+
+    /* Loader */
+    #loader{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(13,13,26,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200;transition:.3s}
+    #loader.hidden{opacity:0;visibility:hidden}
+    #loader .spinner{width:30px;height:30px;border:4px solid rgba(0,255,255,.2);border-top:4px solid var(--cyan);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:14px}
+    #loader p{font-family:var(--font-display);font-size:1rem}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+    /* Removed .bn (Bottom Nav) styles as it's removed from HTML */
+
+  </style>
+</head>
+<body>
+
+<div id="loader">
+  <div class="spinner"></div><p>Loading Wallet…</p>
+</div>
+
+<header class="header">
+  <button class="header-back-button" id="backButton" title="Go Back">
+    <span class="material-symbols-outlined">arrow_back_ios_new</span>
+  </button>
+  <h1 class="header-title">Wallet & Tokens</h1>
+  <div class="header-placeholder"></div> 
+</header>
+
+<main class="main">
+
+  <!-- Wallet -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Wallet Address</span>
+      <span id="wstat" class="w-status disconnected"><span class="material-symbols-outlined">error</span>Disconnected</span>
+    </div>
+    <div class="addr-box">
+      <div class="addr" id="addr">Not Connected</div>
+      <button class="copy-btn" id="copy"><span class="material-symbols-outlined">content_copy</span>Copy</button>
+    </div>
+    <button class="connect-btn" id="connect"><span class="material-symbols-outlined">link</span>Connect Wallet</button>
+  </div>
+
+  <!-- EMX -->
+  <div class="token-card">
+    <div class="token-head"><img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="emx">EMX Token</div>
+    <div class="bal" id="bal">0.00 EMX</div>
+    <div class="val" id="val">≈ $0.00 USD</div> 
+    <div class="t-actions">
+      <button class="buy" id="buyEmxButton"><span class="material-symbols-outlined">add_shopping_cart</span>Buy</button>
+      <button class="send" id="sendEmxButton"><span class="material-symbols-outlined">send</span>Send</button>
+    </div>
+  </div>
+
+  <!-- Market -->
+  <div class="market">
+    <div class="market-head">
+      <span class="market-title">Market Tokens</span>
+      <div class="refresh" id="refresh"><span class="material-symbols-outlined">refresh</span>Refresh</div>
+    </div>
+    <div class="list" id="list"><div class="list-message">Loading market data…</div></div>
+  </div>
+
+</main>
+
+<!-- Bottom navigation removed from here -->
+
+<script>
+/* Firebase */
+const firebaseConfig={apiKey:"AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",authDomain:"daisy-n7g20a.firebaseapp.com",databaseURL:"https://daisy-n7g20a-default-rtdb.firebaseio.com",projectId:"daisy-n7g20a",storageBucket:"daisy-n7g20a.appspot.com",messagingSenderId:"225362605902",appId:"1:225362605902:web:d2551cc389e78c92c3d01f"};
+firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
+const authInstance = firebase.auth();
+const rtDbInstance = firebase.database(); 
+
+/* DOM Elements */
+const loaderElement = document.getElementById('loader');
+const walletStatusElement = document.getElementById('wstat');
+const walletAddressElement = document.getElementById('addr');
+const copyButton = document.getElementById('copy');
+const connectButton = document.getElementById('connect');
+const emxBalanceElement = document.getElementById('bal');
+const emxValueElement = document.getElementById('val');
+const marketListElement = document.getElementById('list');
+const refreshMarketButton = document.getElementById('refresh');
+// const signOutButton = document.getElementById('signout'); // Removed as it's not in this page's header
+const backButtonElement = document.getElementById('backButton');
+
+
+/* Utils */
+const triggerHapticFeedback = t => navigator.vibrate && navigator.vibrate(t === 'light' ? 20 : t === 'strong' ? 100 : t === 'selection' ? 10 : 50);
+const formatDisplayCurrency = (n, s = '$', d = 2) => s + (Number(n) || 0).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const formatEmxToken = (amount, decimals = 2) => {
+    const numericAmount = Number(amount) || 0;
+    return numericAmount.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals
+    }) + " EMX";
+};
+const shortenAddress = (a) => a ? `${a.slice(0, 6)}…${a.slice(-4)}` : 'Not Connected';
+
+let userNormalizedPhoneKey = null; 
+
+async function displayWalletInfo(uid) {    
+    if (!userNormalizedPhoneKey) { 
+        console.warn("User phone key not available for wallet info.");
+        walletAddressElement.textContent = 'Error: User ID missing';
+        return;
+    }
+    
+    try {
+        const userWalletRef = rtDbInstance.ref(`users_info/${userNormalizedPhoneKey}/wallet`);
+        const snapshot = await userWalletRef.once('value');
+        const walletData = snapshot.val() || {};
+
+        if (walletData.connected && walletData.address) {
+            walletStatusElement.className = 'w-status connected';
+            walletStatusElement.innerHTML = '<span class="material-symbols-outlined">check_circle</span>Connected';
+            walletAddressElement.textContent = shortenAddress(walletData.address);
+            walletAddressElement.dataset.full = walletData.address;
+            connectButton.innerHTML = '<span class="material-symbols-outlined">link_off</span>Disconnect Wallet';
+        } else {
+            walletStatusElement.className = 'w-status disconnected';
+            walletStatusElement.innerHTML = '<span class="material-symbols-outlined">error</span>Disconnected';
+            walletAddressElement.textContent = 'Not Connected';
+            walletAddressElement.dataset.full = '';
+            connectButton.innerHTML = '<span class="material-symbols-outlined">link</span>Connect Wallet';
+        }
+    } catch (error) {
+        console.error("Error fetching wallet info from RTDB:", error);
+        walletStatusElement.className = 'w-status disconnected';
+        walletStatusElement.innerHTML = '<span class="material-symbols-outlined">error</span>Error';
+        walletAddressElement.textContent = 'Error loading';
+    }
+}
+
+function displayEmxBalance(userData) {
+    const currentEmxBalance = userData.emx_token_balance || 0;
+    emxBalanceElement.textContent = formatEmxToken(currentEmxBalance);
+    const mockEmxPriceUSD = 0.05; 
+    emxValueElement.textContent = `≈ ${formatDisplayCurrency(currentEmxBalance * mockEmxPriceUSD)}`;
+}
+
+function listenToUserData(phoneKey) {
+    if (!phoneKey) {
+        console.error("Cannot listen to user data: phoneKey is null.");
+        return;
+    }
+    const userSpecificDataRef = rtDbInstance.ref(`users_info/${phoneKey}`);
+    
+    userSpecificDataRef.on('value', (snapshot) => {
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            console.log("Real-time user data update:", userData);
+            displayEmxBalance(userData); 
+        } else {
+            console.warn(`Real-time listener: No data for user with phoneKey ${phoneKey}`);
+            emxBalanceElement.textContent = formatEmxToken(0);
+            emxValueElement.textContent = `≈ ${formatDisplayCurrency(0)}`;
+        }
+    }, (error) => {
+        console.error("Error listening to real-time user data:", error);
+    });
+}
+
+async function initializePage(user) {
+    if (!user || !user.uid) {
+        if (loaderElement) loaderElement.classList.add('hidden');
+        window.location.href = 'signin.html'; 
+        return;
+    }
+
+    if (loaderElement) loaderElement.classList.remove('hidden');
+    try {
+        const usersInfoRef = rtDbInstance.ref('users_info');
+        const query = usersInfoRef.orderByChild('firebaseUid').equalTo(user.uid);
+        const snapshot = await query.once('value');
+
+        if (snapshot.exists()) {
+            snapshot.forEach(childSnapshot => { 
+                userNormalizedPhoneKey = childSnapshot.key;
+                return true; 
+            });
+
+            if (userNormalizedPhoneKey) {
+                await displayWalletInfo(user.uid); 
+                listenToUserData(userNormalizedPhoneKey);
+                loadMarketData(); 
+            } else {
+                throw new Error("User's phone key not found in database.");
+            }
+        } else {
+            throw new Error("User profile not found in users_info. Please sign up or sign in again.");
+        }
+    } catch (e) {
+        console.error("Initialization Error:", e);
+        alert(e.message || 'Error loading page data. Please try again.');
+    } finally {
+        if (loaderElement) loaderElement.classList.add('hidden');
+    }
+}
+
+async function loadMarketData() {
+    if (!marketListElement) return;
+    marketListElement.innerHTML = '<div class="list-message">Fetching market data…</div>';
+    if (refreshMarketButton) refreshMarketButton.classList.add('refreshing');
+    
+    setTimeout(() => {
+        const mockMarketData = [
+            { image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1.png', name: 'Bitcoin', symbol: 'BTC', current_price: 29500.50, price_change_percentage_24h: 1.25 },
+            { image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png', name: 'Ethereum', symbol: 'ETH', current_price: 1850.75, price_change_percentage_24h: -0.55 },
+            { image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/825.png', name: 'Tether USDt', symbol: 'USDT', current_price: 1.00, price_change_percentage_24h: 0.01 },
+            { image: 'https://s2.coinmarketcap.com/static/img/coins/64x64/1839.png', name: 'BNB', symbol: 'BNB', current_price: 240.10, price_change_percentage_24h: 2.10 }
+        ];
+        marketListElement.innerHTML = ''; 
+        mockMarketData.forEach(token => {
+            const change = Number(token.price_change_percentage_24h) || 0;
+            const changeClass = change >= 0 ? 'positive' : 'negative';
+            const sign = change >= 0 ? '+' : '';
+            marketListElement.insertAdjacentHTML('beforeend', `
+                <div class="token-row">
+                  <div class="t-icon"><img src="${token.image}" alt="${token.symbol}"></div>
+                  <div class="t-details">
+                    <div class="t-name">${token.name}<span class="sym">${token.symbol}</span></div>
+                    <div class="price">${formatDisplayCurrency(token.current_price, '$', token.current_price < 1 ? 4 : 2)}</div>
+                  </div>
+                  <div class="change ${changeClass}">${sign}${change.toFixed(2)}%</div>
+                </div>
+            `);
+        });
+        if (refreshMarketButton) refreshMarketButton.classList.remove('refreshing');
+    }, 1500);
+}
+
+/* Event Listeners */
+if (copyButton) {
+    copyButton.addEventListener('click', () => {
+        triggerHapticFeedback('light');
+        const addressToCopy = walletAddressElement.dataset.full || '';
+        if (!addressToCopy || addressToCopy === 'Not Connected') return alert('No address to copy');
+        navigator.clipboard.writeText(addressToCopy).then(() => {
+            copyButton.innerHTML = '<span class="material-symbols-outlined">check</span>Copied!';
+            setTimeout(() => copyButton.innerHTML = '<span class="material-symbols-outlined">content_copy</span>Copy', 2000);
+        }).catch(err => alert('Failed to copy address.'));
+    });
+}
+
+if (connectButton) {
+    connectButton.addEventListener('click', async () => {
+        triggerHapticFeedback();
+        const user = authInstance.currentUser;
+        if (!user || !userNormalizedPhoneKey) {
+            alert('User not properly identified. Please refresh.');
+            return;
+        }
+        if (loaderElement) loaderElement.classList.remove('hidden');
+        
+        try {
+            const userWalletRef = rtDbInstance.ref(`users_info/${userNormalizedPhoneKey}/wallet`);
+            const currentWalletSnapshot = await userWalletRef.once('value');
+            const currentWalletData = currentWalletSnapshot.val() || {};
+
+            if (currentWalletData.connected) { 
+                await userWalletRef.update({ connected: false, address: null }); 
+                console.log("Wallet disconnected.");
+            } else { 
+                const mockWalletAddress = '0x' + Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                await userWalletRef.update({ connected: true, address: mockWalletAddress });
+                console.log("Wallet connected with mock address:", mockWalletAddress);
+            }
+            await displayWalletInfo(user.uid); 
+        } catch (e) {
+            console.error("Error updating wallet connection status:", e);
+            alert('Error updating wallet status.');
+        }
+        if (loaderElement) loaderElement.classList.add('hidden');
+    });
+}
+
+if (refreshMarketButton) {
+    refreshMarketButton.addEventListener('click', () => { triggerHapticFeedback('light'); loadMarketData(); });
+}
+
+if (backButtonElement) {
+    backButtonElement.addEventListener('click', () => {
+        triggerHapticFeedback();
+        window.history.back();
+    });
+}
+
+/* Removed signOutButton event listener as it's not in this page's header */
+
+/* Auth State Change Handler */
+authInstance.onAuthStateChanged(user => {
+    if (user) {
+        initializePage(user);
+    } else {
+        if (loaderElement) loaderElement.classList.add('hidden');
+        if (userNormalizedPhoneKey) {
+            rtDbInstance.ref(`users_info/${userNormalizedPhoneKey}`).off();
+            userNormalizedPhoneKey = null;
+        }
+        window.location.href = 'signin.html';
+    }
+});
+
+/* Prevent zoom and double tap zoom */
+document.addEventListener('touchstart', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+let lastTouchEndTime = 0;
+document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEndTime <= 300) { 
+        e.preventDefault();
+    }
+    lastTouchEndTime = now;
+}, { passive: false });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - Stake EMX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <style>
+    :root {
+      /* ai-Connect EMX Theme Variables */
+      --aiConnect-bg-dark: #0d0d1a;         
+      --aiConnect-panel-dark: #121225;      
+      --aiConnect-glass-bg: rgba(18, 18, 37, 0.85); 
+      --aiConnect-border: rgba(0, 255, 255, 0.25);  
+      --aiConnect-cyan: #00ffff;            
+      --aiConnect-cyan-dark: #00cccc;       
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-text-primary: #e0e0f0;    
+      --aiConnect-text-secondary: #a0a0c0;  
+      --aiConnect-success: #00ff88;         
+      --aiConnect-error: #ff4444;    
+      --aiConnect-gold: #ffc107;       
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace; 
+
+      --header-height: 56px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --transition-speed: 0.3s;
+      --box-shadow-panel: 0 2px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+      --spacing-unit: 15px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: var(--header-height);
+        padding-bottom: calc(60px + var(--spacing-unit));
+        max-width: 420px;
+        margin: 0 auto;
+        overflow-x: hidden;
+        position: relative;
+    }
+    a { color: var(--aiConnect-cyan); text-decoration: none; }
+    a:hover { color: var(--aiConnect-cyan-dark); text-decoration: underline; text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--border-radius); transition: background-color var(--transition-speed), transform 0.1s, box-shadow var(--transition-speed); }
+    button:active { transform: translateY(1px) scale(0.98); }
+    .material-symbols-outlined, .fas { vertical-align: middle; }
+
+    .header {
+        background-color: var(--aiConnect-glass-bg);
+        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        color: var(--aiConnect-text-primary); padding: 0 var(--spacing-unit);
+        display: flex; align-items: center; justify-content: space-between;
+        position: fixed; top: 0; left: 0; right: 0;
+        width: 100%; max-width: 420px; margin: 0 auto;
+        z-index: 100; border-bottom: 1px solid var(--aiConnect-border);
+        height: var(--header-height); box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+    }
+    .header-logo-container { display: flex; align-items: center; }
+    .header-logo-img { width: 30px; height: 30px; object-fit: contain; margin-right: 8px; }
+    .header-logo-text {
+        font-size: 1.1rem; font-weight: 700; color: var(--aiConnect-cyan);
+        font-family: var(--font-display); text-shadow: 0 0 5px var(--aiConnect-glow-medium);
+    }
+     .header-page-title { /* For page specific title */
+        font-family: var(--font-display); color: var(--aiConnect-text-primary);
+        font-size: 1rem; font-weight: 500;
+        position: absolute; left: 50%; transform: translateX(-50%);
+        text-shadow: 0 0 3px var(--aiConnect-glow-soft);
+    }
+    .header-icons-right { display: flex; align-items: center; gap: calc(var(--spacing-unit) * 0.5); }
+    .header-icon { position: relative; cursor: pointer; color: var(--aiConnect-text-secondary); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; transition: background-color 0.2s, color 0.2s, text-shadow 0.2s; }
+    .header-icon:hover { background-color: rgba(0, 255, 255, 0.1); color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .header-icon .material-symbols-outlined { font-size: 22px; }
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+    
+    .panel-emo {
+        background-color: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large); padding: var(--spacing-unit);
+        margin-bottom: calc(var(--spacing-unit) * 1.5); box-shadow: var(--box-shadow-panel);
+    }
+    .panel-emo h2, .panel-emo h3 {
+        font-family: var(--font-display); color: var(--aiConnect-cyan);
+        margin-bottom: var(--spacing-unit); padding-bottom: calc(var(--spacing-unit) * 0.5);
+        border-bottom: 1px solid var(--aiConnect-border); display: flex; align-items: center; gap: 8px;
+    }
+    .panel-emo h2 .fas, .panel-emo h2 .material-symbols-outlined { font-size: 1.1em; }
+    .panel-emo p { color: var(--aiConnect-text-secondary); margin-bottom: var(--spacing-unit); font-size: 0.9rem; line-height: 1.6; }
+    
+    .form-label-emo {
+      font-family: var(--font-display); color: var(--aiConnect-text-secondary);
+      font-size: 0.9rem; margin-bottom: 8px; display: block;
+    }
+    .form-control-emo, .form-select-emo {
+      background-color: rgba(13,13,26,0.8); border: 1px solid var(--aiConnect-border);
+      color: var(--aiConnect-text-primary); font-family: var(--font-body);
+      border-radius: var(--border-radius); padding: 10px 12px; width: 100%;
+      margin-bottom: var(--spacing-unit);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+      transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    .form-control-emo:focus, .form-select-emo:focus {
+      border-color: var(--aiConnect-cyan); outline: none;
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 0 0 10px var(--aiConnect-glow-medium);
+    }
+    .input-group-emo { display: flex; margin-bottom: var(--spacing-unit); }
+    .input-group-emo .form-control-emo { border-right: none; border-top-right-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0;}
+    .input-group-text-emo {
+        background-color: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+        border-left: none; padding: 10px 12px; color: var(--aiConnect-text-secondary);
+        border-top-right-radius: var(--border-radius); border-bottom-right-radius: var(--border-radius);
+        font-family: var(--font-data);
+    }
+    
+    .btn-emo {
+        font-family: var(--font-display); font-size: 0.95rem; padding: 10px 18px;
+        border-radius: var(--border-radius); border: 1px solid var(--aiConnect-border);
+        background: linear-gradient(145deg, rgba(0, 255, 255, 0.15), rgba(0, 255, 255, 0.08));
+        color: var(--aiConnect-cyan); cursor: pointer;
+        transition: all var(--transition-speed) ease; box-shadow: 0 0 8px var(--aiConnect-glow-soft);
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-emo:hover {
+        background: linear-gradient(145deg, rgba(0, 255, 255, 0.25), rgba(0, 255, 255, 0.15));
+        color: #fff; box-shadow: 0 0 15px var(--aiConnect-glow-medium);
+        transform: translateY(-1px); border-color: var(--aiConnect-cyan);
+    }
+    .btn-emo.btn-primary-emo { background: var(--aiConnect-cyan); color: var(--aiConnect-bg-dark); border-color: var(--aiConnect-cyan-dark); }
+    .btn-emo.btn-primary-emo:hover { background: var(--aiConnect-cyan-dark); box-shadow: 0 0 15px var(--aiConnect-glow-strong); }
+    .btn-emo:disabled { opacity: 0.4; cursor: not-allowed; background: #2a2a3f !important; box-shadow: none !important; border-color: #40405f !important; color: #707090 !important; }
+
+    .staking-options .option-card {
+        background-color: rgba(18,18,37,0.6); border: 1px solid var(--aiConnect-border);
+        padding: var(--spacing-unit); border-radius: var(--border-radius); margin-bottom: 10px;
+        cursor: pointer; transition: all var(--transition-speed) ease;
+    }
+    .staking-options .option-card:hover, .staking-options .option-card.selected {
+        border-color: var(--aiConnect-cyan); box-shadow: 0 0 10px var(--aiConnect-glow-medium);
+        background-color: rgba(0, 255, 255, 0.05);
+    }
+    .staking-options .option-card h4 { color: var(--aiConnect-text-primary); font-size: 1rem; margin-bottom: 5px; border:none; padding:0;}
+    .staking-options .option-card p { font-size: 0.8rem; color: var(--aiConnect-text-secondary); margin-bottom: 0;}
+    .staking-options .option-card .apy-boost { color: var(--aiConnect-success); font-weight: bold; }
+
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--spacing-unit); margin-top: var(--spacing-unit);}
+    .stat-item { text-align: center; background-color: rgba(13,13,26,0.7); padding: 10px; border-radius: var(--border-radius); border: 1px solid var(--aiConnect-border);}
+    .stat-item .stat-value { font-family: var(--font-data); font-size: 1.3rem; color: var(--aiConnect-gold); display: block; margin-bottom: 3px; text-shadow: 0 0 5px var(--aiConnect-gold-glow);}
+    .stat-item .stat-label { font-size: 0.75rem; color: var(--aiConnect-text-secondary); text-transform: uppercase;}
+
+
+    #pageLoading {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(13, 13, 26, 0.95);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1001; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; }
+    #pageLoading .loading-text { font-size: 1.1rem; font-weight: 500; color: var(--aiConnect-text-primary); font-family: var(--font-display); }
+    #pageLoading .spinner {
+        border: 4px solid rgba(0, 255, 255, 0.2); border-top: 4px solid var(--aiConnect-cyan);
+        border-radius: 50%; width: 30px; height: 30px;
+        animation: spin 1s linear infinite; margin-bottom: 15px;
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .bottom-nav {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid var(--aiConnect-border); width: 100%; max-width: 420px; 
+        display: flex; justify-content: space-around; align-items: center;
+        padding: 5px 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+        z-index: 100; height: 60px; box-shadow: 0 -3px 15px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .nav-item {
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        color: var(--aiConnect-text-secondary); flex: 1; padding: 10px 0;
+        transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
+        height: 100%; border-radius: var(--border-radius); margin: 0 2px;
+    }
+    .nav-item.active { color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .nav-item:hover:not(.active) { color: var(--aiConnect-cyan); background-color: rgba(0, 255, 255, 0.08); }
+    .nav-item:active { transform: scale(0.95); }
+    .nav-item .material-symbols-outlined { font-size: 28px; }
+    .center-button-nav {
+        display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%;
+        background-color: var(--aiConnect-panel-dark); box-shadow: 0 0 15px rgba(0,0,0,0.7);
+        margin-top: -20px; cursor: pointer; border: 2px solid var(--aiConnect-border);
+        position: relative; flex-shrink: 0;
+        transition: transform 0.1s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .center-button-nav img { width: 28px; height: 28px; object-fit: contain; }
+    .center-button-nav.active { border-color: var(--aiConnect-cyan); box-shadow: 0 0 15px var(--aiConnect-glow-strong); }
+    .center-button-nav:hover:not(.active) { box-shadow: 0 0 10px var(--aiConnect-glow-medium), 0 0 20px rgba(0,0,0,0.7); }
+    .center-button-nav:active { transform: scale(0.95); }
+
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+      <div class="spinner"></div>
+      <p class="loading-text">Loading ai-Connect Stake...</p>
+  </div>
+
+  <header class="header">
+    <div class="header-logo-container">
+      <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="ai-Connect Logo" class="header-logo-img">
+      <span class="header-logo-text">EMX</span>
+    </div>
+    <div class="header-page-title">Stake EMX</div>
+    <div class="header-icons-right">
+      <div id="signOutIcon" class="header-icon" title="Sign Out">
+        <span class="material-symbols-outlined">logout</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <section class="panel-emo" id="staking-panel">
+        <h2><i class="fas fa-piggy-bank"></i> Stake Your EMX Tokens</h2>
+        <p>Lock your EMX Tokens to earn rewards and contribute to the ecosystem's stability. Choose a staking period that suits your strategy.</p>
+
+        <div class="mb-3">
+            <label for="stakeAmount" class="form-label-emo">Amount to Stake (EMX)</label>
+            <div class="input-group-emo">
+                <input type="number" class="form-control-emo" id="stakeAmount" placeholder="e.g., 1000" min="100">
+                <span class="input-group-text-emo">EMX</span>
+            </div>
+            <small class="form-text" style="color: var(--aiConnect-text-secondary); font-size: 0.8rem;">Minimum stake: 100 EMX. Your current EMX Balance: <span id="currentUserEmoBalance">Loading...</span></small>
+        </div>
+
+        <div class="staking-options mb-3">
+            <h4 style="font-family: var(--font-display); color: var(--aiConnect-text-secondary); font-size: 0.9rem; margin-bottom: 10px;">Select Lock Period:</h4>
+            <div class="option-card" data-period="7" data-apy="5.0">
+                <h4>7 Days</h4>
+                <p>Estimated APY: <span class="apy-boost">5.0%</span></p>
+            </div>
+            <div class="option-card selected" data-period="30" data-apy="12.5">
+                <h4>30 Days</h4>
+                <p>Estimated APY: <span class="apy-boost">12.5%</span></p>
+            </div>
+            <div class="option-card" data-period="90" data-apy="20.0">
+                <h4>90 Days</h4>
+                <p>Estimated APY: <span class="apy-boost">20.0%</span> (Best Value)</p>
+            </div>
+             <div class="option-card" data-period="180" data-apy="28.0">
+                <h4>180 Days</h4>
+                <p>Estimated APY: <span class="apy-boost">28.0%</span> (Long Term)</p>
+            </div>
+        </div>
+        
+        <button id="confirmStakeButton" class="btn-emo btn-primary-emo w-100 mt-2" style="width:100%;"><i class="fas fa-lock"></i> Confirm Stake</button>
+    </section>
+
+    <section class="panel-emo" id="current-stakes-panel">
+        <h2><i class="fas fa-history"></i> Your Active Stakes</h2>
+        <div id="activeStakesList">
+            <p style="text-align: center; color: var(--aiConnect-text-secondary);">Loading your stakes...</p>
+            
+        </div>
+    </section>
+
+     <section class="panel-emo" id="staking-stats-panel">
+        <h2><i class="fas fa-chart-bar"></i> Staking Statistics</h2>
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-value" id="totalStakedValue">-- EMX</span>
+                <span class="stat-label">Total EMX Staked</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="totalStakersValue">--</span>
+                <span class="stat-label">Total Stakers</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-value" id="averageApyValue">-- %</span>
+                <span class="stat-label">Average APY</span>
+            </div>
+        </div>
+    </section>
+  </main>
+
+  <div class="bottom-nav">
+    <div class="nav-item" data-target-url="aiconnect-content.html" title="Content"> <span class="material-symbols-outlined">edit_square</span> </div>
+    <div class="nav-item" data-target-url="aiconnect-tools.html" title="Tools"> <span class="material-symbols-outlined">build</span> </div>
+    <div class="center-button-nav" data-target-url="index.html" title="Home"> <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="Home"> </div>
+    <div class="nav-item" data-target-url="aiconnect-business.html" title="Business"> <span class="material-symbols-outlined">business_center</span> </div>
+    <div class="nav-item" data-target-url="aiconnect-userprofile.html" title="Profile"> <span class="material-symbols-outlined">account_circle</span> </div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const authInstance = firebase.auth();
+    const dbInstance = firebase.firestore(); 
+
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const signOutIcon = document.getElementById('signOutIcon');
+    const stakeAmountInput = document.getElementById('stakeAmount');
+    const currentUserEmoBalanceEl = document.getElementById('currentUserEmoBalance');
+    const stakingOptionsContainer = document.querySelector('.staking-options');
+    const confirmStakeButton = document.getElementById('confirmStakeButton');
+    const activeStakesListEl = document.getElementById('activeStakesList');
+    const totalStakedValueEl = document.getElementById('totalStakedValue');
+    const totalStakersValueEl = document.getElementById('totalStakersValue');
+    const averageApyValueEl = document.getElementById('averageApyValue');
+
+    let currentAuthUser = null;
+    let currentUserData = null;
+    let selectedStakingPeriod = 30; // Default to 30 days
+    let selectedStakingApy = 12.5;
+
+    function triggerHapticFeedback(type = 'selection') {
+        if (window.navigator.vibrate) {
+            let duration = 10; // Default for selection
+            if (type === 'light') duration = 20;
+            else if (type === 'medium') duration = 50;
+            else if (type === 'strong') duration = 100;
+            window.navigator.vibrate(duration);
+        }
+    }
+    
+    function formatTokenDisplay(amount, decimals = 2) {
+      const numericAmount = Number(amount) || 0;
+      return numericAmount.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+
+    async function fetchUserData(user) {
+        if (!user) return;
+        try {
+            const userDocRef = dbInstance.collection('users').doc(user.uid);
+            const userDoc = await userDocRef.get();
+            if (userDoc.exists) {
+                currentUserData = userDoc.data();
+                if (currentUserEmoBalanceEl) {
+                    currentUserEmoBalanceEl.textContent = `${formatTokenDisplay(currentUserData.emx_token_balance || 0)} EMX`;
+                }
+                loadUserStakes(user.uid);
+            } else {
+                if (currentUserEmoBalanceEl) currentUserEmoBalanceEl.textContent = '0.00 EMX';
+                activeStakesListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-text-secondary);">No user data found.</p>';
+            }
+        } catch (error) {
+            console.error("Error fetching user data for staking:", error);
+            if (currentUserEmoBalanceEl) currentUserEmoBalanceEl.textContent = 'Error';
+            activeStakesListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-error);">Error loading stakes.</p>';
+        }
+    }
+    
+    function selectStakingOption(selectedCard) {
+        document.querySelectorAll('.staking-options .option-card').forEach(card => card.classList.remove('selected'));
+        selectedCard.classList.add('selected');
+        selectedStakingPeriod = parseInt(selectedCard.dataset.period);
+        selectedStakingApy = parseFloat(selectedCard.dataset.apy);
+        triggerHapticFeedback();
+        console.log(`Selected period: ${selectedStakingPeriod} days, APY: ${selectedStakingApy}%`);
+    }
+
+    stakingOptionsContainer.addEventListener('click', (e) => {
+        const card = e.target.closest('.option-card');
+        if (card) {
+            selectStakingOption(card);
+        }
+    });
+
+    confirmStakeButton.addEventListener('click', async () => {
+        if (!currentAuthUser || !currentUserData) {
+            alert("Please log in to stake tokens."); return;
+        }
+        const amountToStake = parseFloat(stakeAmountInput.value);
+        if (isNaN(amountToStake) || amountToStake < 100) {
+            alert("Minimum stake amount is 100 EMX."); return;
+        }
+        if (amountToStake > (currentUserData.emx_token_balance || 0)) {
+            alert("Insufficient EMO balance to stake this amount."); return;
+        }
+
+        triggerHapticFeedback('medium');
+        confirmStakeButton.disabled = true;
+        confirmStakeButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Staking...';
+        pageLoadingElement.classList.remove('hidden');
+
+        try {
+            const stakeId = `stake_${Date.now()}`;
+            const stakeEndTime = new Date(Date.now() + selectedStakingPeriod * 24 * 60 * 60 * 1000).toISOString();
+            const newStake = {
+                amount: amountToStake,
+                periodDays: selectedStakingPeriod,
+                apyAtStake: selectedStakingApy,
+                startTime: new Date().toISOString(),
+                endTime: stakeEndTime,
+                claimed: false,
+                userId: currentAuthUser.uid
+            };
+
+            await dbInstance.collection('users').doc(currentAuthUser.uid).collection('stakes').doc(stakeId).set(newStake);
+            
+            // Deduct from user's main balance and update Firestore
+            const newBalance = (currentUserData.emx_token_balance || 0) - amountToStake;
+            await dbInstance.collection('users').doc(currentAuthUser.uid).update({
+                emx_token_balance: newBalance
+            });
+            
+            stakeAmountInput.value = '';
+            alert(`Successfully staked ${formatTokenDisplay(amountToStake)} EMX for ${selectedStakingPeriod} days!`);
+            fetchUserData(currentAuthUser); // Refresh user data and stakes
+            loadOverallStakingStats(); // Refresh overall stats
+        } catch (error) {
+            console.error("Error confirming stake:", error);
+            alert("Staking failed. Please try again. " + error.message);
+        } finally {
+            confirmStakeButton.disabled = false;
+            confirmStakeButton.innerHTML = '<i class="fas fa-lock"></i> Confirm Stake';
+            pageLoadingElement.classList.add('hidden');
+        }
+    });
+
+    async function loadUserStakes(userId) {
+        activeStakesListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-text-secondary);">Loading your active stakes...</p>';
+        try {
+            const stakesSnapshot = await dbInstance.collection('users').doc(userId).collection('stakes').orderBy('startTime', 'desc').get();
+            if (stakesSnapshot.empty) {
+                activeStakesListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-text-secondary);">You have no active stakes.</p>';
+                return;
+            }
+            let stakesHtml = '';
+            stakesSnapshot.forEach(doc => {
+                const stake = doc.data();
+                const endDate = new Date(stake.endTime);
+                const isClaimable = new Date() > endDate && !stake.claimed;
+                const timeRemaining = new Date() < endDate ? getTimeRemaining(endDate) : "Ended";
+                const potentialReward = (stake.amount * (stake.apyAtStake / 100) * (stake.periodDays / 365)).toFixed(2);
+
+                stakesHtml += `
+                    <div class="panel-emo" style="margin-bottom: 10px; background-color: rgba(13,13,26,0.7);">
+                        <h4 style="color:var(--aiConnect-cyan); font-size:0.9rem; margin-bottom:8px; border:none; padding:0;">Staked: ${formatTokenDisplay(stake.amount)} EMX</h4>
+                        <p style="font-size:0.8rem; margin-bottom:3px;">Period: ${stake.periodDays} Days (APY: ${stake.apyAtStake}%)</p>
+                        <p style="font-size:0.8rem; margin-bottom:3px;">Ends: ${endDate.toLocaleDateString()} (${timeRemaining})</p>
+                        <p style="font-size:0.8rem; margin-bottom:8px;">Est. Reward: ${potentialReward} EMX</p>
+                        ${isClaimable ? `<button class="btn-emo btn-primary-emo claim-reward-btn" data-stake-id="${doc.id}" data-reward="${potentialReward}" data-staked-amount="${stake.amount}" style="font-size:0.8rem; padding: 6px 10px;">Claim Reward & Unstake</button>` : ''}
+                        ${!isClaimable && new Date() > endDate && stake.claimed ? '<p style="color: var(--aiConnect-success); font-size:0.8rem;">Rewards Claimed & Unstaked</p>' : ''}
+                    </div>
+                `;
+            });
+            activeStakesListEl.innerHTML = stakesHtml;
+            
+            document.querySelectorAll('.claim-reward-btn').forEach(button => {
+                button.addEventListener('click', handleClaimReward);
+            });
+
+        } catch (error) {
+            console.error("Error loading user stakes:", error);
+            activeStakesListEl.innerHTML = '<p style="text-align:center; color: var(--aiConnect-error);">Could not load your stakes.</p>';
+        }
+    }
+
+    function getTimeRemaining(endtime) {
+        const total = Date.parse(endtime) - Date.parse(new Date());
+        if (total <= 0) return "Ended";
+        const seconds = Math.floor((total / 1000) % 60);
+        const minutes = Math.floor((total / 1000 / 60) % 60);
+        const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(total / (1000 * 60 * 60 * 24));
+        return `${days}d ${hours}h ${minutes}m`;
+    }
+
+    async function handleClaimReward(event) {
+        const stakeId = event.target.dataset.stakeId;
+        const rewardAmount = parseFloat(event.target.dataset.reward);
+        const stakedAmount = parseFloat(event.target.dataset.stakedAmount);
+
+        if (!currentAuthUser || !currentUserData || isNaN(rewardAmount) || isNaN(stakedAmount)) {
+            alert("Error processing claim. User data missing or invalid amounts.");
+            return;
+        }
+        
+        triggerHapticFeedback('strong');
+        event.target.disabled = true;
+        event.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Claiming...';
+        pageLoadingElement.classList.remove('hidden');
+
+        try {
+            const userRef = dbInstance.collection('users').doc(currentAuthUser.uid);
+            const stakeRef = userRef.collection('stakes').doc(stakeId);
+
+            await dbInstance.runTransaction(async (transaction) => {
+                const userDoc = await transaction.get(userRef);
+                const stakeDoc = await transaction.get(stakeRef);
+
+                if (!userDoc.exists || !stakeDoc.exists) {
+                    throw new Error("User or stake data not found.");
+                }
+                if (stakeDoc.data().claimed) {
+                     throw new Error("Rewards already claimed for this stake.");
+                }
+
+                const currentBalance = userDoc.data().emx_token_balance || 0;
+                const newBalance = currentBalance + stakedAmount + rewardAmount;
+
+                transaction.update(userRef, { emx_token_balance: newBalance });
+                transaction.update(stakeRef, { claimed: true, claimedAt: new Date().toISOString() });
+            });
+            
+            alert(`Successfully claimed ${formatTokenDisplay(rewardAmount)} EMX reward and unstaked ${formatTokenDisplay(stakedAmount)} EMX!`);
+            fetchUserData(currentAuthUser); // Refresh UI
+            loadOverallStakingStats(); // Refresh overall stats
+        } catch (error) {
+            console.error("Error claiming reward:", error);
+            alert("Failed to claim reward: " + error.message);
+            event.target.disabled = false; // Re-enable button on error
+            event.target.textContent = 'Claim Reward & Unstake';
+        } finally {
+            pageLoadingElement.classList.add('hidden');
+        }
+    }
+
+
+    async function loadOverallStakingStats() {
+        try {
+            const stakesSnapshot = await dbInstance.collectionGroup('stakes').get(); // Firestore collectionGroup query
+            let totalStaked = 0;
+            const stakerIds = new Set();
+            let totalApySum = 0;
+            let activeStakeCount = 0;
+
+            stakesSnapshot.forEach(doc => {
+                const stake = doc.data();
+                totalStaked += stake.amount;
+                stakerIds.add(stake.userId);
+                if (!stake.claimed && new Date(stake.endTime) > new Date()) { // Consider only active, unclaimed stakes for APY average
+                    totalApySum += stake.apyAtStake;
+                    activeStakeCount++;
+                }
+            });
+            
+            if(totalStakedValueEl) totalStakedValueEl.textContent = `${formatTokenDisplay(totalStaked)} EMX`;
+            if(totalStakersValueEl) totalStakersValueEl.textContent = stakerIds.size;
+            if(averageApyValueEl) averageApyValueEl.textContent = activeStakeCount > 0 ? `${(totalApySum / activeStakeCount).toFixed(2)} %` : '-- %';
+
+        } catch (error) {
+            console.error("Error loading overall staking stats:", error);
+            if(totalStakedValueEl) totalStakedValueEl.textContent = 'Error';
+            if(totalStakersValueEl) totalStakersValueEl.textContent = 'Error';
+            if(averageApyValueEl) averageApyValueEl.textContent = 'Error';
+        }
+    }
+
+
+    authInstance.onAuthStateChanged((user) => {
+        pageLoadingElement.classList.remove('hidden');
+        if (user) {
+            currentAuthUser = user;
+            fetchUserData(user);
+            loadOverallStakingStats();
+        } else {
+            currentAuthUser = null;
+            currentUserData = null;
+            window.location.href = 'aiconnect-signin.html'; // Redirect to ai-Connect sign-in
+        }
+        setTimeout(() => pageLoadingElement.classList.add('hidden'), 500); // Hide loader after a bit
+    });
+
+    if(signOutIcon) {
+        signOutIcon.addEventListener('click', async () => {
+            triggerHapticFeedback('medium');
+            if (confirm("Sign out from ai-Connect?")) {
+                try {
+                    pageLoadingElement.classList.remove('hidden');
+                    await authInstance.signOut();
+                } catch (error) {
+                    console.error("Error signing out:", error); alert("Failed to sign out.");
+                    pageLoadingElement.classList.add('hidden');
+                }
+            }
+        });
+    }
+
+    document.querySelectorAll('.bottom-nav .nav-item, .bottom-nav .center-button-nav').forEach(item => {
+        item.addEventListener('click', () => {
+            triggerHapticFeedback();
+            const targetUrl = item.dataset.targetUrl;
+            if (targetUrl && !item.classList.contains('active')) { window.location.href = targetUrl; }
+            else if (item.classList.contains('active')) { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        if (pageLoadingElement.classList.contains('hidden') && !authInstance.currentUser) {
+           pageLoadingElement.classList.remove('hidden'); // Show if hidden but no user (auth is pending)
+        }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>aiConnect Audio Plus</title>
+    <style>
+        /* Basic Reset & Font */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #0A1427; /* Deep Dark Blue from image */
+            color: #D4D4D8; /* Light Grey/Off-white Text */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-top: 70px; /* Space for sticky header */
+        }
+
+        .sticky-header {
+            position: fixed; /* Changed to fixed for better cross-browser sticky */
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #0A1427; /* Match body or slightly darker */
+            color: #33FFFF; /* Cyan Text */
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(51, 255, 255, 0.2); /* Cyan glow */
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #14233F; /* Subtle separator */
+        }
+
+        .sticky-header .back-icon {
+            font-size: 1.8em;
+            margin-right: 15px;
+            cursor: pointer;
+            color: #33FFFF;
+        }
+
+        .sticky-header .title {
+            font-size: 1.4em;
+            font-weight: 500;
+        }
+
+        .container {
+            background-color: #14233F; /* Lighter Dark Blue */
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(51, 255, 255, 0.1); /* Subtle cyan glow */
+            width: 100%;
+            max-width: 700px; /* Max width for app-like feel */
+            margin: 20px; /* Replaces margin-top */
+        }
+
+        h1, h2 {
+            color: #33FFFF; /* Cyan Titles */
+            margin-bottom: 15px;
+            border-bottom: 1px solid #2A7A7A; /* Muted Cyan Separator */
+            padding-bottom: 10px;
+        }
+        h1 { font-size: 1.8em; text-align: center; }
+        h2 { font-size: 1.3em; margin-top: 25px; }
+
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #A0A0A0; /* Slightly muted label text */
+        }
+
+        input[type="file"],
+        input[type="range"],
+        input[type="number"],
+        select,
+        button {
+            margin-bottom: 20px;
+            border-radius: 6px;
+            border: 1px solid #2A7A7A; /* Muted Cyan Border */
+            background-color: #0A1427; /* Dark background for inputs */
+            color: #D4D4D8;
+            padding: 10px;
+            font-size: 1em;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        input[type="file"] {
+            padding: 5px; /* Adjust padding for file input */
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #33FFFF;
+            box-shadow: 0 0 8px rgba(51, 255, 255, 0.5);
+        }
+
+        /* Custom File Input Button Style */
+        input[type="file"]::file-selector-button {
+            background-color: #2A7A7A;
+            color: #33FFFF;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: background-color 0.3s ease;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background-color: #33FFFF;
+            color: #0A1427;
+        }
+
+
+        button, .download-link-styled { /* Style download link like a button */
+            padding: 10px 18px;
+            background-color: transparent; /* Transparent background */
+            color: #33FFFF; /* Cyan text */
+            border: 2px solid #33FFFF; /* Cyan border */
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 8px;
+            font-weight: 500;
+            text-decoration: none; /* For download link */
+            display: inline-block; /* For download link */
+        }
+
+        button:hover, .download-link-styled:hover {
+            background-color: rgba(51, 255, 255, 0.1); /* Subtle cyan fill on hover */
+            box-shadow: 0 0 12px rgba(51, 255, 255, 0.7);
+        }
+
+        button:disabled {
+            background-color: #14233F;
+            border-color: #2A7A7A;
+            color: #556677;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .audio-track-card {
+            background-color: #0A1427; /* Darker than container for contrast */
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #2A7A7A;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .audio-track-card:hover {
+            border-color: #33FFFF;
+            box-shadow: 0 0 10px rgba(51, 255, 255, 0.3);
+        }
+
+        .track-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .track-header span {
+            font-weight: 500;
+            color: #D4D4D8;
+            word-break: break-all; /* Prevent long names from breaking layout */
+            padding-right:10px;
+        }
+        .track-header .remove-track-btn {
+            background-color: #B32D2D; /* Reddish for remove */
+            border-color: #B32D2D;
+            color: white;
+            padding: 6px 10px;
+            font-size: 0.9em;
+        }
+        .track-header .remove-track-btn:hover {
+            background-color: #CC0000;
+            box-shadow: 0 0 8px rgba(204,0,0, 0.7);
+        }
+
+
+        .track-controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column; /* Stack label on top of input */
+            align-items: flex-start; /* Align label to the start */
+        }
+        .control-group label {
+            margin-right: 0;
+            margin-bottom: 5px; /* Space between label and input */
+            white-space: nowrap;
+        }
+
+        .control-group input[type="range"],
+        .control-group input[type="number"] {
+            flex-grow: 1;
+            min-width: 60px;
+            margin-bottom: 0;
+            width: 100%; /* Make inputs take full width of their grid cell */
+        }
+
+        /* Range Input Styling */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #2A7A7A; /* Muted cyan track */
+            border-radius: 5px;
+            outline: none;
+            padding:0; /* Override general input padding */
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #33FFFF; /* Cyan thumb */
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #0A1427; /* Dark border for thumb */
+            box-shadow: 0 0 5px rgba(51, 255, 255, 0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: #33FFFF;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #0A1427;
+            box-shadow: 0 0 5px rgba(51, 255, 255, 0.5);
+        }
+
+
+        #status {
+            margin-top: 20px;
+            font-style: italic;
+            color: #A0A0A0; /* Muted status text */
+            text-align: center;
+            min-height: 1.5em; /* Prevent layout shift */
+        }
+
+        .hidden {
+            display: none !important; /* Ensure hidden class works */
+        }
+
+        audio { /* HTML5 Player */
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 6px;
+            /* Basic dark theme attempt for default controls - results vary by browser */
+            filter: invert(1) hue-rotate(180deg) contrast(0.9) brightness(1.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+            justify-content: center; /* Center buttons */
+            align-items: center;
+            gap: 10px; /* Space between buttons */
+            margin-top: 20px;
+            padding-bottom: 10px;
+        }
+         .action-buttons label { margin-bottom: 0; } /* Align select label */
+
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+                margin-top: 70px; /* ensure space for header after fixed position applied*/
+            }
+            h1 { font-size: 1.6em; }
+            h2 { font-size: 1.2em; }
+            button, .download-link-styled { padding: 8px 12px; font-size: 0.9em; }
+            .track-controls-grid {
+                 grid-template-columns: 1fr; /* Stack controls vertically on very small screens */
+            }
+            .sticky-header .title { font-size: 1.2em;}
+            .sticky-header .back-icon { font-size: 1.6em;}
+
+        }
+
+    </style>
+</head>
+<body>
+    <div class="sticky-header">
+        <span class="back-icon" title="Back">←</span>
+        <span class="title">aiConnect Audio Plus</span>
+    </div>
+
+    <div class="container">
+        <h1>Audio Tool Suite</h1> <!-- Changed from "Advanced Audio Tool App" -->
+
+        <h2>1. Add Main Audio Tracks (Max 100)</h2>
+        <input type="file" id="hiddenAudioFilesInput" multiple accept="audio/*" class="hidden">
+        <button id="addNewAudioButton">Add New Audio File(s)</button>
+        <div id="audioTracksListContainer">
+            <!-- Audio track cards will be appended here -->
+        </div>
+        <p style="text-align: right; margin-top: 10px; color: #A0A0A0;">Total Tracks: <span id="totalTracksCount">0</span>/100</p>
+
+
+        <h2>2. Upload Background Audio (Optional)</h2>
+        <label for="backgroundAudioInput">Select a looping background audio file:</label>
+        <input type="file" id="backgroundAudioInput" accept="audio/*">
+        <div id="backgroundAudioInfo" class="hidden audio-track-card" style="padding:15px; margin-top:10px;"> <!-- Re-styled for consistency -->
+            <span style="display:block; margin-bottom:10px;">Background: <span id="backgroundFileName"></span></span>
+            <div class="control-group">
+                <label for="backgroundVolume">Volume:</label>
+                <input type="range" id="backgroundVolume" min="0" max="1" step="0.01" value="0.5">
+            </div>
+        </div>
+
+        <h2>3. Playback & Mixdown Controls</h2>
+        <audio id="player" controls></audio>
+        <div class="action-buttons">
+            <button id="playAllButton" disabled>Play All Sequentially</button>
+            <button id="stopAllButton" disabled>Stop All Playback</button>
+            <button id="mixdownButton" disabled>Mix Down Audio</button>
+            <label for="exportFormat">Format:</label>
+            <select id="exportFormat">
+                <option value="wav">WAV</option>
+                <option value="mp3">MP3</option>
+            </select>
+        </div>
+        <a id="downloadLink" class="hidden download-link-styled" style="margin-top:15px; text-align:center;">Download Mixed Audio</a>
+        <div id="status">Ready. Add audio files to begin.</div>
+    </div>
+
+    <script>
+        // JavaScript remains the same as your previous version
+        // ... (paste the full JavaScript code from your previous correct version here) ...
+        const hiddenAudioFilesInput = document.getElementById('hiddenAudioFilesInput');
+        const addNewAudioButton = document.getElementById('addNewAudioButton');
+        const audioTracksListContainer = document.getElementById('audioTracksListContainer');
+        const totalTracksCountSpan = document.getElementById('totalTracksCount');
+
+        const backgroundAudioInput = document.getElementById('backgroundAudioInput');
+        const backgroundAudioInfo = document.getElementById('backgroundAudioInfo');
+        const backgroundFileName = document.getElementById('backgroundFileName');
+        const backgroundVolumeControl = document.getElementById('backgroundVolume');
+        
+        const player = document.getElementById('player');
+        const playAllButton = document.getElementById('playAllButton');
+        const stopAllButton = document.getElementById('stopAllButton');
+        const mixdownButton = document.getElementById('mixdownButton');
+        const exportFormatSelect = document.getElementById('exportFormat');
+        const downloadLink = document.getElementById('downloadLink');
+        const statusDiv = document.getElementById('status');
+
+        let mainAudioTracks = []; // Array of track objects
+        let backgroundAudioFile = null;
+        let backgroundAudioBuffer = null; // For mixdown and BGM playback
+
+        let currentSequentialTrackIndex = 0;
+        let audioContext;
+        const GAP_SECONDS = 1.5;
+        const MAX_TRACKS = 100;
+
+        let playerMode = 'none'; // 'none', 'sequential', 'individual'
+        let sequentialPlayTimeoutId = null; 
+        let individualPlayTrackId = null; 
+
+        let bgmPlaybackSourceNode = null; // For BGM during sequential play
+        let bgmPlaybackGainNode = null;   // For BGM volume during sequential play
+
+
+        // Initialize AudioContext
+        try {
+            window.AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioContext = new AudioContext();
+        } catch (e) {
+            alert('Web Audio API is not supported in this browser');
+            statusDiv.textContent = 'Error: Web Audio API not supported.';
+            [addNewAudioButton, playAllButton, mixdownButton].forEach(btn => btn.disabled = true);
+        }
+
+        addNewAudioButton.addEventListener('click', () => {
+            hiddenAudioFilesInput.click(); 
+        });
+
+        hiddenAudioFilesInput.addEventListener('change', async (event) => {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
+
+            addNewAudioButton.disabled = true; 
+            statusDiv.textContent = "Processing new files...";
+
+            let addedCount = 0;
+            for (const file of files) {
+                if (mainAudioTracks.length >= MAX_TRACKS) {
+                    alert(`Maximum of ${MAX_TRACKS} tracks reached. Some files were not added.`);
+                    break;
+                }
+                try {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0)); 
+
+                    const trackId = `track-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+                    mainAudioTracks.push({
+                        id: trackId,
+                        file: file,
+                        name: file.name,
+                        volume: 1.0,
+                        trimStart: 0,
+                        trimEnd: parseFloat(audioBuffer.duration.toFixed(2)),
+                        originalDuration: parseFloat(audioBuffer.duration.toFixed(2)),
+                        audioBuffer: audioBuffer, 
+                        isPlayingPreview: false
+                    });
+                    addedCount++;
+                } catch (err) {
+                    console.error(`Error processing file ${file.name}:`, err);
+                    statusDiv.textContent = `Error processing ${file.name}. It might be corrupted or not a supported audio format.`;
+                }
+            }
+            renderTrackList();
+            updateButtonStates();
+            updateTotalTracksCount();
+            addNewAudioButton.disabled = false;
+            statusDiv.textContent = addedCount > 0 ? `${addedCount} track(s) added.` : "No new tracks added (limit reached or error).";
+            hiddenAudioFilesInput.value = ''; 
+        });
+
+        backgroundAudioInput.addEventListener('change', async (event) => {
+            if (event.target.files.length > 0) {
+                backgroundAudioFile = event.target.files[0];
+                backgroundFileName.textContent = backgroundAudioFile.name;
+                backgroundAudioInfo.classList.remove('hidden');
+                try {
+                    const arrayBuffer = await backgroundAudioFile.arrayBuffer();
+                    backgroundAudioBuffer = await audioContext.decodeAudioData(arrayBuffer); // Store for mixdown AND playback
+                } catch (err) {
+                    console.error("Error decoding background audio:", err);
+                    statusDiv.textContent = "Error decoding background audio.";
+                    backgroundAudioFile = null;
+                    backgroundAudioBuffer = null;
+                    backgroundAudioInfo.classList.add('hidden');
+                }
+            } else {
+                backgroundAudioFile = null;
+                backgroundAudioBuffer = null;
+                backgroundAudioInfo.classList.add('hidden');
+            }
+            updateButtonStates();
+        });
+        
+        function updateTotalTracksCount() {
+            totalTracksCountSpan.textContent = mainAudioTracks.length;
+        }
+
+        function renderTrackList() {
+            audioTracksListContainer.innerHTML = ''; 
+            mainAudioTracks.forEach((track, index) => {
+                const card = document.createElement('div');
+                card.className = 'audio-track-card';
+                card.dataset.trackId = track.id;
+
+                card.innerHTML = `
+                    <div class="track-header">
+                        <span>${index + 1}. ${track.name} (Duration: ${track.originalDuration}s)</span>
+                        <button class="remove-track-btn" data-track-id="${track.id}">Remove</button>
+                    </div>
+                    <div class="track-controls-grid">
+                        <div class="control-group">
+                            <label for="volume-${track.id}">Volume:</label>
+                            <input type="range" id="volume-${track.id}" min="0" max="1" step="0.01" value="${track.volume}" data-property="volume">
+                        </div>
+                        <div class="control-group">
+                            <label for="trimStart-${track.id}">Trim Start (s):</label>
+                            <input type="number" id="trimStart-${track.id}" min="0" max="${track.originalDuration}" step="0.01" value="${track.trimStart}" data-property="trimStart">
+                        </div>
+                        <div class="control-group">
+                            <label for="trimEnd-${track.id}">Trim End (s):</label>
+                            <input type="number" id="trimEnd-${track.id}" min="0" max="${track.originalDuration}" step="0.01" value="${track.trimEnd}" data-property="trimEnd">
+                        </div>
+                        <div class="control-group" style="justify-content: center;"> <!-- Center play button in its group -->
+                            <button class="play-pause-track-btn" data-track-id="${track.id}" style="min-width: 120px;">${track.isPlayingPreview ? "Pause" : "Play Trimmed"}</button>
+                        </div>
+                    </div>
+                `;
+                audioTracksListContainer.appendChild(card);
+            });
+
+            document.querySelectorAll('.audio-track-card input').forEach(input => {
+                input.addEventListener('input', handleTrackInputChange);
+            });
+            document.querySelectorAll('.play-pause-track-btn').forEach(button => {
+                button.addEventListener('click', handleIndividualPlayPause);
+            });
+            document.querySelectorAll('.remove-track-btn').forEach(button => {
+                button.addEventListener('click', handleRemoveTrack);
+            });
+        }
+
+        function handleRemoveTrack(event) {
+            const trackIdToRemove = event.target.dataset.trackId;
+            mainAudioTracks = mainAudioTracks.filter(t => t.id !== trackIdToRemove);
+            if (playerMode === 'individual' && individualPlayTrackId === trackIdToRemove) {
+                stopAllPlayback(); 
+            }
+            renderTrackList();
+            updateButtonStates();
+            updateTotalTracksCount();
+        }
+
+
+        function handleTrackInputChange(event) {
+            const trackId = event.target.closest('.audio-track-card').dataset.trackId;
+            const track = mainAudioTracks.find(t => t.id === trackId);
+            if (!track) return;
+
+            const property = event.target.dataset.property;
+            let value = event.target.type === 'range' ? parseFloat(event.target.value) : parseFloat(event.target.value);
+
+            if (property === 'trimStart') {
+                value = Math.max(0, Math.min(value, track.trimEnd - 0.01)); 
+                track.trimStart = parseFloat(value.toFixed(2));
+                event.target.value = track.trimStart; 
+                // Update related trimEnd input's min value
+                const trimEndInput = document.getElementById(`trimEnd-${track.id}`);
+                if(trimEndInput) trimEndInput.min = track.trimStart + 0.01;
+
+            } else if (property === 'trimEnd') {
+                value = Math.max(track.trimStart + 0.01, Math.min(value, track.originalDuration)); 
+                track.trimEnd = parseFloat(value.toFixed(2));
+                event.target.value = track.trimEnd; 
+                 // Update related trimStart input's max value
+                const trimStartInput = document.getElementById(`trimStart-${track.id}`);
+                if(trimStartInput) trimStartInput.max = track.trimEnd - 0.01;
+
+            } else if (property === 'volume') {
+                track.volume = value;
+            }
+        }
+
+        function handleIndividualPlayPause(event) {
+            const trackId = event.target.dataset.trackId;
+            const track = mainAudioTracks.find(t => t.id === trackId);
+            if (!track) return;
+
+            if (playerMode === 'sequential') {
+                stopAllPlayback(); 
+            }
+
+            if (track.isPlayingPreview) { 
+                player.pause();
+                track.isPlayingPreview = false;
+                event.target.textContent = "Play Trimmed";
+                playerMode = 'none';
+                individualPlayTrackId = null;
+                statusDiv.textContent = `Paused: ${track.name}`;
+            } else { 
+                mainAudioTracks.forEach(t => {
+                    if (t.isPlayingPreview && t.id !== trackId) { // Ensure only other tracks are paused
+                        t.isPlayingPreview = false;
+                        const btn = audioTracksListContainer.querySelector(`.play-pause-track-btn[data-track-id="${t.id}"]`);
+                        if(btn) btn.textContent = "Play Trimmed";
+                    }
+                });
+                 if(playerMode === 'individual' && individualPlayTrackId && individualPlayTrackId !== trackId) {
+                    player.pause(); // Pause the currently playing individual track if different
+                }
+
+
+                player.src = URL.createObjectURL(track.file);
+                player.currentTime = track.trimStart;
+                player.volume = track.volume;
+                player.play()
+                    .then(() => {
+                        track.isPlayingPreview = true;
+                        event.target.textContent = "Pause";
+                        playerMode = 'individual';
+                        individualPlayTrackId = track.id;
+                        statusDiv.textContent = `Playing preview: ${track.name}`;
+                    })
+                    .catch(e => {
+                        statusDiv.textContent = `Error playing ${track.name}: ${e.message}`;
+                        console.error("Individual play error:", e);
+                        track.isPlayingPreview = false; 
+                        event.target.textContent = "Play Trimmed";
+                        playerMode = 'none';
+                        individualPlayTrackId = null; // Reset if error
+                    });
+            }
+            updateButtonStates();
+        }
+        
+        player.onended = () => {
+            if (playerMode === 'individual' && individualPlayTrackId) {
+                const track = mainAudioTracks.find(t => t.id === individualPlayTrackId);
+                if (track) {
+                    track.isPlayingPreview = false;
+                    const btn = audioTracksListContainer.querySelector(`.play-pause-track-btn[data-track-id="${track.id}"]`);
+                    if(btn) btn.textContent = "Play Trimmed";
+                }
+                playerMode = 'none';
+                individualPlayTrackId = null;
+                statusDiv.textContent = "Preview finished.";
+            }
+            updateButtonStates();
+        };
+
+        player.ontimeupdate = () => {
+            if (playerMode === 'individual' && individualPlayTrackId) {
+                const track = mainAudioTracks.find(t => t.id === individualPlayTrackId);
+                if (track && player.currentTime >= track.trimEnd) {
+                    player.pause(); 
+                    player.dispatchEvent(new Event('ended')); 
+                }
+            }
+        };
+        
+        player.onerror = (e) => {
+            statusDiv.textContent = `Player Error: ${player.error ? player.error.message : 'Unknown error'}.`;
+            console.error("Player error object:", player.error, e);
+            stopAllPlayback(); 
+        };
+
+
+        function updateButtonStates() {
+            const hasMainTracks = mainAudioTracks.length > 0;
+            const isPlayingSomething = playerMode !== 'none';
+
+            playAllButton.disabled = !hasMainTracks || isPlayingSomething;
+            stopAllButton.disabled = !isPlayingSomething;
+            mixdownButton.disabled = !hasMainTracks || !audioContext || isPlayingSomething;
+            addNewAudioButton.disabled = isPlayingSomething; 
+
+            mainAudioTracks.forEach(track => {
+                const btn = audioTracksListContainer.querySelector(`.play-pause-track-btn[data-track-id="${track.id}"]`);
+                if (btn) {
+                    btn.textContent = track.isPlayingPreview ? "Pause" : "Play Trimmed";
+                    btn.disabled = isPlayingSomething && playerMode === 'sequential'; // Disable individual play during sequential
+                }
+            });
+        }
+
+        playAllButton.addEventListener('click', () => {
+            if (mainAudioTracks.length === 0) return;
+            stopAllPlayback(); 
+
+            playerMode = 'sequential';
+            currentSequentialTrackIndex = 0;
+
+            if (backgroundAudioBuffer && audioContext) {
+                // Ensure any existing BGM is stopped before starting new
+                if (bgmPlaybackSourceNode) {
+                    try { bgmPlaybackSourceNode.stop(); } catch (e) {}
+                    bgmPlaybackSourceNode.disconnect();
+                    bgmPlaybackSourceNode = null;
+                }
+                if (bgmPlaybackGainNode) {
+                    bgmPlaybackGainNode.disconnect();
+                    bgmPlaybackGainNode = null;
+                }
+
+                bgmPlaybackSourceNode = audioContext.createBufferSource();
+                bgmPlaybackSourceNode.buffer = backgroundAudioBuffer;
+                bgmPlaybackSourceNode.loop = true;
+
+                bgmPlaybackGainNode = audioContext.createGain();
+                bgmPlaybackGainNode.gain.value = parseFloat(backgroundVolumeControl.value);
+                
+                bgmPlaybackSourceNode.connect(bgmPlaybackGainNode).connect(audioContext.destination);
+                bgmPlaybackSourceNode.start(0);
+            }
+            
+            playNextTrackInSequence();
+            updateButtonStates();
+        });
+
+        stopAllButton.addEventListener('click', stopAllPlayback);
+
+        function stopBGMPlayback() {
+            if (bgmPlaybackSourceNode) {
+                try { bgmPlaybackSourceNode.stop(); } catch (e) { /* already stopped */ }
+                bgmPlaybackSourceNode.disconnect();
+                bgmPlaybackSourceNode = null;
+            }
+            if (bgmPlaybackGainNode) {
+                bgmPlaybackGainNode.disconnect();
+                bgmPlaybackGainNode = null;
+            }
+        }
+
+        function stopAllPlayback() {
+            player.pause();
+            player.currentTime = 0; 
+            if (sequentialPlayTimeoutId) {
+                clearTimeout(sequentialPlayTimeoutId);
+                sequentialPlayTimeoutId = null;
+            }
+            
+            if (playerMode === 'individual' && individualPlayTrackId) {
+                 const track = mainAudioTracks.find(t => t.id === individualPlayTrackId);
+                 if (track) track.isPlayingPreview = false; // This will be updated by renderTrackList or updateButtonStates
+            }
+            
+            stopBGMPlayback(); 
+
+            playerMode = 'none';
+            individualPlayTrackId = null; // Reset this crucial state
+            statusDiv.textContent = "Playback stopped.";
+            updateButtonStates(); // This will re-enable buttons and update preview buttons
+        }
+
+
+        function playNextTrackInSequence() {
+            if (playerMode !== 'sequential' || currentSequentialTrackIndex >= mainAudioTracks.length) {
+                if (playerMode === 'sequential') { 
+                    statusDiv.textContent = "Finished playing all tracks.";
+                    stopBGMPlayback(); 
+                    playerMode = 'none'; // Reset mode AFTER stopping BGM and other cleanup
+                }
+                updateButtonStates();
+                return;
+            }
+
+            const track = mainAudioTracks[currentSequentialTrackIndex];
+            const effectiveDuration = track.trimEnd - track.trimStart;
+
+            if (effectiveDuration <= 0) { 
+                currentSequentialTrackIndex++;
+                playNextTrackInSequence(); // Skip and play next
+                return;
+            }
+            
+            // Revoke old object URL if player.src was set by createObjectURL
+            if (player.src && player.src.startsWith('blob:')) {
+                URL.revokeObjectURL(player.src);
+            }
+            player.src = URL.createObjectURL(track.file);
+            player.volume = track.volume;
+            player.currentTime = track.trimStart;
+            
+            player.play()
+                .then(() => {
+                    statusDiv.textContent = `Playing: ${track.name} (Track ${currentSequentialTrackIndex + 1}/${mainAudioTracks.length})`;
+                    if (bgmPlaybackGainNode) { 
+                        bgmPlaybackGainNode.gain.setTargetAtTime(parseFloat(backgroundVolumeControl.value), audioContext.currentTime, 0.01);
+                    }
+                    sequentialPlayTimeoutId = setTimeout(() => {
+                        player.pause(); 
+                        currentSequentialTrackIndex++;
+                        if (currentSequentialTrackIndex < mainAudioTracks.length) {
+                            statusDiv.textContent = `Waiting ${GAP_SECONDS}s for next track...`;
+                            sequentialPlayTimeoutId = setTimeout(playNextTrackInSequence, GAP_SECONDS * 1000);
+                        } else {
+                            statusDiv.textContent = "Finished playing all tracks.";
+                            stopBGMPlayback(); 
+                            playerMode = 'none';
+                            updateButtonStates();
+                        }
+                    }, effectiveDuration * 1000);
+                })
+                .catch(e => {
+                    statusDiv.textContent = `Error playing ${track.name}: ${e.message}. Skipping.`;
+                    console.error("Sequential play error:", e);
+                    if (sequentialPlayTimeoutId) clearTimeout(sequentialPlayTimeoutId);
+                    
+                    currentSequentialTrackIndex++; // Try to advance past the problematic track
+                    if (currentSequentialTrackIndex >= mainAudioTracks.length) { // If that was the last one or error on last
+                        stopBGMPlayback();
+                        playerMode = 'none';
+                        updateButtonStates();
+                    } else {
+                         sequentialPlayTimeoutId = setTimeout(playNextTrackInSequence, 100); // Small delay before next attempt
+                    }
+                });
+            updateButtonStates(); // Reflect that sequential play is active
+        }
+
+
+        mixdownButton.addEventListener('click', async () => {
+            if (mainAudioTracks.length === 0 || !audioContext) return;
+            if (playerMode !== 'none') {
+                alert("Please stop current playback before starting mixdown.");
+                return;
+            }
+
+            statusDiv.textContent = "Starting mixdown... please wait.";
+            [mixdownButton, playAllButton, addNewAudioButton].forEach(btn => btn.disabled = true);
+            downloadLink.classList.add('hidden');
+
+            try {
+                let totalOfflineDuration = 0;
+                const validTracksForMixdown = [];
+
+                mainAudioTracks.forEach(track => {
+                    const effectiveDuration = track.trimEnd - track.trimStart;
+                    if (track.audioBuffer && effectiveDuration > 0) {
+                        validTracksForMixdown.push({ ...track, effectiveDuration });
+                        totalOfflineDuration += effectiveDuration;
+                    }
+                });
+                if (validTracksForMixdown.length > 0) {
+                    totalOfflineDuration += (validTracksForMixdown.length - 1) * GAP_SECONDS;
+                }
+                
+                if (backgroundAudioBuffer) { // Consider BGM length for total duration if it's longer
+                    totalOfflineDuration = Math.max(totalOfflineDuration, backgroundAudioBuffer.duration);
+                }
+
+                if (totalOfflineDuration <=0 && !backgroundAudioBuffer) { // If no main tracks and no BGM
+                    statusDiv.textContent = "No valid audio data to mix. Check trim settings or add BGM.";
+                    updateButtonStates();
+                    return;
+                }
+                if (totalOfflineDuration <=0 && backgroundAudioBuffer) { // only BGM
+                     totalOfflineDuration = backgroundAudioBuffer.duration; // Mix only BGM
+                }
+
+
+                statusDiv.textContent = `Preparing ${validTracksForMixdown.length} tracks for mix...`;
+                const offlineContext = new OfflineAudioContext(
+                    audioContext.destination.channelCount, 
+                    Math.ceil(totalOfflineDuration * audioContext.sampleRate),
+                    audioContext.sampleRate
+                );
+
+                let currentTimeInMix = 0;
+
+                for (let i = 0; i < validTracksForMixdown.length; i++) {
+                    const track = validTracksForMixdown[i];
+                    const source = offlineContext.createBufferSource();
+                    source.buffer = track.audioBuffer;
+
+                    const gainNode = offlineContext.createGain();
+                    gainNode.gain.setValueAtTime(track.volume, currentTimeInMix);
+                    
+                    source.connect(gainNode);
+                    gainNode.connect(offlineContext.destination);
+                    
+                    source.start(currentTimeInMix, track.trimStart, track.effectiveDuration);
+                    currentTimeInMix += track.effectiveDuration;
+                    if (i < validTracksForMixdown.length - 1) {
+                        currentTimeInMix += GAP_SECONDS;
+                    }
+                }
+
+                if (backgroundAudioBuffer) {
+                    const bgSource = offlineContext.createBufferSource();
+                    bgSource.buffer = backgroundAudioBuffer;
+                    bgSource.loop = true; // Loop for the entire duration of the mix
+
+                    const bgGainNode = offlineContext.createGain();
+                    bgGainNode.gain.setValueAtTime(parseFloat(backgroundVolumeControl.value), 0); // BGM starts at time 0
+
+                    bgSource.connect(bgGainNode);
+                    bgGainNode.connect(offlineContext.destination);
+                    bgSource.start(0); 
+                    // If BGM is the only thing, or defines the length, ensure it can stop.
+                    // If main tracks define length, it will stop with them.
+                    // The offline context will render up to totalOfflineDuration anyway.
+                    if (totalOfflineDuration > 0) {
+                        bgSource.stop(totalOfflineDuration); // Explicitly stop BGM at the calculated end
+                    }
+                }
+                
+                statusDiv.textContent = "Rendering mix... this may take some time.";
+                const renderedBuffer = await offlineContext.startRendering();
+                
+                statusDiv.textContent = "Mixdown complete. Preparing download.";
+
+                const selectedFormat = exportFormatSelect.value;
+                let downloadBlob;
+                let fileName;
+
+                if (selectedFormat === 'wav') {
+                    downloadBlob = bufferToWave(renderedBuffer, renderedBuffer.length);
+                    fileName = 'mixed_audio.wav';
+                    statusDiv.textContent = "Mixdown successful! Click the link to download WAV.";
+                } else if (selectedFormat === 'mp3') {
+                    console.warn("MP3 export selected, but no MP3 encoder is integrated. Serving WAV data with .mp3 extension as a placeholder.");
+                    downloadBlob = bufferToWave(renderedBuffer, renderedBuffer.length); 
+                    fileName = 'mixed_audio.mp3';
+                    statusDiv.textContent = "Mixdown successful! Click link to download (MP3 format needs library; currently WAV data).";
+                }
+
+                // Revoke old object URL if downloadLink.href was set by createObjectURL
+                if (downloadLink.href && downloadLink.href.startsWith('blob:')) {
+                     URL.revokeObjectURL(downloadLink.href);
+                }
+                const downloadUrl = URL.createObjectURL(downloadBlob);
+                downloadLink.href = downloadUrl;
+                downloadLink.download = fileName;
+                downloadLink.classList.remove('hidden');
+                downloadLink.textContent = `Download Mixed Audio (${fileName})`;
+                
+            } catch (error) {
+                console.error("Mixdown error:", error);
+                statusDiv.textContent = `Error during mixdown: ${error.message}`;
+            } finally {
+                updateButtonStates(); 
+            }
+        });
+        
+        updateButtonStates(); 
+
+        function bufferToWave(abuffer, len) {
+            var numOfChan = abuffer.numberOfChannels,
+                view = new DataView(new ArrayBuffer(44 + len * numOfChan * 2)), // Correct ArrayBuffer size
+                channels = [],
+                i, sample,
+                offset = 0,
+                pos = 0;
+
+            function writeString(view, offset, string) {
+                for (var i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+            const dataLength = len * numOfChan * 2; // length of actual PCM data
+
+            writeString(view, pos, 'RIFF'); pos += 4;
+            view.setUint32(pos, 36 + dataLength, true); pos += 4; 
+            writeString(view, pos, 'WAVE'); pos += 4;
+            writeString(view, pos, 'fmt '); pos += 4;
+            view.setUint32(pos, 16, true); pos += 4; 
+            view.setUint16(pos, 1, true); pos += 2;  // PCM
+            view.setUint16(pos, numOfChan, true); pos += 2; 
+            view.setUint32(pos, abuffer.sampleRate, true); pos += 4; 
+            view.setUint32(pos, abuffer.sampleRate * numOfChan * 2, true); pos += 4; // byteRate
+            view.setUint16(pos, numOfChan * 2, true); pos += 2; // blockAlign
+            view.setUint16(pos, 16, true); pos += 2; // bitsPerSample
+            writeString(view, pos, 'data'); pos += 4;
+            view.setUint32(pos, dataLength, true); pos += 4; 
+
+            for (i = 0; i < abuffer.numberOfChannels; i++)
+                channels.push(abuffer.getChannelData(i));
+
+            offset = 0; // frame offset
+            while (offset < len) { 
+                for (i = 0; i < numOfChan; i++) {            
+                    sample = Math.max(-1, Math.min(1, channels[i][offset])); 
+                    sample = sample < 0 ? sample * 32768 : sample * 32767; // PCM 16-bit signed
+                    view.setInt16(pos, sample, true);         
+                    pos += 2;
+                }
+                offset++;                                    
+            }
+            return new Blob([view.buffer], { type: 'audio/wav' }); // Use view.buffer
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ai-Connect • Agent Manager</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#0d0d1a" />
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+  />
+
+  <style>
+    :root {
+      --bg: #0d0d1a;
+      --panel: #121225;
+      --glass: rgba(18, 18, 37, 0.9);
+      --border: rgba(0, 255, 255, 0.25);
+      --cyan: #00ffff;
+      --cyan-dark: #00cccc;
+      --lime-green: #32cd32;
+      --text: #e0e0f0;
+      --text-med: #a0a0c0;
+      --radius: 6px;
+      --radius-lg: 10px;
+      --space: 14px;
+      --header-h: 50px;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 12px rgba(0, 255, 255, 0.15);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+    body {
+      font-family: "Roboto Mono", monospace;
+      font-size: 0.875rem;
+      background: var(--bg);
+      color: var(--text);
+      padding-top: var(--header-h);
+      max-width: 420px;
+      margin: 0 auto;
+      overflow-x: hidden;
+    }
+    a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+    a:hover {
+      color: var(--cyan-dark);
+    }
+
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-h);
+      background: var(--glass);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space);
+      border-bottom: 1px solid var(--border);
+      z-index: 1000;
+    }
+    .header-btn {
+      background: none;
+      border: none;
+      color: var(--text-med);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 7px;
+      border-radius: 50%;
+      transition: background 0.2s, color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .header-btn:hover {
+      background: rgba(0, 255, 255, 0.1);
+      color: var(--cyan);
+    }
+    .title {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: "Orbitron", sans-serif;
+      color: var(--lime-green);
+      font-size: 1rem;
+      font-weight: 500;
+      text-shadow: 0 0 8px rgba(50, 205, 50, 0.35);
+    }
+
+    /* Main & Panel */
+    .main {
+      padding: var(--space);
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: var(--space);
+      margin-bottom: var(--space);
+      box-shadow: var(--shadow);
+    }
+    .panel h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: "Orbitron", sans-serif;
+      color: var(--cyan);
+      font-size: 0.95rem;
+      margin-bottom: calc(var(--space) * 0.75);
+      padding-bottom: calc(var(--space) * 0.4);
+      border-bottom: 1px solid var(--border);
+    }
+    .panel h2 .fas,
+    .panel h2 .material-symbols-outlined {
+      font-size: 0.9em;
+      color: var(--cyan);
+    }
+
+    /* Form */
+    .label {
+      display: block;
+      font-family: "Orbitron", sans-serif;
+      color: var(--text-med);
+      font-size: 0.8rem;
+      margin-bottom: 5px;
+    }
+    .control {
+      width: 100%;
+      padding: 9px 11px;
+      margin-bottom: var(--space);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(13, 13, 26, 0.85);
+      color: var(--text);
+      font-size: 0.85rem;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    .control:focus {
+      border-color: var(--cyan);
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3), 0 0 10px rgba(0, 255, 255, 0.3);
+      outline: none;
+    }
+    textarea.control {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 16px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: linear-gradient(145deg, rgba(0, 255, 255, 0.18), rgba(0, 255, 255, 0.08));
+      color: var(--cyan);
+      font-family: "Orbitron", sans-serif;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.25s, color 0.25s, box-shadow 0.25s, transform 0.25s;
+      box-shadow: 0 0 8px rgba(0, 255, 255, 0.15);
+    }
+    .btn:hover {
+      background: linear-gradient(145deg, rgba(0, 255, 255, 0.28), rgba(0, 255, 255, 0.15));
+      color: #fff;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    /* Agent List (row style) */
+    #agentList {
+      display: flex;
+      flex-direction: column;
+      gap: calc(var(--space) * 0.75);
+    }
+    .agent-row {
+      display: flex;
+      align-items: center;
+      gap: calc(var(--space) * 0.75);
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: calc(var(--space) * 0.85);
+      text-decoration: none;
+      color: inherit;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .agent-row:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 255, 255, 0.2), 0 2px 6px rgba(0, 0, 0, 0.4);
+    }
+    .agent-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid var(--cyan);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    .agent-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .agent-name {
+      font-family: "Orbitron", sans-serif;
+      color: var(--cyan);
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .agent-desc {
+      font-size: 0.75rem;
+      color: var(--text-med);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .agent-arrow-icon {
+      font-size: 1.1rem;
+      color: var(--text-med);
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+    .agent-row:hover .agent-arrow-icon {
+      color: var(--cyan);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- HEADER -->
+  <header class="header">
+    <button class="header-btn" id="backBtn"><i class="fas fa-arrow-left"></i></button>
+    <span class="title">Agent Manager</span>
+    <button class="header-btn" id="headerRightBtn"><i class="fas fa-user-circle"></i></button>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- CREATE PANEL -->
+    <div class="panel">
+      <h2><i class="fas fa-user-plus"></i> Create New Agent Persona</h2>
+      <form id="agentForm">
+        <label class="label" for="agentIdInput">Agent ID</label>
+        <input
+          class="control"
+          id="agentIdInput"
+          name="agentId"
+          type="text"
+          placeholder="e.g., memo_assistant"
+          required
+          pattern="^[a-z0-9_-]+$"
+        />
+
+        <label class="label" for="agentNameInput">Agent Name</label>
+        <input
+          class="control"
+          id="agentNameInput"
+          name="agentName"
+          type="text"
+          placeholder="e.g., Memo Assistant"
+          required
+        />
+
+        <label class="label" for="agentSubtitleInput">Agent Subtitle</label>
+        <input
+          class="control"
+          id="agentSubtitleInput"
+          name="agentSubtitle"
+          type="text"
+          placeholder="e.g., Your friendly memo helper"
+          required
+        />
+
+        <label class="label" for="systemPromptInput">System Prompt</label>
+        <textarea
+          class="control"
+          id="systemPromptInput"
+          name="systemPrompt"
+          rows="4"
+          placeholder="Enter the system prompt for the AI model"
+          required
+        ></textarea>
+
+        <label class="label" for="initialMessageInput">Initial Message</label>
+        <textarea
+          class="control"
+          id="initialMessageInput"
+          name="initialMessage"
+          rows="3"
+          placeholder="Enter the initial greeting message"
+          required
+        ></textarea>
+
+        <label class="label" for="agentLogoInput">Agent Logo Image</label>
+        <input
+          class="control"
+          id="agentLogoInput"
+          name="agentLogo"
+          type="file"
+          accept="image/*"
+          required
+        />
+
+        <label class="label" for="agentBannerInput">Agent Banner Image</label>
+        <input
+          class="control"
+          id="agentBannerInput"
+          name="agentBanner"
+          type="file"
+          accept="image/*"
+          required
+        />
+
+        <button type="submit" class="btn" id="createAgentBtn">
+          <i class="fas fa-save"></i> Create Agent
+        </button>
+      </form>
+    </div>
+
+    <!-- LIST PANEL -->
+    <div class="panel">
+      <h2><i class="fas fa-robot"></i> Existing Agent Personas</h2>
+      <div id="agentList">
+        <div
+          class="panel"
+          style="
+            text-align: center;
+            color: var(--text-med);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+          "
+        >
+          Loading agents…
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- FIREBASE SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+  <script>
+    // --- Firebase init ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db      = firebase.database();
+    const storage = firebase.storage();
+
+    // back button
+    document.getElementById("backBtn").onclick = () => history.back();
+
+    // grab DOM once
+    const agentForm         = document.getElementById("agentForm");
+    const createAgentBtn    = document.getElementById("createAgentBtn");
+    const agentIdInput      = document.getElementById("agentIdInput");
+    const agentNameInput    = document.getElementById("agentNameInput");
+    const agentSubtitleInput= document.getElementById("agentSubtitleInput");
+    const systemPromptInput = document.getElementById("systemPromptInput");
+    const initialMessageInput = document.getElementById("initialMessageInput");
+    const agentLogoInput    = document.getElementById("agentLogoInput");
+    const agentBannerInput  = document.getElementById("agentBannerInput");
+
+    // FORM SUBMIT → upload & write
+    agentForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      // disable button
+      createAgentBtn.disabled = true;
+      createAgentBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Creating…`;
+
+      // collect values
+      const id       = agentIdInput.value.trim();
+      const name     = agentNameInput.value.trim();
+      const subtitle = agentSubtitleInput.value.trim();
+      const prompt   = systemPromptInput.value.trim();
+      const initial  = initialMessageInput.value.trim();
+      const logoFile = agentLogoInput.files[0];
+      const banFile  = agentBannerInput.files[0];
+
+      try {
+        // upload logo
+        const logoRef = storage
+          .ref(`aiConnect_agent_assets/${id}/logo_${Date.now()}_${logoFile.name}`);
+        await logoRef.put(logoFile);
+        const logoUrl = await logoRef.getDownloadURL();
+
+        // upload banner
+        const banRef = storage
+          .ref(`aiConnect_agent_assets/${id}/banner_${Date.now()}_${banFile.name}`);
+        await banRef.put(banFile);
+        const bannerUrl = await banRef.getDownloadURL();
+
+        // write DB
+        const agentData = {
+          id,
+          name,
+          subtitle,
+          systemPrompt: prompt,
+          initialMessage: initial,
+          logoUrl,
+          bannerUrl,
+          quickReplies: [],
+          placeholder: "",
+          callButtonHref: null,
+          createdAt: firebase.database.ServerValue.TIMESTAMP,
+          active: true
+        };
+        await db.ref(`aiConnect_agents/${id}`).set(agentData);
+
+        alert("✅ Agent created successfully!");
+        agentForm.reset();
+      } catch (err) {
+        console.error(err);
+        alert("⚠️ Error: " + err.message);
+      } finally {
+        createAgentBtn.disabled = false;
+        createAgentBtn.innerHTML = `<i class="fas fa-save"></i> Create Agent`;
+      }
+    });
+
+    // RENDER LIST
+    function renderAgentList(data) {
+      const list = document.getElementById("agentList");
+      list.innerHTML = "";
+      if (!data || !Object.keys(data).length) {
+        const empty = document.createElement("div");
+        empty.className = "panel";
+        empty.style.cssText =
+          "text-align:center;color:var(--text-med);background:transparent;border:none;box-shadow:none;";
+        empty.textContent = "No agent personas found.";
+        list.appendChild(empty);
+        return;
+      }
+      Object.entries(data).forEach(([key, agent]) => {
+        if (!agent.active) return;
+        const a = document.createElement("a");
+        a.href = `agent-details.html?agent=${key}`;
+        a.className = "agent-row";
+        a.innerHTML = `
+          <img src="${agent.logoUrl}" class="agent-logo" alt="">
+          <div class="agent-info">
+            <div class="agent-name">${agent.name}</div>
+            <div class="agent-desc">${
+          agent.subtitle
+            ? agent.subtitle
+            : (agent.systemPrompt || "").substring(0, 60) + "…"
+        }</div>
+          </div>
+          <i class="fas fa-chevron-right agent-arrow-icon"></i>
+        `;
+        list.appendChild(a);
+      });
+    }
+
+    // Firebase listener
+    db.ref("aiConnect_agents").on(
+      "value",
+      (snap) => renderAgentList(snap.val()),
+      (err) => {
+        console.error(err);
+        document.getElementById("agentList").innerHTML =
+          '<div class="panel" style="text-align:center;color:var(--text-med)">Error loading agents.</div>';
+      }
+    );
+  </script>
+</body>
+</html>

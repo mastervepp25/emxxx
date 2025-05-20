@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>EMX - Prediction Log</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0A0A14">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  
+  <!-- Reusing styles from main page. Adjust path if main CSS is separate -->
+  <style>
+    :root { /* Copy relevant CSS variables from main page for consistency */
+      --aiConnect-bg-dark: #0A0A14; 
+      --aiConnect-panel-dark: #0C0C1D; 
+      --aiConnect-glass-bg: rgba(10, 10, 20, 0.75); 
+      --aiConnect-border: rgba(0, 255, 255, 0.45); 
+      --aiConnect-cyan: #00FFFF; 
+      --aiConnect-cyan-dark: #00AACC; 
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.3);
+      --aiConnect-text-primary: #F0F0FF; 
+      --aiConnect-text-secondary: #B0B0D0;
+      --aiConnect-error: #FF2222; 
+      --aiConnect-warning: #FFAA00; 
+      --bullish-color: #00FF66; 
+      --bearish-color: #FF2222; 
+      --sideways-color: #FFAA00; 
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Roboto Mono', monospace;
+      --spacing-unit: 15px;
+      --border-radius: 6px; 
+      --border-radius-large: 10px; 
+      --header-height: 56px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: var(--header-height); /* Only header height, no sim bar here */
+        padding-bottom: var(--spacing-unit);
+        max-width: 600px; /* Wider for history if desired */
+        margin: 0 auto;
+        overflow-x: hidden;
+    }
+    /* Page Loader (same as index.html) */
+    #pageLoading { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(10, 10, 20, 0.97); 
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 2001; transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; }
+    #pageLoading .spinner{
+        width: 35px; height: 35px; border: 4px solid rgba(0,255,255,.3);
+        border-top: 4px solid var(--aiConnect-cyan); border-radius:50%;
+        animation: spin 0.8s linear infinite; margin-bottom: 18px;
+    }
+    #pageLoading .loading-text{
+        font-family:var(--font-display);font-size:1.1rem; text-transform: uppercase;
+        letter-spacing: 1px; color: var(--aiConnect-cyan);
+        text-shadow: 0 0 5px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Header (same as index.html, but top: 0) */
+    .header {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(12px); 
+        color: var(--aiConnect-text-primary); padding: 0 var(--spacing-unit);
+        display: flex; align-items: center; position: fixed;
+        top: 0; /* Header at the very top on this page */
+        left: 50%; transform: translateX(-50%);
+        width: 100%; max-width: 600px; /* Match body max-width */
+        z-index: 1000; 
+        border-bottom: 1px solid var(--aiConnect-border); height: var(--header-height);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .header-back-button {
+        color: var(--aiConnect-cyan); background: none; border: none; cursor: pointer;
+        padding: 8px; margin-right: auto; /* Pushes title and placeholder to center/right */
+        display:flex; align-items:center;
+    }
+    .header-back-button .material-symbols-outlined { font-size: 22px; }
+    .header-title {
+        font-family:var(--font-display);font-weight:700;font-size:1.1rem; 
+        color:var(--aiConnect-cyan); 
+        text-shadow:0 0 8px var(--aiConnect-cyan), 0 0 12px rgba(0,255,255,.5); 
+        /* flex-grow: 1; */ /* Removed to allow back button to push */
+        text-align: center; letter-spacing: 1px;
+        position: absolute; /* Center title */
+        left: 50%;
+        transform: translateX(-50%);
+    }
+    .header-placeholder { /* To balance the back button on the left for centering title */
+        width: 40px; /* Approx width of back button + padding */
+        margin-left: auto;
+    }
+
+    /* History Log Specific Styles */
+    .main-content { padding: var(--spacing-unit); }
+    .history-log-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-unit);
+    }
+    .log-entry-card {
+        background: var(--aiConnect-panel-dark);
+        border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large);
+        padding: var(--spacing-unit);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .log-entry-header {
+        font-family: var(--font-display);
+        font-size: 0.9rem; /* Slightly smaller */
+        color: var(--aiConnect-text-secondary);
+        margin-bottom: 12px;
+        border-bottom: 1px solid rgba(0,255,255,0.25);
+        padding-bottom: 8px;
+    }
+    .log-prediction-item {
+        margin-bottom: 10px;
+        padding-left: 12px;
+        border-left: 3px solid var(--aiConnect-cyan-dark);
+    }
+    .log-prediction-item:last-child { margin-bottom: 0; }
+    .log-prediction-item p { margin: 4px 0; font-size: 0.8rem; line-height: 1.4; }
+    .log-prediction-item strong { color: var(--aiConnect-text-primary); font-weight: 700; }
+    .no-history { 
+      text-align: center; color: var(--aiConnect-warning); margin-top: 40px; 
+      font-family: var(--font-display); font-size: 1.1rem;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div id="pageLoading">
+    <div class="spinner"></div>
+    <p class="loading-text">LOADING HISTORY LOGS...</p>
+  </div>
+
+  <header class="header">
+    <button class="header-back-button" id="backButtonHistory" title="Go Back">
+        <span class="material-symbols-outlined">arrow_back_ios_new</span>
+    </button>
+    <h1 class="header-title">PREDICTION LOG</h1>
+    <div class="header-placeholder"></div> <!-- Balances back button for title centering -->
+  </header>
+
+  <main class="main-content">
+    <div class="history-log-container" id="historyLogContainer">
+      <!-- Logged predictions will be injected here -->
+    </div>
+  </main>
+
+  <script>
+    const firebaseConfigHist = { // Use different var name if conflicts
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfigHist); }
+    const authHist = firebase.auth(); 
+    const dbHist = firebase.database(); 
+
+    const historyLogContainer = document.getElementById('historyLogContainer');
+    const pageLoadingHistory = document.getElementById('pageLoading');
+    const backButtonHistory = document.getElementById('backButtonHistory');
+
+    if (backButtonHistory) {
+        backButtonHistory.addEventListener('click', () => window.history.back());
+    }
+
+    function formatFirebaseTimestamp(timestamp) {
+        return new Date(timestamp).toLocaleString();
+    }
+
+    function renderLogEntry(logKey, logData) {
+        const entryCard = document.createElement('div');
+        entryCard.className = 'log-entry-card';
+
+        let predictionsHtml = '';
+        if (logData.predictions && logData.predictions.length > 0) {
+            predictionsHtml = logData.predictions.map(p => {
+                let directionColor = 'var(--sideways-color)';
+                if (p.direction.toLowerCase().includes('bullish')) directionColor = 'var(--bullish-color)';
+                else if (p.direction.toLowerCase().includes('bearish')) directionColor = 'var(--bearish-color)';
+                
+                return `
+                <div class="log-prediction-item">
+                    <p><strong>Pair:</strong> ${p.pair || 'N/A'}</p>
+                    <p><strong style="color: ${directionColor}; text-shadow: 0 0 5px ${directionColor};">Directive:</strong> ${p.direction || 'N/A'}</p>
+                    <p><strong>Conviction:</strong> ${p.conviction || p.confidence || 'N/A'}</p>
+                    <p><strong>Support:</strong> ${p.support || 'N/A'}</p>
+                    <p><strong>Resistance:</strong> ${p.resistance || 'N/A'}</p>
+                    <p><strong>Brief:</strong> ${p.quickTake || 'N/A'}</p>
+                </div>
+            `}).join('');
+        } else {
+            predictionsHtml = '<p>No specific predictions in this log entry.</p>';
+        }
+
+        entryCard.innerHTML = `
+            <div class="log-entry-header">LOGGED: ${formatFirebaseTimestamp(logData.timestamp)}</div>
+            ${predictionsHtml}
+        `;
+        return entryCard;
+    }
+
+    async function fetchAndDisplayLogs() {
+        if (pageLoadingHistory) pageLoadingHistory.classList.remove('hidden');
+        historyLogContainer.innerHTML = ''; 
+
+        try {
+            const snapshot = await dbHist.ref('emotrader_prediction_logs')
+                                     .orderByChild('timestamp') 
+                                     // .limitToLast(50) // Optional: limit entries
+                                     .once('value');
+            
+            if (snapshot.exists()) {
+                const logs = [];
+                snapshot.forEach(childSnapshot => {
+                    logs.push({ key: childSnapshot.key, ...childSnapshot.val() });
+                });
+                logs.reverse(); // Newest first
+
+                if (logs.length > 0) {
+                    logs.forEach(log => {
+                        historyLogContainer.appendChild(renderLogEntry(log.key, log));
+                    });
+                } else {
+                     historyLogContainer.innerHTML = '<p class="no-history">NO PREDICTION LOGS FOUND.</p>';
+                }
+            } else {
+                historyLogContainer.innerHTML = '<p class="no-history">NO PREDICTION LOGS FOUND.</p>';
+            }
+        } catch (error) {
+            console.error("Error fetching history logs:", error);
+            historyLogContainer.innerHTML = `<p class="no-history" style="color: var(--aiConnect-error)">ERROR LOADING LOGS: ${error.message}</p>`;
+        } finally {
+            if (pageLoadingHistory) pageLoadingHistory.classList.add('hidden');
+        }
+    }
+    
+    authHist.onAuthStateChanged(user => {
+        if (pageLoadingHistory && !pageLoadingHistory.classList.contains('hidden')) {
+             setTimeout(() => pageLoadingHistory.classList.add('hidden'), 100);
+        }
+        if (user) {
+            fetchAndDisplayLogs();
+        } else {
+            const loadingTextEl = pageLoadingHistory ? pageLoadingHistory.querySelector('.loading-text') : null;
+            if (loadingTextEl) loadingTextEl.textContent = 'ACCESS DENIED. REDIRECTING...';
+            if (pageLoadingHistory) pageLoadingHistory.classList.remove('hidden');
+            
+            setTimeout(() => { window.location.href = 'signin.html'; }, 1500);
+        }
+    });
+
+  </script>
+</body>
+</html>

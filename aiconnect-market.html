@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - NFT Heroes Market</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0d0d1a">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <style>
+    :root {
+      /* EMX Theme Colors for ai-Connect */
+      --aiConnect-bg-dark: #0d0d1a;
+      --aiConnect-panel-dark: #121225;
+      --aiConnect-glass-bg: rgba(18, 18, 37, 0.85);
+      --aiConnect-border: rgba(0, 255, 255, 0.25);
+      --aiConnect-cyan: #00ffff;
+      --aiConnect-cyan-dark: #00cccc;
+      --aiConnect-glow-soft: rgba(0, 255, 255, 0.2);
+      --aiConnect-glow-medium: rgba(0, 255, 255, 0.4);
+      --aiConnect-glow-strong: rgba(0, 255, 255, 0.7);
+      --aiConnect-gold: #ffc107;
+      --aiConnect-gold-glow: rgba(255, 193, 7, 0.6);
+      --aiConnect-text-primary: #e0e0f0;
+      --aiConnect-text-secondary: #a0a0c0;
+      --aiConnect-success: #00ff88;
+      --aiConnect-error: #ff4444;
+
+      /* EMX Fonts */
+      --font-display: 'Orbitron', sans-serif;
+      --font-data: 'Roboto Mono', monospace;
+      --font-body: 'Roboto Mono', monospace;
+
+      /* Layout */
+      --spacing-unit: 15px;
+      --border-radius: 8px;
+      --border-radius-large: 12px;
+      --box-shadow-emo: 0 2px 8px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+      --transition-speed: 0.3s;
+      --header-height: 56px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background-color: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: var(--header-height);
+        padding-bottom: calc(60px + var(--spacing-unit));
+        max-width: 420px;
+        margin: 0 auto;
+        overflow-x: hidden;
+        position: relative;
+    }
+    a { color: var(--aiConnect-cyan); text-decoration: none; }
+    a:hover { color: var(--aiConnect-cyan-dark); text-decoration: underline; text-shadow: 0 0 5px var(--aiConnect-glow-soft); }
+    button { font-family: inherit; cursor: pointer; border: none; border-radius: var(--border-radius); transition: background-color var(--transition-speed), transform 0.1s, box-shadow var(--transition-speed); }
+    button:active { transform: translateY(1px) scale(0.98); }
+    .material-symbols-outlined, .fas { vertical-align: middle; }
+
+    .header {
+        background-color: var(--aiConnect-glass-bg);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: var(--aiConnect-text-primary);
+        padding: 0 var(--spacing-unit);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        z-index: 100;
+        border-bottom: 1px solid var(--aiConnect-border);
+        height: var(--header-height);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft);
+    }
+    .header-logo-container { display: flex; align-items: center; }
+    .header-logo-img { width: 30px; height: 30px; object-fit: contain; margin-right: 8px; }
+    .header-logo-text {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--aiConnect-cyan);
+        font-family: var(--font-display);
+        text-shadow: 0 0 5px var(--aiConnect-glow-medium);
+    }
+    .header-icons-right { display: flex; align-items: center; gap: calc(var(--spacing-unit) * 0.5); }
+    .header-icon { position: relative; cursor: pointer; color: var(--aiConnect-text-secondary); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; transition: background-color 0.2s, color 0.2s, text-shadow 0.2s; }
+    .header-icon:hover { background-color: rgba(0, 255, 255, 0.1); color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .header-icon:active { background-color: rgba(0, 255, 255, 0.2); transform: scale(0.95); }
+    .header-icon .material-symbols-outlined { font-size: 22px; }
+    .badge { position: absolute; top: -2px; right: -2px; background-color: var(--aiConnect-error); color: white; font-size: 9px; font-weight: bold; border-radius: 50%; padding: 1px 4px; min-width: 14px; text-align: center; line-height: 1; display: none; z-index: 1; box-shadow: 0 0 5px rgba(255, 68, 68, 0.5); border: 1px solid var(--aiConnect-bg-dark); }
+    .badge.visible { display: block; }
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+    
+    .market-title-emo {
+        font-family: var(--font-display);
+        color: var(--aiConnect-cyan);
+        text-shadow: 0 0 8px var(--aiConnect-glow-medium);
+        font-size: 1.6rem;
+        text-align: center;
+        margin-bottom: calc(var(--spacing-unit) * 0.5);
+    }
+    .market-description-emo {
+        font-size: 0.9rem;
+        color: var(--aiConnect-text-secondary);
+        text-align: center;
+        line-height: 1.5;
+        margin-bottom: var(--spacing-unit);
+    }
+
+    .nft-grid-emo {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+        gap: var(--spacing-unit);
+        padding-bottom: var(--spacing-unit);
+    }
+
+    .nft-card-emo {
+        background: var(--aiConnect-panel-dark);
+        border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large);
+        padding: calc(var(--spacing-unit) * 0.8);
+        box-shadow: 0 0 15px var(--aiConnect-glow-soft), inset 0 0 8px rgba(0,0,0,0.15);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .nft-card-emo:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 20px var(--aiConnect-glow-medium), 0 0 10px rgba(0,0,0,0.3);
+    }
+    .nft-image-container-emo {
+        width: 100%;
+        aspect-ratio: 2 / 3; /* Portrait aspect ratio */
+        background-color: rgba(0, 255, 255, 0.05);
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        margin-bottom: calc(var(--spacing-unit) * 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .nft-image-emo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; 
+    }
+    .nft-info-emo {
+        display: flex;
+        flex-direction: column;
+        gap: calc(var(--spacing-unit) * 0.3);
+        flex-grow: 1; 
+    }
+    .nft-name-emo {
+        font-family: var(--font-display);
+        font-size: 0.9rem; /* Slightly smaller to accommodate longer names */
+        font-weight: 500;
+        color: var(--aiConnect-text-primary);
+        line-height: 1.3;
+        /* For multi-line name if needed, but usually kept short */
+        display: -webkit-box;
+        -webkit-line-clamp: 2; 
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-height: calc(0.9rem * 1.3 * 1); /* min height for 1 line to prevent jump */
+    }
+    .nft-description-emo {
+        font-size: 8px;
+        color: var(--aiConnect-text-secondary);
+        line-height: 1.4;
+        opacity: 0.9;
+        display: -webkit-box;
+        -webkit-line-clamp: 2; 
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        height: calc(8px * 1.4 * 2); 
+        margin-top: 2px;
+        margin-bottom: 4px;
+    }
+    .nft-price-emo {
+        font-family: var(--font-data);
+        font-size: 0.9rem;
+        color: var(--aiConnect-gold);
+        text-shadow: 0 0 5px var(--aiConnect-gold-glow);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .nft-price-emo .usd-price {
+        font-size: 0.75rem;
+        color: var(--aiConnect-text-secondary);
+        opacity: 0.8;
+    }
+    .nft-rarity-emo {
+        font-size: 0.7rem;
+        color: var(--aiConnect-text-secondary);
+        background-color: rgba(0, 255, 255, 0.08);
+        padding: 2px 6px;
+        border-radius: 4px;
+        align-self: flex-start; 
+        border: 1px solid rgba(0, 255, 255, 0.15);
+        font-family: var(--font-body);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 2px;
+    }
+
+    .nft-action-button-emo {
+        background-color: rgba(0, 255, 255, 0.1);
+        color: var(--aiConnect-cyan);
+        border: 1px solid var(--aiConnect-border);
+        font-weight: 500;
+        padding: 8px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-family: var(--font-display);
+        text-align: center;
+        margin-top: auto; 
+        transition: all var(--transition-speed);
+    }
+    .nft-action-button-emo:hover {
+        background-color: rgba(0, 255, 255, 0.2);
+        border-color: var(--aiConnect-cyan);
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft);
+        color: #fff;
+    }
+
+
+    #pageLoading {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(13, 13, 26, 0.95);
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 1001; transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s linear 0s; }
+    #pageLoading .loading-text { font-size: 1.1rem; font-weight: 500; color: var(--aiConnect-text-primary); font-family: var(--font-display); }
+    #pageLoading .spinner {
+        border: 4px solid rgba(0, 255, 255, 0.2); border-top: 4px solid var(--aiConnect-cyan);
+        border-radius: 50%; width: 30px; height: 30px;
+        animation: spin 1s linear infinite; margin-bottom: 15px;
+        box-shadow: 0 0 10px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .bottom-nav {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+        border-top: 1px solid var(--aiConnect-border); width: 100%; max-width: 420px;
+        display: flex; justify-content: space-around; align-items: center;
+        padding: 5px 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+        z-index: 100; height: 60px; box-shadow: 0 -3px 15px rgba(0,0,0,0.5), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .nav-item {
+        display: flex; align-items: center; justify-content: center; cursor: pointer;
+        color: var(--aiConnect-text-secondary); flex: 1; padding: 10px 0;
+        transition: color 0.2s ease, background-color 0.2s ease, transform 0.1s ease, text-shadow 0.2s ease;
+        height: 100%; border-radius: var(--border-radius); margin: 0 2px;
+    }
+    .nav-item.active { color: var(--aiConnect-cyan); text-shadow: 0 0 8px var(--aiConnect-glow-medium); }
+    .nav-item:hover:not(.active) { color: var(--aiConnect-cyan); background-color: rgba(0, 255, 255, 0.08); }
+    .nav-item:active { transform: scale(0.95); }
+    .nav-item .material-symbols-outlined { font-size: 28px; }
+    .center-button-nav {
+        display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; border-radius: 50%;
+        background-color: var(--aiConnect-panel-dark); box-shadow: 0 0 15px rgba(0,0,0,0.7);
+        margin-top: -20px; cursor: pointer; border: 2px solid var(--aiConnect-border);
+        position: relative; flex-shrink: 0;
+        transition: transform 0.1s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .center-button-nav.active { border-color: var(--aiConnect-cyan); box-shadow: 0 0 15px var(--aiConnect-glow-strong); }
+    .center-button-nav:hover:not(.active) { box-shadow: 0 0 10px var(--aiConnect-glow-medium), 0 0 20px rgba(0,0,0,0.7); }
+    .center-button-nav:active { transform: scale(0.95); }
+    .center-button-nav img { width: 28px; height: 28px; object-fit: contain; }
+
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+      <div class="spinner"></div>
+      <p class="loading-text" id="loadingStatusText">Loading Heroes Collection...</p>
+  </div>
+
+  <header class="header">
+    <div class="header-logo-container">
+      <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="ai-Connect Logo" class="header-logo-img">
+      <span class="header-logo-text">EMX</span>
+    </div>
+    <div class="header-icons-right">
+      <div class="header-icon" id="notificationsIcon" title="Notifications">
+        <span class="material-symbols-outlined">notifications</span>
+        <span id="notificationBadge" class="badge"></span>
+      </div>
+      <div class="header-icon" id="messagesIcon" title="Messages">
+        <span class="material-symbols-outlined">mail</span>
+        <span id="messageBadge" class="badge"></span>
+      </div>
+      <div id="signOutIcon" class="header-icon" title="Sign Out">
+        <span class="material-symbols-outlined">logout</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <h2 class="market-title-emo">NFT Heroes - Collection</h2>
+    <p class="market-description-emo">
+        NFTs of heroic Filipino Vepp's.
+    </p>
+
+    <div class="nft-grid-emo" id="nftGridContainer">
+        <!-- NFT cards will be dynamically inserted here -->
+        <p id="nftLoadingError" style="display:none; color: var(--aiConnect-error); text-align:center;">Could not load NFT data. Please ensure images are correctly placed.</p>
+    </div>
+  </main>
+
+  <div class="bottom-nav">
+    <div class="nav-item" data-target-url="aiconnect-content.html" title="Content"> <span class="material-symbols-outlined">edit_square</span> </div>
+    <div class="nav-item" data-target-url="aiconnect-tools.html" title="Tools"> <span class="material-symbols-outlined">build</span> </div>
+    <div class="center-button-nav" data-target-url="index.html" title="Home"> <img src="https://memo.aitekchat.com/assets/logo/logo.png" alt="Home"> </div>
+    <div class="nav-item active" data-target-url="aiconnect-market.html" title="Market"> <span class="material-symbols-outlined">storefront</span> </div> <!-- Market is active -->
+    <div class="nav-item" data-target-url="aiconnect-userprofile.html" title="Profile"> <span class="material-symbols-outlined">account_circle</span> </div>
+  </div>
+
+  <script>
+    // ai-Connect Firebase Config
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+     };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); } else { firebase.app(); }
+    const authInstance = firebase.auth();
+    const dbInstance = firebase.firestore();
+
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const pageLoadingText = pageLoadingElement.querySelector('.loading-text');
+    const notificationsIcon = document.getElementById('notificationsIcon');
+    const messagesIcon = document.getElementById('messagesIcon');
+    const notificationBadge = document.getElementById('notificationBadge');
+    const messageBadge = document.getElementById('messageBadge');
+    const signOutIcon = document.getElementById('signOutIcon');
+    const nftGridContainer = document.getElementById('nftGridContainer');
+    const nftLoadingError = document.getElementById('nftLoadingError');
+    const loadingStatusText = document.getElementById('loadingStatusText');
+
+
+    // --- Sample NFT Data: Philippine Revolutionary Heroes ---
+    const sampleNFTs = [
+        { 
+            id: 'hero001', 
+            name: 'Heneral Antonio Luna – Brigadier General', 
+            imageSrc: 'data-image/nft/1.png',
+            priceEMO: 65000, priceUSD: 650, rarity: 'Epic', 
+            description: 'Sharp eyes, prominent mustache, blue-gray uniform, holding a sword, war strategist.'
+        },
+        { 
+            id: 'hero002', 
+            name: 'Heneral Emilio Aguinaldo – Generalissimo', 
+            imageSrc: 'data-image/nft/2.png',
+            priceEMO: 100000, priceUSD: 1000, rarity: 'Legendary', 
+            description: 'Decorated white uniform, holding Philippine flag, on balcony overlooking revolutionaries.'
+        },
+        { 
+            id: 'hero003', 
+            name: 'Heneral Gregorio del Pilar – Brigadier General', 
+            imageSrc: 'data-image/nft/3.png',
+            priceEMO: 60000, priceUSD: 600, rarity: 'Epic', 
+            description: 'Young, fearless, stylish military coat, bicorne hat, mounted on horse, determined.'
+        },
+        { 
+            id: 'hero004', 
+            name: 'Heneral Artemio Ricarte – General', 
+            imageSrc: 'data-image/nft/4.png',
+            priceEMO: 40000, priceUSD: 400, rarity: 'Rare', 
+            description: 'Firm stance, rifle slung, khaki uniform with sash, calm but powerful presence.'
+        },
+        { 
+            id: 'hero005', 
+            name: 'Heneral Manuel Tinio – Major General', 
+            imageSrc: 'data-image/nft/5.jpg',
+            priceEMO: 55000, priceUSD: 550, rarity: 'Epic', 
+            description: 'Youngest Major General, elegant uniform, proud expression, in war tent.'
+        },
+        { 
+            id: 'hero006', 
+            name: 'Heneral José Alejandrino – Brigadier General', 
+            imageSrc: 'data-image/nft/6.jpg',
+            priceEMO: 35000, priceUSD: 350, rarity: 'Rare', 
+            description: 'Engineer, spectacles, custom uniform, holding battle plan, intelligent look.'
+        },
+        { 
+            id: 'hero007', 
+            name: 'Heneral Juan Cailles – Brigadier General', 
+            imageSrc: 'data-image/nft/7.jpg',
+            priceEMO: 30000, priceUSD: 300, rarity: 'Rare', 
+            description: 'Fierce, bandolier, traditional scarf, rifle & sword, gritty rain-soaked scene.'
+        },
+        { 
+            id: 'hero008', 
+            name: 'Heneral Mariano Llanera – Brigadier General', 
+            imageSrc: 'data-image/nft/8.jpg',
+            priceEMO: 25000, priceUSD: 250, rarity: 'Rare', 
+            description: 'Rebel general, straw hat (Skull Flag), rugged uniform, lantern-lit hideout.'
+        }
+    ];
+
+
+    function triggerHapticFeedback(type = 'medium') {
+        if (window.navigator.vibrate) {
+            let duration = 50;
+            if (type === 'light') duration = 20;
+            else if (type === 'strong') duration = 100;
+            else if (type === 'selection') duration = 10;
+            window.navigator.vibrate(duration);
+        }
+    }
+
+    function formatToken(amount, decimals = 0) { 
+      const numericAmount = Number(amount) || 0;
+      return numericAmount.toLocaleString(undefined, {
+          minimumFractionDigits: decimals,
+          maximumFractionDigits: decimals
+      });
+    }
+
+    function displayNFTs(nfts) {
+        if (!nftGridContainer) {
+            console.error("NFT grid container not found!");
+            if(nftLoadingError) nftLoadingError.style.display = 'block';
+            return;
+        }
+        nftGridContainer.innerHTML = ''; 
+        if(nftLoadingError) nftLoadingError.style.display = 'none';
+
+        if (!nfts || nfts.length === 0) {
+            nftGridContainer.innerHTML = '<p style="color: var(--aiConnect-text-secondary); text-align:center;">No NFTs available in this collection yet.</p>';
+            return;
+        }
+
+        nfts.forEach(nft => {
+            const card = document.createElement('div');
+            card.classList.add('nft-card-emo');
+            card.dataset.nftId = nft.id;
+
+            // Use a generic placeholder if imageSrc is missing or seems invalid
+            const placeholderImage = 'https://via.placeholder.com/200x300/121225/00FFFF?Text=NFT+Hero';
+            const imageToDisplay = nft.imageSrc ? nft.imageSrc : placeholderImage;
+
+            card.innerHTML = `
+                <div class="nft-image-container-emo">
+                    <img src="${imageToDisplay}" alt="${nft.name}" class="nft-image-emo" loading="lazy" onerror="this.src='${placeholderImage}'; this.onerror=null;">
+                </div>
+                <div class="nft-info-emo">
+                    <div class="nft-name-emo" title="${nft.name}">${nft.name}</div>
+                    ${nft.description ? `<div class="nft-description-emo" title="${nft.description}">${nft.description}</div>` : ''}
+                    ${nft.rarity ? `<div class="nft-rarity-emo">${nft.rarity}</div>` : ''}
+                    <div class="nft-price-emo">
+                        <span class="material-symbols-outlined" style="font-size: 1em; color: var(--aiConnect-gold);">token</span>
+                        ${formatToken(nft.priceEMO)} EMO 
+                        <span class="usd-price">($${nft.priceUSD.toFixed(2)})</span>
+                    </div>
+                    <button class="nft-action-button-emo" data-nft-id="${nft.id}">View Details</button>
+                </div>
+            `;
+            
+            const actionButton = card.querySelector('.nft-action-button-emo');
+            actionButton.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                triggerHapticFeedback('light');
+                alert(`NFT Hero:\nName: ${nft.name}\nPrice: ${nft.priceEMO} EMO ($${nft.priceUSD})\nRarity: ${nft.rarity}\nBrief: ${nft.description}`);
+            });
+
+            nftGridContainer.appendChild(card);
+        });
+    }
+
+
+    async function fetchAndDisplayHeaderData(user) { 
+        if (!user || !user.uid) return; 
+
+        try {
+            const userDocRef = dbInstance.collection('users').doc(user.uid);
+            const userDoc = await userDocRef.get();
+
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const notificationsCount = userData.unreadNotifications || 0;
+                if (notificationBadge) {
+                     if (notificationsCount > 0) {
+                         notificationBadge.textContent = notificationsCount > 9 ? '9+' : notificationsCount;
+                         notificationBadge.classList.add('visible');
+                     } else {
+                         notificationBadge.textContent = ''; 
+                         notificationBadge.classList.remove('visible');
+                     }
+                }
+                const messagesCount = userData.unreadMessages || 0;
+                if (messageBadge) {
+                      if (messagesCount > 0) {
+                          messageBadge.textContent = messagesCount > 9 ? '9+' : messagesCount;
+                          messageBadge.classList.add('visible');
+                      } else {
+                          messageBadge.textContent = '';
+                          messageBadge.classList.remove('visible');
+                      }
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching user data for header:", error);
+        }
+    }
+
+    authInstance.onAuthStateChanged((user) => {
+        if (pageLoadingElement) pageLoadingElement.classList.remove('hidden');
+
+        if (user) {
+            if(loadingStatusText) loadingStatusText.textContent = 'Fetching Heroes Data...';
+            fetchAndDisplayHeaderData(user); 
+            displayNFTs(sampleNFTs); 
+            setTimeout(() => { if(pageLoadingElement) pageLoadingElement.classList.add('hidden'); }, 500);
+        }
+        else {
+            if(pageLoadingElement) pageLoadingElement.classList.add('hidden');
+            window.location.href = 'signin.html'; 
+        }
+    });
+
+    if (notificationsIcon) {
+        notificationsIcon.addEventListener('click', () => {
+            triggerHapticFeedback('light');
+            window.location.href = 'aiconnect-notifications.html';
+        });
+    }
+    if (messagesIcon) {
+        messagesIcon.addEventListener('click', () => {
+            triggerHapticFeedback('light');
+            window.location.href = 'aiconnect-messages.html';
+        });
+    }
+    if(signOutIcon) {
+        signOutIcon.addEventListener('click', async () => {
+            triggerHapticFeedback('light');
+            if (confirm("Sign out from ai-Connect?")) {
+                try {
+                    if(pageLoadingElement) pageLoadingElement.classList.remove('hidden');
+                    if(loadingStatusText) loadingStatusText.textContent = 'Signing out...';
+                    await authInstance.signOut();
+                } catch (error) {
+                    console.error("Error signing out:", error); alert("Failed to sign out. Please try again.");
+                    if(pageLoadingElement) pageLoadingElement.classList.add('hidden');
+                }
+            }
+        });
+    }
+    
+
+    document.querySelectorAll('.bottom-nav .nav-item, .bottom-nav .center-button-nav').forEach(item => {
+        item.addEventListener('click', () => {
+            triggerHapticFeedback();
+            const targetUrl = item.dataset.targetUrl;
+             if (targetUrl && !item.classList.contains('active')) { window.location.href = targetUrl; }
+             else if (item.classList.contains('active')) { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+        });
+    });
+
+    document.addEventListener('touchstart', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    document.addEventListener('touchmove', function(event) { if (event.touches.length > 1) event.preventDefault(); }, { passive: false });
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function(event) {
+      const now = Date.now();
+      if (now - lastTouchEnd <= 300) event.preventDefault();
+      lastTouchEnd = now;
+    }, { passive: false });
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+          if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden') && !authInstance.currentUser) {
+             if(loadingStatusText) loadingStatusText.textContent = 'Authentication timed out. Please refresh.';
+          }
+        }, 7000); 
+    });
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>ai-Connect – Reset Account PIN</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Roboto+Mono&display=swap" rel="stylesheet" />
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script> 
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- libphonenumber-js for phone number parsing/formatting -->
+  <script src="https://unpkg.com/libphonenumber-js@1.10.57/bundle/libphonenumber-min.js"></script>
+  <style>
+    :root {
+      --bg:#0d0d1a; --panel:#121225; --cyan:#00ffff; --cyan-faded:rgba(0,255,255,0.2);
+      --glow:rgba(0,255,255,.3); --txt:#e0e0f0; --err:#ff4444; --succ:#00ff88;
+      --font-d:'Orbitron',sans-serif; --font-b:'Roboto Mono',monospace;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      height:100vh;background:var(--bg);font-family:var(--font-b);color:var(--cyan);
+    }
+    .card{
+      width:100%;max-width:380px; 
+      background:var(--panel);
+      padding:40px 30px;border:1px solid var(--glow);
+      border-radius:16px;text-align:center;box-shadow:0 0 30px var(--glow);
+    }
+    .logo{width:70px;margin-bottom:20px;filter:drop-shadow(0 0 8px var(--glow))}
+    h2{font-family:var(--font-d);margin-bottom:20px;text-shadow:0 0 8px var(--glow);}
+
+    .input-field {
+      width: 100%;
+      padding: 15px;
+      margin-bottom: 20px;
+      background: transparent;
+      border: 2px solid var(--cyan-faded);
+      border-radius: 8px;
+      color: var(--txt);
+      font-family: var(--font-b);
+      font-size: 1em;
+      box-sizing: border-box;
+      transition: opacity 0.3s ease-out, max-height 0.3s ease-out, margin 0.3s ease-out, padding 0.3s ease-out;
+    }
+    .input-field.hidden-field {
+        opacity: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-bottom: 0;
+        border-width: 0;
+        overflow: hidden;
+    }
+    .input-field::placeholder { color: rgba(224, 224, 240, 0.7); }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px var(--glow);
+    }
+    .input-field.error { border-color: var(--err); }
+
+    .btn{
+      position:relative;width:100%;padding:14px; margin-top: 5px;
+      font-family:var(--font-d);font-weight:700;font-size:1.1em;
+      color:var(--cyan);border:2px solid var(--cyan);
+      border-radius:8px;background:transparent;cursor:pointer;
+      transition:all .35s ease-out; /* Added ease-out */
+    }
+    .btn.hidden-field { /* To hide the button smoothly */
+        opacity: 0;
+        max-height: 0;
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-top: 0;
+        margin-bottom: 0;
+        border-width: 0;
+        overflow: hidden;
+    }
+    .btn::before{
+      content:'';position:absolute;top:0;left:0;width:100%;height:100%;
+      background:linear-gradient(135deg,var(--cyan),#00cccc);
+      transform:translateY(101%);transition:transform .35s ease-out;z-index:-1;
+    }
+    .btn:hover:not(:disabled){
+      color:var(--bg);transform:translateY(-3px);box-shadow:0 5px 20px var(--glow);
+    }
+    .btn:hover:not(:disabled)::before{transform:translateY(0)}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    
+    .msg{margin-top:20px;font-size:.9em;min-height:1.4em;color:var(--txt)}
+    .msg.error {color:var(--err)}
+    .msg.success {color:var(--succ)}
+    .back-link {
+        display: block;
+        margin-top: 20px;
+        color: var(--cyan-faded);
+        font-size: 0.85em;
+        text-decoration: none;
+    }
+    .back-link:hover {
+        color: var(--cyan);
+        text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="assets/logo/logo.png" alt="Logo" class="logo">
+    <h2 id="pageTitle">Reset PIN</h2>
+
+    <div id="resetForm">
+        <input type="tel" id="phoneNumberResetInput" class="input-field" placeholder="Registered Phone Number" required>
+        <input type="email" id="emailInput" class="input-field" placeholder="Your Email Address" required>
+        <button class="btn" id="sendResetButton">Send Reset Instructions</button>
+    </div>
+    
+    <div class="msg" id="messageDiv">Enter your phone and email to start PIN reset.</div>
+    <a href="signin.html" class="back-link" id="backToSignInLink">Back to Sign In</a>
+  </div>
+
+  <script>
+    // Firebase init
+    const firebaseConfig = {
+      apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+      authDomain: "daisy-n7g20a.firebaseapp.com",
+      databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+      projectId: "daisy-n7g20a",
+      storageBucket: "daisy-n7g20a.appspot.com",
+      messagingSenderId: "225362605902",
+      appId: "1:225362605902:web:d2551cc389e78c92c3d01f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    const resetForm = document.getElementById('resetForm');
+    const phoneNumberResetInput = document.getElementById('phoneNumberResetInput');
+    const emailInput = document.getElementById('emailInput');
+    const sendResetButton = document.getElementById('sendResetButton');
+    const messageDiv = document.getElementById('messageDiv');
+    const pageTitle = document.getElementById('pageTitle');
+    const backToSignInLink = document.getElementById('backToSignInLink');
+
+
+    function showMessage(text, type = 'info') {
+        messageDiv.textContent = text;
+        messageDiv.className = 'msg'; 
+        if (type === 'error') messageDiv.classList.add('error');
+        else if (type === 'success') messageDiv.classList.add('success');
+        
+        phoneNumberResetInput.classList.toggle('error', type === 'error' && text.toLowerCase().includes("phone"));
+        emailInput.classList.toggle('error', type === 'error' && text.toLowerCase().includes("email"));
+    }
+    
+    phoneNumberResetInput.addEventListener('input', () => {
+        if (messageDiv.classList.contains('error')) {
+             showMessage("Enter your phone and email to start PIN reset.", 'info');
+        }
+    });
+    emailInput.addEventListener('input', () => {
+        if (messageDiv.classList.contains('error')) {
+             showMessage("Enter your phone and email to start PIN reset.", 'info');
+        }
+    });
+
+    sendResetButton.addEventListener("click", async () => {
+      const rawPhoneNumber = phoneNumberResetInput.value.trim();
+      const emailAddress = emailInput.value.trim();
+
+      showMessage("Verifying...", 'info');
+      sendResetButton.disabled = true;
+      
+      if (!rawPhoneNumber) {
+        showMessage("Phone number is required.", 'error');
+        sendResetButton.disabled = false; return;
+      }
+      if (!emailAddress) { 
+        showMessage("Email address is required.", 'error');
+        sendResetButton.disabled = false; return;
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailAddress)) {
+        showMessage("Please enter a valid email address.", 'error');
+        sendResetButton.disabled = false; return;
+      }
+
+      let parsedPhoneNumber;
+      try {
+        parsedPhoneNumber = libphonenumber.parsePhoneNumberFromString(rawPhoneNumber);
+      } catch (e) {
+        showMessage("Invalid phone number format. Use international format (e.g. +1).", 'error');
+        sendResetButton.disabled = false; return;
+      }
+
+      if (!parsedPhoneNumber || !parsedPhoneNumber.isValid()) {
+        let errMsg = "Invalid phone number. Please check and include country code (e.g. +1, +63).";
+        if (!rawPhoneNumber.startsWith('+')) errMsg = "Phone number must start with '+' and country code.";
+        showMessage(errMsg, 'error');
+        sendResetButton.disabled = false; return;
+      }
+
+      const normalizedPhoneKey = parsedPhoneNumber.format('E.164').substring(1);
+
+      try {
+        const userRecordRef = database.ref(`users_info/${normalizedPhoneKey}`);
+        const snapshot = await userRecordRef.once("value");
+
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            
+            // SIMULATION for client-side:
+            // In a real system: Call a Cloud Function here.
+            // The Cloud Function would:
+            // 1. Verify phone if needed.
+            // 2. Generate a secure, unique, time-limited reset token.
+            // 3. Store token & expiry in `users_info/${normalizedPhoneKey}`.
+            // 4. Send an email to `emailAddress` with a link like:
+            //    `your-app.com/set-new-pin.html?token=THE_TOKEN&phoneKey=${normalizedPhoneKey}`
+            
+            // For client-side demonstration:
+            // Optionally store/update the recovery email.
+            // This might be useful if your Cloud Function later needs to know which email to send to.
+            if (!userData.recoveryEmail || userData.recoveryEmail !== emailAddress) {
+                 await userRecordRef.update({ recoveryEmail: emailAddress });
+                 console.log(`Recovery email for ${normalizedPhoneKey} updated/set to ${emailAddress}.`);
+            } else {
+                 console.log(`Recovery email for ${normalizedPhoneKey} is already ${emailAddress}.`);
+            }
+
+            // Update UI to instruct user to check email
+            pageTitle.textContent = "Check Your Email";
+            
+            // Hide form elements smoothly
+            phoneNumberResetInput.classList.add('hidden-field');
+            emailInput.classList.add('hidden-field');
+            sendResetButton.classList.add('hidden-field');
+            // After transition, set display none
+            setTimeout(() => {
+                if(resetForm) resetForm.style.display = 'none'; // Hide the whole form div
+            }, 350); // Match transition duration
+
+
+            showMessage(`If an account exists for ${parsedPhoneNumber.formatInternational()}, a PIN reset link has been sent to ${emailAddress}. Please check your inbox (and spam folder).`, 'success');
+            // The button remains disabled. No automatic redirect from this page.
+            // The user must now go to their email and click the link.
+
+        } else { // Phone number not registered
+            // To avoid leaking information about which phone numbers are registered,
+            // you might show a generic message even if the phone isn't found.
+            // However, for better UX in a trusted environment, specific feedback is okay.
+            showMessage("This phone number is not registered with ai-Connect. Please check the number or sign up.", 'error');
+            sendResetButton.disabled = false;
+        }
+      } catch (error) {
+        console.error("Error during account verification:", error);
+        showMessage("Verification failed due to a system error. Please try again.", 'error');
+        sendResetButton.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => { phoneNumberResetInput.focus(); });
+  </script>
+</body>
+</html>

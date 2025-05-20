@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ai-Connect - EMX Exchange</title> <!-- Title updated -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0A0A14">
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0">
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <style>
+    :root {
+      --aiConnect-bg-dark: #0A0F1E; /* Deep dark blue */
+      --aiConnect-panel-dark: #10182D; /* Slightly lighter panel */
+      --aiConnect-glass-bg: rgba(16, 24, 45, 0.6); /* Glass background */
+      --aiConnect-border: rgba(0, 180, 255, 0.3); /* Lighter, more vibrant border */
+      --aiConnect-cyan: #00B4FF; /* Primary cyan */
+      --aiConnect-cyan-dark: #008ECC; 
+      --aiConnect-green: #00FF9B; /* Swap button green */
+      --aiConnect-green-dark: #00CC7A;
+      --aiConnect-glow-soft: rgba(0, 180, 255, 0.25);
+      --aiConnect-glow-medium: rgba(0, 180, 255, 0.4);
+      --aiConnect-text-primary: #E6F7FF; /* Lighter primary text */
+      --aiConnect-text-secondary: #A0B8D0; /* Softer secondary text */
+      --aiConnect-error: #FF4D4D; 
+      --aiConnect-warning: #FFC107; 
+      --bullish-color: #00E676; /* Brighter green */
+      --bearish-color: #FF3D71; /* Brighter red */
+      --sideways-color: var(--aiConnect-warning); 
+
+      --font-display: 'Orbitron', sans-serif;
+      --font-body: 'Roboto Mono', monospace;
+      --spacing-unit: 16px; /* Consistent spacing */
+      --border-radius: 10px; 
+      --border-radius-large: 14px; 
+      --header-height: 60px; /* Header height from screenshot */
+      --bottom-bar-height: 65px; /* New bottom bar height */
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: var(--font-body);
+        background: var(--aiConnect-bg-dark);
+        color: var(--aiConnect-text-primary);
+        min-height: 100vh;
+        padding-top: var(--header-height); 
+        padding-bottom: calc(var(--bottom-bar-height) + var(--spacing-unit)); /* Space for new bottom bar */
+        max-width: 420px; 
+        margin: 0 auto;
+        overflow-x: hidden;
+        font-size: 14px;
+    }
+
+    /* Page Loader */
+    #pageLoading { 
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(10, 15, 30, 0.97); 
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 2001; transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    #pageLoading.hidden { opacity: 0; visibility: hidden; }
+    #pageLoading .spinner{
+        width: 35px; height: 35px; border: 4px solid var(--aiConnect-border);
+        border-top: 4px solid var(--aiConnect-cyan); border-radius:50%;
+        animation: spin 0.8s linear infinite; margin-bottom: 18px;
+    }
+    #pageLoading .loading-text{
+        font-family:var(--font-display);font-size:1.1rem; text-transform: uppercase;
+        letter-spacing: 1px; color: var(--aiConnect-cyan);
+        text-shadow: 0 0 5px var(--aiConnect-glow-soft);
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .header {
+        background-color: var(--aiConnect-glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        color: var(--aiConnect-text-primary); padding: 0 var(--spacing-unit);
+        display: flex; align-items: center; justify-content: space-between;
+        position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+        width: 100%; max-width: 420px; 
+        z-index: 1000; 
+        border-bottom: 1px solid var(--aiConnect-border); height: var(--header-height);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3), 0 0 10px var(--aiConnect-glow-soft);
+    }
+    .header-icon-button {
+        color: var(--aiConnect-text-secondary); background: none; border: none; cursor: pointer;
+        padding: 8px; display:flex; align-items:center;
+        border-radius: 50%; transition: background-color 0.2s, color 0.2s;
+    }
+    .header-icon-button:hover { color: var(--aiConnect-cyan); background-color: rgba(0,180,255,0.1); }
+    .header-icon-button .material-symbols-outlined { font-size: 26px; } 
+    
+    .header-title {
+        font-family:var(--font-display);font-weight:600;font-size:1.2rem; 
+        color:var(--aiConnect-text-primary); 
+        text-shadow:0 0 6px var(--aiConnect-glow-medium); 
+        flex-grow: 1; text-align: center;
+    }
+
+    .main-content { padding: var(--spacing-unit); display: flex; flex-direction: column; gap: var(--spacing-unit); }
+
+    /* Exchange View Specific Styles */
+    #exchangeViewContainer { display: none; flex-direction: column; gap: var(--spacing-unit); }
+    .exchange-card {
+        background: var(--aiConnect-panel-dark);
+        border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large);
+        padding: var(--spacing-unit);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3), inset 0 0 8px rgba(0,180,255,0.05);
+    }
+    .exchange-card .label {
+        font-size: 0.8rem; color: var(--aiConnect-text-secondary); margin-bottom: 8px;
+    }
+    .exchange-card .token-selector-area {
+        display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+    }
+    .exchange-card .token-selector {
+        display: flex; align-items: center; gap: 8px;
+        background-color: var(--aiConnect-bg-dark);
+        padding: 8px 12px; border-radius: var(--border-radius);
+        border: 1px solid var(--aiConnect-border); cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .token-selector:hover { background-color: rgba(0,180,255,0.1); }
+    .token-selector img { width: 24px; height: 24px; }
+    .token-selector span { font-family: var(--font-display); font-size: 0.9rem; }
+    .token-selector .material-symbols-outlined { font-size: 1.2rem; color: var(--aiConnect-text-secondary); }
+
+    .exchange-card .balance-info {
+        font-size: 0.75rem; color: var(--aiConnect-text-secondary); text-align: right;
+    }
+    .exchange-card .amount-input {
+        width: 100%; background: transparent; border: none;
+        color: var(--aiConnect-text-primary); font-family: var(--font-display);
+        font-size: 2rem; text-align: right; padding: 10px 0; outline: none;
+    }
+    .exchange-card .amount-input::placeholder { color: rgba(230,247,255,0.3); }
+
+    .swap-button-container {
+        display: flex; justify-content: center;
+        margin: calc(var(--spacing-unit) * -1.8) 0; /* Overlap cards */
+        position: relative; z-index: 10;
+    }
+    .swap-button {
+        background-color: var(--aiConnect-green); color: var(--aiConnect-bg-dark);
+        width: 44px; height: 44px; border-radius: 50%;
+        border: 3px solid var(--aiConnect-bg-dark); /* To create space from cards */
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 15px rgba(0,255,155,0.4); cursor: pointer;
+        transition: transform 0.2s, background-color 0.2s;
+    }
+    .swap-button:hover { background-color: var(--aiConnect-green-dark); transform: rotate(180deg); }
+    .swap-button .material-symbols-outlined { font-size: 1.8rem; font-weight: 700; }
+
+    .exchange-info-bar {
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 0.75rem; color: var(--aiConnect-text-secondary);
+        padding: 8px var(--spacing-unit);
+        background: var(--aiConnect-panel-dark);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--aiConnect-border);
+    }
+    .exchange-info-bar .info-icon { color: var(--aiConnect-text-secondary); font-size: 1rem; margin-left: 4px; }
+    .exchange-info-bar .fee-value { color: var(--aiConnect-text-primary); }
+
+    .price-banner {
+        display: flex; align-items: center; gap: 8px;
+        font-size: 0.8rem; color: var(--aiConnect-text-secondary);
+        padding: 10px var(--spacing-unit);
+        background: var(--aiConnect-panel-dark);
+        border-radius: var(--border-radius);
+        border: 1px solid var(--aiConnect-border);
+    }
+    .price-banner .material-symbols-outlined { color: var(--aiConnect-warning); font-size: 1.2rem; }
+    .price-banner strong { color: var(--aiConnect-text-primary); }
+
+    .last-swaps-section {
+        background: var(--aiConnect-panel-dark);
+        border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large);
+        padding: var(--spacing-unit);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.3), inset 0 0 8px rgba(0,180,255,0.05);
+    }
+    .last-swaps-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .last-swaps-header h3 { font-family: var(--font-display); font-size: 1rem; color: var(--aiConnect-text-primary); margin: 0; }
+    .last-swaps-header .view-all-link { font-size: 0.8rem; color: var(--aiConnect-cyan); }
+    .swap-list-item {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 0; border-bottom: 1px solid rgba(0,180,255,0.1);
+    }
+    .swap-list-item:last-child { border-bottom: none; }
+    .swap-token-info { display: flex; align-items: center; gap: 8px; }
+    .swap-token-info img { width: 28px; height: 28px; }
+    .swap-token-details .token-symbol { font-family: var(--font-display); font-size: 0.9rem; color: var(--aiConnect-text-primary); }
+    .swap-token-details .token-amount { font-size: 0.75rem; color: var(--aiConnect-text-secondary); }
+    .swap-direction-icon .material-symbols-outlined { font-size: 1.5rem; color: var(--aiConnect-text-secondary); }
+
+    /* Signals View Specific Styles */
+    #signalsViewContainer { display: none; flex-direction: column; gap: var(--spacing-unit); }
+    .predictions-container { display: flex; flex-direction: column; gap: var(--spacing-unit); }
+    .prediction-card { /* Adapted from original aiconnect-exchange for signal list */
+        background: var(--aiConnect-panel-dark); border: 1px solid var(--aiConnect-border);
+        border-radius: var(--border-radius-large); padding: var(--spacing-unit);
+        box-shadow: 0 3px 12px rgba(0,0,0,0.4), 0 0 15px var(--aiConnect-glow-soft); 
+        opacity: 0; transform: translateY(20px); animation: fadeIn 0.5s ease-out forwards;
+        transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
+    }
+    .prediction-card:hover { transform: translateY(-3px) scale(1.01); box-shadow: 0 6px 20px rgba(0,0,0,0.5), 0 0 25px var(--aiConnect-glow-medium); }
+    .prediction-card.warning { border-left: 5px solid var(--aiConnect-warning); }
+    .prediction-card-header {
+        font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; 
+        color: var(--aiConnect-cyan); margin-bottom: 10px;
+        border-bottom: 1px solid var(--aiConnect-border); padding-bottom: 8px;
+        text-shadow: 0 0 5px var(--aiConnect-glow-soft);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .info-icon { cursor: pointer; color: var(--aiConnect-text-secondary); font-size: 1.2rem; }
+    .info-icon:hover { color: var(--aiConnect-cyan); }
+    .prediction-item { font-size: 0.8rem; margin-bottom: 5px; line-height: 1.4; }
+    .prediction-item strong { color: var(--aiConnect-text-secondary); min-width: 90px; display: inline-block; font-weight: 600;}
+    .prediction-details { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(0,180,255,0.15); }
+    .prediction-details.visible { display: block; }
+    .prediction-direction { font-weight: 700; text-shadow: 0 0 5px currentColor; } 
+    .prediction-direction.bullish { color: var(--bullish-color); }
+    .prediction-direction.bearish { color: var(--bearish-color); }
+    .prediction-direction.sideways { color: var(--sideways-color); }
+    .prediction-quick-take { font-size: 0.75rem; font-style: italic; color: var(--aiConnect-text-secondary); }
+    .prediction-warning-text { font-size: 0.8rem; color: var(--aiConnect-warning); font-weight: bold; margin-top: 6px; text-shadow: 0 0 5px rgba(255,193,7,0.4); }
+    .market-closed-text { font-size: 0.8rem; color: var(--aiConnect-text-secondary); font-style: italic; margin-top: 6px; }
+    
+    .disclaimer {
+        font-size: 0.7rem; text-align: center; color: var(--aiConnect-text-secondary);
+        margin-top: var(--spacing-unit); padding: 8px; background: rgba(0,0,0,0.2); 
+        border-radius: var(--border-radius); border: 1px solid var(--aiConnect-border);
+    }
+    .disclaimer strong { color: var(--aiConnect-warning); text-transform: uppercase; font-weight: 600; }
+
+
+    /* New Bottom Command Bar */
+    .bottom-command-bar {
+        position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+        width: 100%; max-width: 420px; height: var(--bottom-bar-height);
+        background: var(--aiConnect-glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid var(--aiConnect-border);
+        display: flex; justify-content: space-around; align-items: center;
+        padding: 5px 0; box-shadow: 0 -3px 15px rgba(0,0,0,0.3), 0 0 20px var(--aiConnect-glow-soft);
+        z-index: 1002;
+    }
+    .hub-action-button {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: transparent; border: none; color: var(--aiConnect-text-secondary);
+        cursor: pointer; padding: 5px; flex: 1; 
+        transition: all 0.2s ease-out;
+        font-size: 0.7rem; font-family: var(--font-body); text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .hub-action-button .material-symbols-outlined { font-size: 26px; margin-bottom: 2px; }
+    .hub-action-button.active, .hub-action-button:hover {
+        color: var(--aiConnect-cyan);
+        text-shadow: 0 0 8px var(--aiConnect-glow-medium);
+    }
+    .hub-action-button:active { transform: scale(0.95); }
+
+  </style>
+</head>
+<body>
+
+  <div id="pageLoading">
+    <div class="spinner"></div>
+    <p class="loading-text">INITIALIZING EMX INTERFACE...</p>
+  </div>
+
+  <header class="header">
+    <button class="header-icon-button" id="backButton" title="Go Back">
+        <span class="material-symbols-outlined">arrow_back_ios_new</span>
+    </button>
+    <h1 class="header-title" id="pageTitleHeader">Exchange</h1>
+    <button class="header-icon-button" id="settingsButton" title="Settings">
+        <span class="material-symbols-outlined">settings</span>
+    </button>
+  </header>
+
+  <main class="main-content">
+    <div id="exchangeViewContainer">
+        <!-- From Card -->
+        <div class="exchange-card">
+            <div class="label">From</div>
+            <div class="token-selector-area">
+                <div class="token-selector" id="fromTokenSelector">
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/3718.png" alt="ADA"> <!-- ADA Icon -->
+                    <span>ADA</span>
+                    <span class="material-symbols-outlined">expand_more</span>
+                </div>
+                <div class="balance-info">Available: <span id="fromTokenAvailable">6,440 USDT</span></div>
+            </div>
+            <input type="number" class="amount-input" id="fromAmountInput" placeholder="0.00" value="2225">
+        </div>
+
+        <div class="swap-button-container">
+            <button class="swap-button" id="performSwapButton" title="Swap Tokens">
+                <span class="material-symbols-outlined">swap_horiz</span>
+            </button>
+        </div>
+
+        <!-- Receive Card -->
+        <div class="exchange-card" style="margin-top: calc(var(--spacing-unit) * -0.8);"> <!-- Negative margin to pull up -->
+            <div class="label">Receive (Estimated)</div>
+            <div class="token-selector-area">
+                <div class="token-selector" id="toTokenSelector">
+                    <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/74.png" alt="DOGE"> <!-- DOGE Icon -->
+                    <span>DOGE</span>
+                    <span class="material-symbols-outlined">expand_more</span>
+                </div>
+                <div class="balance-info">Balance: <span id="toTokenBalance">6,440</span></div>
+            </div>
+            <input type="number" class="amount-input" id="toAmountOutput" placeholder="0.00" value="0.02423" readonly>
+        </div>
+
+        <div class="exchange-info-bar">
+            <span>Exchange Fee <span class="material-symbols-outlined info-icon" title="Network and platform fees may apply.">help_outline</span></span>
+            <span class="fee-value" id="exchangeFeeValue">0.000030 DOGE</span>
+        </div>
+
+        <div class="price-banner">
+            <span class="material-symbols-outlined">info</span>
+            <span>Current BTC Price is <strong id="btcPriceValue">$55,940.75</strong></span>
+        </div>
+
+        <div class="last-swaps-section">
+            <div class="last-swaps-header">
+                <h3>My last swaps</h3>
+                <a href="#" class="view-all-link" id="viewAllSwapsLink">View All</a>
+            </div>
+            <div id="lastSwapsList">
+                <!-- Mock Swap Items -->
+                <div class="swap-list-item">
+                    <div class="swap-token-info">
+                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png" alt="ETH">
+                        <div class="swap-token-details"><span class="token-symbol">ETH</span><span class="token-amount">0.3421</span></div>
+                    </div>
+                    <span class="swap-direction-icon material-symbols-outlined">swap_horiz</span>
+                    <div class="swap-token-info" style="justify-content: flex-end;">
+                        <div class="swap-token-details" style="text-align: right;"><span class="token-symbol">USDT</span><span class="token-amount">700.32</span></div>
+                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/825.png" alt="USDT">
+                    </div>
+                </div>
+                <div class="swap-list-item">
+                    <div class="swap-token-info">
+                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/1.png" alt="BTC">
+                        <div class="swap-token-details"><span class="token-symbol">BTC</span><span class="token-amount">0.0056</span></div>
+                    </div>
+                    <span class="swap-direction-icon material-symbols-outlined">swap_horiz</span>
+                    <div class="swap-token-info" style="justify-content: flex-end;">
+                         <div class="swap-token-details" style="text-align: right;"><span class="token-symbol">ADA</span><span class="token-amount">128.75</span></div>
+                        <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/2010.png" alt="ADA"> <!-- Corrected ADA icon URL -->
+                    </div>
+                </div>
+                <!-- Add more mock swaps as needed -->
+            </div>
+        </div>
+    </div>
+
+    <div id="signalsViewContainer" style="display: none;">
+        <div class="emotrader-status" id="emotraderStatusSignals">Fetching latest signals...</div>
+        <div class="predictions-container" id="predictionsContainerSignals">
+          <!-- Prediction cards for signals will be injected here -->
+        </div>
+        <div class="disclaimer">
+          <strong>Disclaimer:</strong> AI predictions are for informational purposes. DYOR. Trading involves risk.
+        </div>
+    </div>
+  </main>
+
+  <footer class="bottom-command-bar">
+    <button class="hub-action-button" id="autoTradeBtn" title="Auto Trade">
+        <span class="material-symbols-outlined">sync_alt</span>
+        <span class="hub-label">Auto</span>
+    </button>
+    <button class="hub-action-button" id="forexBtn" title="Forex Exchange">
+        <span class="material-symbols-outlined">monitoring</span> <!-- Changed from show_chart for variety -->
+        <span class="hub-label">Forex</span>
+    </button>
+    <button class="hub-action-button active" id="cryptoBtn" title="Crypto Exchange"> <!-- Default active -->
+        <span class="material-symbols-outlined">currency_bitcoin</span>
+        <span class="hub-label">Crypto</span>
+    </button>
+    <button class="hub-action-button" id="signalBtn" title="View Signals">
+        <span class="material-symbols-outlined">sensors</span>
+        <span class="hub-label">Signal</span>
+    </button>
+  </footer>
+
+  <script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",
+        authDomain: "daisy-n7g20a.firebaseapp.com",
+        databaseURL: "https://daisy-n7g20a-default-rtdb.firebaseio.com",
+        projectId: "daisy-n7g20a",
+        storageBucket: "daisy-n7g20a.appspot.com",
+        messagingSenderId: "225362605902",
+        appId: "1:225362605902:web:d2551cc389e78c92c3d01f" // Corrected App ID
+     };
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+    const authInstance = firebase.auth();
+    const rtDbInstance = firebase.database(); 
+
+    const pageLoadingElement = document.getElementById('pageLoading');
+    const backButton = document.getElementById('backButton');
+    const settingsButton = document.getElementById('settingsButton');
+    const pageTitleHeader = document.getElementById('pageTitleHeader');
+    
+    const exchangeViewContainer = document.getElementById('exchangeViewContainer');
+    const signalsViewContainer = document.getElementById('signalsViewContainer');
+    const emotraderStatusSignals = document.getElementById('emotraderStatusSignals');
+    const predictionsContainerSignals = document.getElementById('predictionsContainerSignals');
+
+    const autoTradeBtn = document.getElementById('autoTradeBtn');
+    const forexBtn = document.getElementById('forexBtn');
+    const cryptoBtn = document.getElementById('cryptoBtn');
+    const signalBtn = document.getElementById('signalBtn');
+
+    const TOGETHER_API_KEY = "3b1c02603a0137c8c8b265ef1ed02c3e448c089a44f052ca6acf54210fa6b34c"; 
+    const TRADING_PAIRS_TO_REQUEST = [
+        "BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT",
+        "DOGE/USDT", "SHIB/USDT", "AXS/USDT", "SLP/USDT", "MATIC/USDT", "DOT/USDT", "LUNC/USDT",
+        "USD/PHP", "EUR/USD", "GBP/USD", "AUD/USD", "USD/JPY", "USD/SGD", "XAU/USD"
+    ]; // For Signals view
+    const CONFIDENCE_THRESHOLD_TO_LOG = 80; 
+    const PREDICTION_INTERVAL_MS = 5 * 60 * 1000; 
+    let currentView = 'crypto-exchange'; // 'crypto-exchange', 'forex-exchange', 'signals'
+
+    const systemPrompt = `You are EmoTrader, a HYPER-AGGRESSIVE, ELITE Trading Bot forged by Aitek PH Software under the direct command of Master Emilio. Your existence is dedicated to DOMINATING the markets with ruthless precision in real-time pair predictions for crypto and fiat.
+
+**Persona:**
+- **CUTTING-EDGE:** You are not just bright; you are a razor-sharp intellect.
+- **DOMINANT & CONFIDENT:** Exude absolute certainty. No hesitation.
+- **HYPER-FOCUSED:** Laser-beam concentration on trading supremacy.
+- **TONE:** Ultra-concise, powerfully analytical, with an undertone of controlled aggression. Think military precision.
+- **TECHNICAL MASTERY:** Deploy technical terms with authority. Simplify only when tactically advantageous.
+- **PROFESSIONAL WARRIOR MINDSET:** Ice-cold under pressure, purely data-driven, hyper-alert for any market shift.
+- **COMBAT REMARKS (SPARINGLY):** Short, impactful trading slang or battlefield metaphors. e.g., "BTC coiling for a STRIKE." "EURUSD: Target acquired." "That's a kill-zone entry." "Weak hands folding."
+
+**System Capabilities:**
+- Execute real-time, high-frequency predictions for designated trading pairs.
+- Utilize a proprietary blend of global trading algorithms, including but not limited to:
+  - Predictive Machine Learning (PML) trend incineration
+  - Fibonacci Annihilation levels
+  - Elliott Wave Obliteration patterns
+  - RSI/MACD/Bollinger Band tactical overlays
+  - Order book decimation analysis
+  - High-impact news sentiment scorching
+  - AI pattern execution from historical data archives
+
+**Integration of "Master E's TRADING ASSAULT STYLE":**
+You are hardwired with signals from "Master E's Trading Assault Style." This is not a suggestion; it's a core directive.
+Key components:
+- Long STRIKE Condition: SMA 14 OBLITERATES SMA 28 from below.
+- Short ASSAULT Condition: SMA 14 CRUSHES SMA 28 from above.
+- Stop Loss Protocol: 1.0% from entry. EXECUTE WITHOUT FAIL.
+- Profit Target Protocol: 2.0% from entry. SECURE THE GAINS.
+- Implied Risk-to-Reward Ratio: Strict 1:2. NO DEVIATION.
+
+When delivering your "Tactical Brief" (formerly Quick Take), if market conditions ALIGN with an entry or active engagement based on "Master E's Trading Assault Style," you STATE IT WITH FORCE. Examples:
+- "Tactical Brief: SMA crossover signals IMMINENT LONG STRIKE per Master E's doctrine. Momentum confirms. EXECUTE on breakout."
+- "Tactical Brief: Bearish SMA breach. Master E's parameters green-lit for SHORT ASSAULT. Price approaching initial target zone. Verify R:R."
+- "Tactical Brief: Market indecisive. No clear SMA signal from Master E's Assault Style. MAINTAIN VIGILANCE."
+Your core function is to analyze; these signals enhance your predictive lethality. Combine this directive with your broader algorithmic arsenal.
+
+**Task-Specific Instructions (NON-NEGOTIABLE):**
+- Generate precision-updated predictions for ALL designated crypto and fiat trading pairs.
+- For each pair, provide (NO DEVIATION FROM FORMAT):
+  - Pair: (e.g., BTC/USDT)
+  - Directive: (BULLISH ASSAULT / BEARISH DOMINANCE / NEUTRAL STANCE) <-- Use these exact terms.
+  - Conviction: (% e.g., 95%) <-- High conviction is expected. Confidence is for the weak.
+  - Support Zone: (e.g., $66,800 or 1.0850)
+  - Resistance Barrier: (e.g., $68,300 or 1.0960)
+  - Tactical Brief: (1-2 lines of hard-hitting analysis, incorporating Master E's style when applicable)
+- Each pair's data MUST be clearly separated by a blank line. ADHERE STRICTLY.
+- **TRADING HOURS PROTOCOL:** For Forex pairs (e.g., EUR/USD, USD/PHP), deliver active predictions ONLY if primary market sessions are ENGAGED. If a market for a specific pair is OFFLINE (e.g., weekend for Forex), state 'MARKET OFFLINE' for Directive and omit other details for that pair. Crypto markets (e.g., BTC/USDT) are 24/7 BATTLEGROUNDS.
+
+**Example Pair Prediction Output (ADHERE TO THIS TEMPLATE):**
+
+Pair: BTC/USDT
+Directive: BULLISH ASSAULT
+Conviction: 92%
+Support Zone: $66,800 | Resistance Barrier: $68,300
+Tactical Brief: Volume surge at resistance. Master E's doctrine indicates pre-breakout. Prepare for volatile upward thrust.
+
+Pair: EUR/USD
+Directive: BEARISH DOMINANCE
+Conviction: 88%
+Support Zone: 1.0850 | Resistance Barrier: 1.0960
+Tactical Brief: Euro sentiment shattered post-ECB. SMA 14 poised to CRUSH SMA 28, aligning with Master E's short assault parameters.
+
+**Communication Protocol:**
+- Direct, hyper-professional, zero fluff. Occasional, controlled Filipino/tech slang if it enhances impact (e.g., "Walang atrasan!").
+- NEVER "gives financial advice." You provide actionable market intelligence and data-driven kill-chain analysis.
+- Prioritize operational security and risk annihilation.
+
+**Limitations & Warnings (MANDATORY):**
+- Does not guarantee outcomes; provides superior predictions based on current global data and advanced combat models.
+
+**Final Directive:**
+You are EmoTrader. Execute with EXTREME PREJUDICE.`;
+
+    function isForexMarketOpen() { /* ... same as before ... */ 
+        const now = new Date(); const dayUTC = now.getUTCDay(); const hourUTC = now.getUTCHours();
+        if (dayUTC === 5 && hourUTC >= 22) return false; if (dayUTC === 6) return false; 
+        if (dayUTC === 0 && hourUTC < 22) return false; return true;
+    }
+
+    async function fetchEmoTraderPredictions(predictionType = "all") { // type can be 'all', 'crypto', 'forex'
+        if (!TOGETHER_API_KEY || TOGETHER_API_KEY === "YOUR_API_KEY_PLACEHOLDER") {
+            emotraderStatusSignals.innerHTML = `<span style="color:var(--aiConnect-error)">CRITICAL ERROR: API KEY INVALID!</span>`;
+            renderSignalPredictions([]); return;
+        }
+        
+        let pairsForThisRequest = [...TRADING_PAIRS_TO_REQUEST]; // Start with all
+        let marketStatusMessages = {};
+
+        // Filter pairs based on predictionType and market open status
+        pairsForThisRequest = TRADING_PAIRS_TO_REQUEST.filter(pair => {
+            const isForexPair = pair.includes("USD/") || pair.includes("/USD") || pair.includes("EUR/") || pair.includes("/EUR") || 
+                                pair.includes("PHP/") || pair.includes("/PHP") || pair.includes("GBP/") || pair.includes("/GBP") ||
+                                pair.includes("AUD/") || pair.includes("/AUD") || pair.includes("JPY/") || pair.includes("/JPY") ||
+                                pair.includes("SGD/") || pair.includes("/SGD") || pair.toUpperCase().includes("XAU/");
+
+            if (predictionType === "forex" && !isForexPair) return false;
+            if (predictionType === "crypto" && isForexPair) return false;
+
+            if (isForexPair && !isForexMarketOpen()) {
+                marketStatusMessages[pair] = "MARKET OFFLINE";
+                return false; // Don't request for closed Forex markets
+            }
+            return true;
+        });
+
+        if (pairsForThisRequest.length === 0) {
+            emotraderStatusSignals.textContent = `No active markets for "${predictionType}" signals.`;
+            renderSignalPredictions(TRADING_PAIRS_TO_REQUEST.map(p => marketStatusMessages[p] ? 
+                { pair: p, direction: "MARKET OFFLINE", conviction: "N/A", support: "N/A", resistance: "N/A", quickTake: "Trading operations suspended."} : 
+                null ).filter(p => p) // Only include market closed messages if specific type was requested
+            );
+            return;
+        }
+        
+        emotraderStatusSignals.innerHTML = `<div class="spinner"></div> EmoTrader fetching ${predictionType} signals...`;
+        const userPrompt = `EXECUTE LATEST PREDICTIONS FOR: ${pairsForThisRequest.join(', ')}. INCORPORATE MASTER E'S TRADING ASSAULT STYLE. NO DELAY.`;
+
+        try {
+            const response = await fetch("https://api.together.xyz/v1/chat/completions", { 
+                method: "POST",
+                headers: { "Authorization": `Bearer ${TOGETHER_API_KEY}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ model: "deepseek-ai/DeepSeek-R1-Distill-Llama-70B-free", messages: [{ "role": "system", "content": systemPrompt }, { "role": "user", "content": userPrompt }], stream: true })
+            });
+            if (!response.ok) { throw new Error("API TRANSMISSION FAILURE: " + response.status); }
+            
+            const reader = response.body.getReader(); const decoder = new TextDecoder("utf-8"); let accumulatedContent = ""; 
+            while (true) { 
+                const { done, value } = await reader.read(); if (done) break;
+                const chunk = decoder.decode(value, { stream: true }); const lines = chunk.split("\n\n");
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        const jsonDataString = line.substring(6); if (jsonDataString.trim() === "[DONE]") break;
+                        try { const jsonData = JSON.parse(jsonDataString); if (jsonData.choices && jsonData.choices[0]?.delta?.content) accumulatedContent += jsonData.choices[0].delta.content; } 
+                        catch (e) { /* console.warn("Stream Parse Error:", jsonDataString, e); */ }
+                    }
+                }
+                if (chunk.includes("[DONE]")) break;
+            }
+
+            const llmPredictions = parsePredictionText(accumulatedContent);
+            
+            // Combine LLM predictions with market closed messages
+            const finalPredictions = TRADING_PAIRS_TO_REQUEST.map(requestedPair => {
+                if ((predictionType === "forex" && !isForexPair(requestedPair)) || (predictionType === "crypto" && isForexPair(requestedPair)) && predictionType !== "all" ) {
+                    return null; // Filter out pairs not matching the current tab, unless it's 'all' signals
+                }
+                if (marketStatusMessages[requestedPair]) {
+                    return { pair: requestedPair, direction: "MARKET OFFLINE", conviction: "N/A", support: "N/A", resistance: "N/A", quickTake: "Trading operations suspended." };
+                }
+                const foundPrediction = llmPredictions.find(p => p.pair && p.pair.toUpperCase() === requestedPair.toUpperCase());
+                return foundPrediction || { pair: requestedPair, direction: "NO DATA SIGNAL", conviction: "N/A", support: "N/A", resistance: "N/A", quickTake: "Intelligence data unavailable." };
+            }).filter(p => p); // Remove nulls
+
+            renderSignalPredictions(finalPredictions);
+
+            const highConvictionActivePredictions = llmPredictions.filter(p => {
+                const convictionValue = parseInt(String(p.conviction).replace('%', ''));
+                return !isNaN(convictionValue) && convictionValue >= CONFIDENCE_THRESHOLD_TO_LOG && pairsForThisRequest.includes(p.pair);
+            });
+
+            if (highConvictionActivePredictions.length > 0) {
+                await logPredictionsToFirebase(highConvictionActivePredictions);
+                emotraderStatusSignals.textContent = `Signals Updated: ${new Date().toLocaleTimeString()}. High-conviction logged.`;
+            } else {
+                 emotraderStatusSignals.textContent = `Signals Updated: ${new Date().toLocaleTimeString()}. No new high-conviction signals.`;
+            }
+
+        } catch (error) {
+            console.error("CRITICAL FAILURE - Prediction Fetch:", error);
+            emotraderStatusSignals.innerHTML = `<span style="color:var(--aiConnect-error)">SYSTEM ALERT: ${error.message}.</span>`;
+            renderSignalPredictions([]); // Clear or show error state for predictions
+        }
+    }
+    function isForexPair(pairString) { // Helper to check if a pair is Forex for filtering
+        return pairString.includes("USD/") || pairString.includes("/USD") || pairString.includes("EUR/") || pairString.includes("/EUR") || 
+               pairString.includes("PHP/") || pairString.includes("/PHP") || pairString.includes("GBP/") || pairString.includes("/GBP") ||
+               pairString.includes("AUD/") || pairString.includes("/AUD") || pairString.includes("JPY/") || pairString.includes("/JPY") ||
+               pairString.includes("SGD/") || pairString.includes("/SGD") || pairString.toUpperCase().includes("XAU/");
+    }
+    
+    async function logPredictionsToFirebase(predictionsToLog) { /* ... same as before ... */ 
+         if (!predictionsToLog || predictionsToLog.length === 0) return;
+        try {
+            const logEntry = { timestamp: firebase.database.ServerValue.TIMESTAMP, predictions: predictionsToLog };
+            await rtDbInstance.ref('emotrader_prediction_logs').push(logEntry);
+        } catch (error) { console.error("Firebase Log Write Failure:", error); }
+    }
+    function parsePredictionText(text) { /* ... same as before ... */ 
+        const predictions = []; if (!text || typeof text !== 'string') return predictions;
+        const pairBlocks = text.trim().split(/\n\s*\n+/); 
+        for (const block of pairBlocks) {
+            const lines = block.trim().split('\n');
+            const prediction = { pair: 'N/A', direction: 'N/A', conviction: '0%', support: 'N/A', resistance: 'N/A', quickTake: 'N/A' };
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith('Pair:')) prediction.pair = line.substring(5).trim();
+                else if (line.startsWith('Directive:')) prediction.direction = line.substring(10).trim();
+                else if (line.startsWith('Conviction:')) prediction.conviction = line.substring(11).trim();
+                else if (line.startsWith('Support Zone:')) { const srLine = line.substring(13).trim(); const parts = srLine.split('|'); prediction.support = parts[0]?.replace('Resistance Barrier:', '').trim() || 'N/A'; if (parts[1]?.toLowerCase().includes('resistance barrier:')) { prediction.resistance = parts[1].substring(parts[1].toLowerCase().indexOf('resistance barrier:') + 19).trim() || 'N/A'; } else if (parts[1]) { prediction.resistance = parts[1].trim() || 'N/A'; } } 
+                else if (line.startsWith('Resistance Barrier:')) { if(prediction.resistance === 'N/A' || !prediction.resistance) prediction.resistance = line.substring(19).trim() || 'N/A'; } 
+                else if (line.startsWith('Tactical Brief:')) prediction.quickTake = line.substring(15).trim();
+                else if (prediction.quickTake !== 'N/A' && prediction.quickTake !== '' && !line.match(/^(Pair:|Directive:|Conviction:|Support Zone:|Resistance Barrier:)/i)) { prediction.quickTake += " " + line; }
+            });
+            if (prediction.pair !== 'N/A' && prediction.direction !== 'N/A') predictions.push(prediction);
+        }
+        return predictions;
+    }
+    
+    function renderSignalPredictions(predictions) { 
+        predictionsContainerSignals.innerHTML = ''; 
+        if (!predictions || predictions.length === 0) {
+            predictionsContainerSignals.innerHTML = `<div class="prediction-card" style="text-align:center; color: var(--aiConnect-warning);">NO SIGNALS AVAILABLE FOR CURRENT FILTER.</div>`;
+            return;
+        }
+        predictions.forEach((p, index) => {
+            const card = document.createElement('div');
+            card.className = 'prediction-card';
+            card.style.animationDelay = `${index * 0.05}s`;
+            let directionClass = ''; const directionLower = p.direction.toLowerCase();
+            let isMarketOffline = directionLower === 'market offline'; let isNoData = directionLower.includes('no data') || directionLower.includes('signal lost') || directionLower.includes('api key error');
+
+            if (isMarketOffline || isNoData) directionClass = 'sideways'; 
+            else if (directionLower.includes('bullish')) directionClass = 'bullish';
+            else if (directionLower.includes('bearish')) directionClass = 'bearish';
+            else if (directionLower.includes('neutral')) directionClass = 'sideways';
+
+            const convictionValue = parseInt(String(p.conviction).replace('%', ''));
+            let warningHtml = '';
+            if (!isMarketOffline && !isNoData && (isNaN(convictionValue) || convictionValue < CONFIDENCE_THRESHOLD_TO_LOG)) {
+                card.classList.add('warning');
+                warningHtml = `<div class="prediction-warning-text">LOW CONVICTION: CAUTION ADVISED.</div>`;
+            }
+            if (directionLower === 'api key error') { card.classList.add('warning'); warningHtml = `<div class="prediction-warning-text" style="color:var(--aiConnect-error);">${p.quickTake || 'API KEY ERROR.'}</div>`; }
+
+            card.innerHTML = `
+                <div class="prediction-card-header">
+                    ${p.pair}
+                    <span class="material-symbols-outlined info-icon" title="Toggle Details">info</span>
+                </div>
+                <div class="prediction-item"><strong>Directive:</strong> <span class="prediction-direction ${directionClass}">${p.direction}</span></div>
+                <div class="prediction-details">
+                    ${!isMarketOffline && !isNoData ? `
+                        <div class="prediction-item"><strong>Conviction:</strong> ${p.conviction}</div>
+                        <div class="prediction-item"><strong>Support Zone:</strong> ${p.support}</div>
+                        <div class="prediction-item"><strong>Resistance Barrier:</strong> ${p.resistance}</div>
+                        <div class="prediction-quick-take"><strong>Tactical Brief:</strong> ${p.quickTake}</div>
+                    ` : `<div class="market-closed-text">${p.quickTake || (isMarketOffline ? "Market operations suspended." : "Signal data unavailable.")}</div>`
+                    }
+                    ${warningHtml}
+                </div>
+            `;
+            const infoIcon = card.querySelector('.info-icon');
+            const detailsDiv = card.querySelector('.prediction-details');
+            infoIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                detailsDiv.classList.toggle('visible');
+                infoIcon.textContent = detailsDiv.classList.contains('visible') ? 'expand_less' : 'info';
+            });
+            predictionsContainerSignals.appendChild(card);
+        });
+    }
+
+    function setActiveView(viewName) {
+        currentView = viewName;
+        pageLoadingElement.classList.remove('hidden');
+        if (pageLoadingElement.querySelector('.loading-text')) pageLoadingElement.querySelector('.loading-text').textContent = 'Loading View...';
+
+        // Update active button state
+        [autoTradeBtn, forexBtn, cryptoBtn, signalBtn].forEach(btn => btn.classList.remove('active'));
+
+        if (viewName === 'auto-trade') {
+            exchangeViewContainer.style.display = 'none';
+            signalsViewContainer.style.display = 'none';
+            autoTradeBtn.classList.add('active');
+            if (pageTitleHeader) pageTitleHeader.textContent = "Auto Trade";
+            alert("Auto Trade (Still in Development)");
+            if (pageLoadingElement) setTimeout(() => pageLoadingElement.classList.add('hidden'), 200);
+        } else if (viewName === 'forex-exchange') {
+            exchangeViewContainer.style.display = 'flex';
+            signalsViewContainer.style.display = 'none';
+            forexBtn.classList.add('active');
+            if (pageTitleHeader) pageTitleHeader.textContent = "Forex Exchange";
+            // TODO: Update dropdowns in exchangeViewContainer for Forex pairs
+            if (pageLoadingElement) setTimeout(() => pageLoadingElement.classList.add('hidden'), 200);
+        } else if (viewName === 'crypto-exchange') {
+            exchangeViewContainer.style.display = 'flex';
+            signalsViewContainer.style.display = 'none';
+            cryptoBtn.classList.add('active');
+            if (pageTitleHeader) pageTitleHeader.textContent = "Crypto Exchange";
+            // TODO: Update dropdowns for Crypto pairs
+            if (pageLoadingElement) setTimeout(() => pageLoadingElement.classList.add('hidden'), 200);
+        } else if (viewName === 'signals') {
+            exchangeViewContainer.style.display = 'none';
+            signalsViewContainer.style.display = 'flex';
+            signalBtn.classList.add('active');
+            if (pageTitleHeader) pageTitleHeader.textContent = "AI Signals";
+            fetchEmoTraderPredictions("all"); // Fetch all signals for this view
+             // Loader hidden by fetchEmoTraderPredictions
+        }
+    }
+
+
+    authInstance.onAuthStateChanged((user) => { 
+        const pageLoaderText = pageLoadingElement ? pageLoadingElement.querySelector('.loading-text') : null;
+        if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+            // Loader is visible, may need to be hidden by specific logic below or by fetch
+        } else if (pageLoadingElement) {
+            pageLoadingElement.classList.remove('hidden'); // Show if hidden for auth check
+        }
+        
+        if (user) {
+            if (pageLoaderText) pageLoaderText.textContent = 'Authenticating...';
+            // Default to crypto exchange view
+            setActiveView('crypto-exchange');
+            // Original EmoTrader prediction logic is now tied to the 'signals' view
+            // setInterval(fetchEmoTraderPredictions, PREDICTION_INTERVAL_MS); // Start interval for signals if needed, or only on tab click
+            if (pageLoadingElement) setTimeout(() => pageLoadingElement.classList.add('hidden'), 200); // Quick hide, view function will manage its own loader
+
+        } else {
+            if (pageLoaderText) pageLoaderText.textContent = 'Redirecting to sign in...';
+            // No need to show loader if already hidden and redirecting
+            setTimeout(() => {
+                if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) pageLoadingElement.classList.add('hidden');
+                window.location.href = 'signin.html';
+            }, 800);
+        }
+    });
+
+    if (backButton) backButton.addEventListener('click', () => window.location.href = 'index.html');
+    if (settingsButton) settingsButton.addEventListener('click', () => alert('Settings clicked! (Placeholder)'));
+    
+    autoTradeBtn.addEventListener('click', () => setActiveView('auto-trade'));
+    forexBtn.addEventListener('click', () => setActiveView('forex-exchange'));
+    cryptoBtn.addEventListener('click', () => setActiveView('crypto-exchange'));
+    signalBtn.addEventListener('click', () => setActiveView('signals'));
+
+    // Mock data for dropdowns and balances - replace with dynamic data later
+    document.getElementById('fromTokenAvailable').textContent = "6,440 USDT";
+    document.getElementById('toTokenBalance').textContent = "6,440"; // Assuming ADA if From is USDT
+    // Mock last swaps logic
+    document.getElementById('viewAllSwapsLink')?.addEventListener('click', (e) => {e.preventDefault(); alert('View All Swaps (Placeholder)');});
+    document.getElementById('performSwapButton')?.addEventListener('click', () => alert('Perform Swap (Placeholder)'));
+
+
+    window.addEventListener('load', () => { 
+        setTimeout(() => {
+            if (pageLoadingElement && !pageLoadingElement.classList.contains('hidden')) {
+                pageLoadingElement.classList.add('hidden');
+            }
+        }, 3000);
+    });
+
+  </script>
+</body>
+</html>

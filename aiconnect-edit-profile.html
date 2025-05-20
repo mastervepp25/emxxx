@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ai-Connect – Edit Profile</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+
+<!-- fonts & icons -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+<style>
+/* ── ai-Connect colour system ─────────────────────────────────────────── */
+:root{
+  --cyan:           #00ffff;
+  --cyan-dark:      #00cccc;
+  --cyan-bg:        rgba(0,255,255,.08);
+
+  --bg-main:        #0d0d1a;
+  --bg-surface:     #121225;
+  --bg-input:       #0d0d1a;
+
+  --text-light:     #e0e0f0;
+  --text-med:       #a0a0c0;
+  --text-dark:      #ffffff;
+
+  --spacing:        15px;
+  --radius:         8px;
+  --shadow:         0 1px 3px rgba(0,0,0,.35);
+
+  --btn-disabled-bg:#444;
+  --btn-disabled-tx:#777;
+}
+
+/* ── base ── */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg-main);
+  color:var(--text-light);
+  max-width:420px;min-height:100vh;margin:0 auto;overflow-x:hidden;
+  padding-bottom:var(--spacing);
+}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+button{
+  font-family:inherit;border:none;border-radius:var(--radius);cursor:pointer;
+  transition:background .25s,transform .1s;display:inline-flex;align-items:center;justify-content:center
+}
+button:active{transform:translateY(1px)}
+button:disabled{background:var(--btn-disabled-bg)!important;color:var(--btn-disabled-tx)!important;cursor:not-allowed;transform:none}
+
+/* ── header ── */
+.header{
+  background:var(--bg-surface);height:56px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--spacing);box-shadow:var(--shadow);position:sticky;top:0;z-index:100
+}
+.header-left-icon,.header-icons-right{width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--text-med)}
+.header-left-icon:hover{color:var(--cyan)}
+.header-title{flex-grow:1;text-align:center;font-size:1.1rem;font-weight:600;color:var(--cyan);margin-left:-32px}
+
+/* ── form surface ── */
+.profile-edit-form-section{
+  background:var(--bg-surface);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:var(--spacing);display:flex;flex-direction:column;gap:var(--spacing)
+}
+.profile-edit-form-section h3{
+  font-size:1.1rem;font-weight:600;color:var(--cyan);border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:7px
+}
+
+/* ── inputs ── */
+.form-group{display:flex;flex-direction:column}
+.form-group label{font-size:.9rem;font-weight:500;color:var(--text-med);margin-bottom:5px}
+.form-group input,.form-group textarea{
+  width:100%;padding:10px;border:1px solid rgba(255,255,255,.15);border-radius:var(--radius);
+  font-size:.95rem;color:var(--text-light);background:var(--bg-input);outline:none;transition:border .2s
+}
+.form-group textarea{min-height:80px;resize:vertical}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--cyan)}
+.form-group input:read-only{background:#1c1c30;cursor:not-allowed}
+.form-group .hint-text{font-size:.75rem;color:var(--text-med);margin-top:4px}
+
+/* ── actions ── */
+.form-actions{display:flex;gap:12px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,.08);padding-top:var(--spacing)}
+.cancel-button{background:#1c1c30;color:var(--text-light)}
+.cancel-button:hover:not(:disabled){background:#292947}
+.primary-button{background:var(--cyan);color:var(--bg-main)}
+.primary-button:hover:not(:disabled){background:var(--cyan-dark)}
+
+/* ── status messages ── */
+#statusMessage{display:none;margin-top:var(--spacing);padding:10px;border-radius:var(--radius);font-weight:500;text-align:center}
+#statusMessage.success{display:block;background:#003a3a;color:#00e0a0}
+#statusMessage.error{display:block;background:#3a0000;color:#ff6b6b}
+#statusMessage.loading{display:block;background:#363600;color:#f5e86b}
+
+/* ── loader ── */
+#loadingOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;color:var(--cyan);font-weight:600;z-index:1000;opacity:0;visibility:hidden;transition:.3s
+}
+#loadingOverlay.visible{opacity:1;visibility:visible}
+
+/* ── layout spacing ── */
+.main-content{padding:var(--spacing);display:flex;flex-direction:column;gap:var(--spacing)}
+</style>
+</head>
+<body>
+
+<!-- loader -->
+<div id="loadingOverlay">Loading Profile…</div>
+
+<!-- header -->
+<header class="header">
+  <div class="header-left-icon" id="backButton"><span class="material-symbols-outlined">arrow_back_ios_new</span></div>
+  <span class="header-title">Edit Profile</span>
+  <div class="header-icons-right"></div>
+</header>
+
+<!-- main -->
+<main class="main-content">
+  <section class="profile-edit-form-section">
+    <h3>Basic Information</h3>
+
+    <div class="form-group"><label for="fullName">Full Name</label><input id="fullName" type="text" placeholder="Enter your full name"></div>
+    <div class="form-group"><label for="email">Email Address</label><input id="email" type="email" readonly><span class="hint-text">Email can’t be changed here.</span></div>
+    <div class="form-group"><label for="phone">Phone Number</label><input id="phone" type="tel" placeholder="+63 9xx xxx xxxx"></div>
+    <div class="form-group"><label for="bio">Bio / Description</label><textarea id="bio" placeholder="Tell us about yourself…"></textarea></div>
+
+    <h3>Social Media</h3>
+    <div class="form-group"><label for="youtubeUrl">YouTube Channel URL</label><input id="youtubeUrl" type="url" placeholder="https://www.youtube.com/@yourchannel"></div>
+    <div class="form-group"><label for="facebookUrl">Facebook URL</label><input id="facebookUrl" type="url" placeholder="https://www.facebook.com/yourpage"></div>
+    <div class="form-group"><label for="instagramUrl">Instagram URL</label><input id="instagramUrl" type="url" placeholder="https://www.instagram.com/yourhandle"></div>
+    <div class="form-group"><label for="tiktokUrl">TikTok URL</label><input id="tiktokUrl" type="url" placeholder="https://www.tiktok.com/@yourhandle"></div>
+
+    <div id="statusMessage"></div>
+
+    <div class="form-actions">
+      <button class="cancel-button" id="cancelButton">Cancel</button>
+      <button class="primary-button" id="saveChangesBtn">Save Changes</button>
+    </div>
+  </section>
+</main>
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+/* Firebase config (same project) */
+const firebaseConfig={apiKey:"AIzaSyDwldURmtljNpORmpGRacwXriPmQZjF6j8",authDomain:"daisy-n7g20a.firebaseapp.com",databaseURL:"https://daisy-n7g20a-default-rtdb.firebaseio.com",projectId:"daisy-n7g20a",storageBucket:"daisy-n7g20a.appspot.com",messagingSenderId:"225362605902",appId:"1:225362605902:web:d2551cc389e78c92c3d01f"};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth(),db=firebase.database();
+
+/* elements */
+const loader=document.getElementById('loadingOverlay');
+const statusBox=document.getElementById('statusMessage');
+const fields={
+  fullName:document.getElementById('fullName'),
+  email:document.getElementById('email'),
+  phone:document.getElementById('phone'),
+  bio:document.getElementById('bio'),
+  youtube:document.getElementById('youtubeUrl'),
+  facebook:document.getElementById('facebookUrl'),
+  instagram:document.getElementById('instagramUrl'),
+  tiktok:document.getElementById('tiktokUrl')
+};
+const saveBtn=document.getElementById('saveChangesBtn');
+const cancelBtn=document.getElementById('cancelButton');
+const backBtn=document.getElementById('backButton');
+
+const showLoader=m=>{loader.textContent=m||'Loading…';loader.classList.add('visible');saveBtn.disabled=cancelBtn.disabled=true};
+const hideLoader=()=>{loader.classList.remove('visible');saveBtn.disabled=cancelBtn.disabled=false};
+const flash=(msg,type)=>{statusBox.className=type;statusBox.textContent=msg;statusBox.style.display='block';
+                         if(type!=='loading')setTimeout(()=>statusBox.style.display='none',4000)};
+
+let uid=null;
+
+/* populate form */
+const loadProfile=()=>{
+  if(!uid)return;
+  showLoader('Loading Profile…');
+  db.ref(`users/${uid}/profile`).once('value').then(snap=>{
+    const d=snap.val()||{};
+    fields.fullName.value=d.fullName||'';
+    fields.phone.value=d.phone||'';
+    fields.bio.value=d.bio||'';
+    fields.youtube.value=d.social?.youtube||'';
+    fields.facebook.value=d.social?.facebook||'';
+    fields.instagram.value=d.social?.instagram||'';
+    fields.tiktok.value=d.social?.tiktok||'';
+    fields.email.value=auth.currentUser.email||'';
+  }).catch(e=>flash('Error loading profile','error')).finally(hideLoader);
+};
+
+/* save */
+const saveProfile=()=>{
+  if(!uid)return;
+  if(!fields.fullName.value.trim()){flash('Full name is required','error');fields.fullName.focus();return;}
+  showLoader('Saving…');flash('Saving…','loading');
+  const data={
+    fullName:fields.fullName.value.trim(),
+    phone:fields.phone.value.trim(),
+    bio:fields.bio.value.trim(),
+    social:{
+      youtube:fields.youtube.value.trim(),
+      facebook:fields.facebook.value.trim(),
+      instagram:fields.instagram.value.trim(),
+      tiktok:fields.tiktok.value.trim()
+    },
+    lastUpdated:firebase.database.ServerValue.TIMESTAMP
+  };
+  db.ref(`users/${uid}/profile`).update(data)
+    .then(()=>flash('Profile saved!','success'))
+    .catch(e=>flash(`Error: ${e.message}`,'error'))
+    .finally(hideLoader);
+};
+
+/* auth */
+auth.onAuthStateChanged(user=>{
+  if(user){uid=user.uid;loadProfile();}
+  else{showLoader('Redirecting to login…');alert('Please sign in.');location.href='signin.html';}
+});
+
+/* buttons */
+saveBtn.onclick=saveProfile;
+cancelBtn.onclick=backBtn.onclick=()=>history.back();
+
+/* touch zoom prevention */
+document.addEventListener('touchstart',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+let last=0;document.addEventListener('touchend',e=>{const n=Date.now();if(n-last<=300)e.preventDefault();last=n},{passive:false});
+</script>
+</body>
+</html>
